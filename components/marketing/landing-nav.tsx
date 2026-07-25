@@ -32,22 +32,30 @@ export function LandingNav({ userName = null }: { userName?: string | null }) {
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-24 bg-gradient-to-b from-black/55 to-transparent sm:h-28"
         aria-hidden
       />
-      <span className="flex items-center gap-2">
+      <span className="flex shrink-0 items-center gap-2">
         <Coffee className="h-[26px] w-[26px] text-white" aria-hidden />
         <span className="font-playfair text-2xl italic text-white">PhaDinCoffee</span>
       </span>
-      <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-full border border-white/30 bg-white/20 px-2 py-2 backdrop-blur-md md:flex">
-        {NAV_LINKS.map(({ key, href }) => (
-          <Link
-            key={key}
-            href={href}
-            className="rounded-full px-4 py-1.5 text-sm font-medium text-white/80 transition-colors hover:bg-white/20 hover:text-white"
-          >
-            {t(key)}
-          </Link>
-        ))}
+      {/* Centered within the flex-1 middle track (not absolute left-1/2 true-
+          viewport centering) so it never overlaps the logo or the right-side
+          greeting/logout block when their widths are asymmetric — which is
+          exactly what happens at tablet widths once a signed-in user's name
+          plus the reserved header-actions-stack clearance eat into the
+          available space. */}
+      <div className="hidden flex-1 items-center justify-center px-2 md:flex">
+        <div className="flex items-center gap-1 rounded-full border border-white/30 bg-white/20 px-2 py-2 backdrop-blur-md">
+          {NAV_LINKS.map(({ key, href }) => (
+            <Link
+              key={key}
+              href={href}
+              className="whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+            >
+              {t(key)}
+            </Link>
+          ))}
+        </div>
       </div>
-      <div className="hidden items-center gap-3 md:flex" style={{ marginRight: signUpClearance }}>
+      <div className="hidden shrink-0 items-center gap-3 md:flex" style={{ marginRight: signUpClearance }}>
         {userName ? (
           <>
             <span className="text-sm font-medium text-white/90">{t("navGreeting", { name: userName })}</span>

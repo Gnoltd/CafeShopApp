@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl"
 import { Link, usePathname, useRouter } from "@/i18n/navigation"
 import { cn } from "@/lib/utils"
 import { useCart } from "@/hooks/useCart"
+import { useHeaderActionsClearance } from "@/hooks/useHeaderActionsClearance"
 
 const DESKTOP_NAV = [
   { href: "/menu", labelKey: "menu", icon: UtensilsCrossed },
@@ -22,10 +23,17 @@ export function CustomerHeader({ showBack = false }: { showBack?: boolean }) {
   const router = useRouter()
   const pathname = usePathname()
   const { itemCount } = useCart()
+  // #header-actions-stack (RoleBadge + ThemeToggle + LanguageSwitcher) is
+  // fixed top-right and can be wider than a static guess, especially at
+  // tablet widths — measure it so nav items never end up hidden behind it.
+  const actionsClearance = useHeaderActionsClearance()
 
   return (
     <header className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur-sm">
-      <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 pl-4 pr-64 md:h-16 md:px-4">
+      <div
+        className="mx-auto flex h-14 max-w-7xl items-center gap-2 pl-4 md:h-16"
+        style={{ paddingRight: actionsClearance }}
+      >
         {/* Back button — mobile only when showBack */}
         {showBack && (
           <button
