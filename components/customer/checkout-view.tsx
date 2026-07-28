@@ -13,6 +13,7 @@ import { cancelPendingOrder } from "@/lib/supabase/orders-data"
 import { isShiftOpen } from "@/lib/supabase/shift-data"
 import { getMyRedemptions, type MyRedemption } from "@/lib/supabase/rewards-data"
 import { getShopSettings, getLoyaltySettings } from "@/lib/supabase/settings-data"
+import { computeOrderTotals } from "@/lib/order-line"
 import { useCart } from "@/hooks/useCart"
 import { useTables } from "@/hooks/useTables"
 import { QrScannerOverlay } from "@/components/customer/qr-scanner-overlay"
@@ -136,9 +137,7 @@ export function CheckoutView() {
     .filter((r) => selectedRedemptionIds.includes(r.id))
     .reduce((sum, r) => sum + r.discountValueVnd, 0)
   const discount = promoDiscount + loyaltyDiscount + redemptionDiscount
-  const taxableAmount = Math.max(subtotal - discount, 0)
-  const tax = Math.round(taxableAmount * (taxRatePercent / 100))
-  const total = taxableAmount + tax
+  const { taxableAmount, tax, total } = computeOrderTotals(subtotal, discount, taxRatePercent)
 
   function toggleRedemption(id: string) {
     setSelectedRedemptionIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))

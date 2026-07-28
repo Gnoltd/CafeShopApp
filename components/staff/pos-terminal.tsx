@@ -14,6 +14,7 @@ import { useShift } from "@/hooks/useShift"
 import { KitchenPendingPayment } from "@/components/staff/kitchen-pending-payment"
 import { PosItemPicker, type PosPickerSelection } from "@/components/staff/pos-item-picker"
 import { getShopSettings } from "@/lib/supabase/settings-data"
+import { buildOrderLineKey, computeOrderTotals } from "@/lib/order-line"
 
 const ICONS: Record<MenuIcon, typeof Coffee> = {
   coffee: Coffee,
@@ -33,10 +34,6 @@ type OrderLine = {
   modifierNames: string[]
   unitPrice: number
   quantity: number
-}
-
-function lineMergeKey(menuItemId: string, sizeId: string | null, modifierIds: string[]): string {
-  return `${menuItemId}|${sizeId ?? ""}|${[...modifierIds].sort().join(",")}`
 }
 
 type OrderType = "dine-in" | "takeaway"
@@ -92,10 +89,10 @@ export function PosTerminal({ categories, items }: { categories: MenuCategory[];
   }, [items, selectedCategory, searchQuery])
 
   function addLine(item: MenuItem, selection: PosPickerSelection) {
-    const key = lineMergeKey(item.id, selection.sizeId, selection.modifierIds)
+    const key = buildOrderLineKey({ menuItemId: item.id, sizeId: selection.sizeId, modifierIds: selection.modifierIds })
     setOrder((prev) => {
       const existing = prev.find(
-        (line) => lineMergeKey(line.menuItemId, line.sizeId, line.modifierIds) === key
+        (line) => buildOrderLineKey({ menuItemId: line.menuItemId, sizeId: line.sizeId, modifierIds: line.modifierIds }) === key
       )
       if (existing) {
         return prev.map((line) => (line.lineId === existing.lineId ? { ...line, quantity: line.quantity + 1 } : line))
@@ -136,8 +133,7 @@ export function PosTerminal({ categories, items }: { categories: MenuCategory[];
   }
 
   const subtotal = order.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0)
-  const tax = Math.round(subtotal * (taxRatePercent / 100))
-  const total = subtotal + tax
+  const { tax, total } = computeOrderTotals(subtotal, 0, taxRatePercent)
 
   async function handleCharge() {
     if (order.length === 0) return
