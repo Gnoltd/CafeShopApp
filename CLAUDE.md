@@ -140,17 +140,19 @@ Reusable facts that apply anywhere in the codebase, not tied to one feature.
 - **Order-status lifecycle logic intentionally lives in two separate
   places**, not one: `hooks/useKitchenOrders.tsx`'s `NEXT_STATUS` map
   (staff-driven kitchen progression, paid→preparing→ready→served) and
-  `supabase/functions/_shared/order-status.ts`'s `buildPaidUpdate`
-  (the served-or-not branch a payment webhook applies when money
-  clears). Considered unifying these during an architecture review
+  the `confirm_order_payment`/`cancel_pending_order` Postgres RPCs (the
+  served-or-not branch and the pending-cancel guard, called uniformly by
+  cash confirm, Stripe's webhook, and VNPay's IPN/return — migration
+  `0056`, unifying what used to be three separately-reimplemented
+  copies). Considered unifying *these two* during an architecture review
   (2026-07-12) and rejected it — they're triggered by different events
-  (a staff tap vs. a gateway callback), live in different runtimes
-  (Next.js client bundle vs. Deno edge function) with no shared-code
-  bridge between them (`tsconfig.json` excludes `supabase/functions`
-  entirely), and don't call each other. Unifying would mean inventing
-  new cross-runtime tooling to remove one repeated `"served"` string
-  comparison — not worth it. Don't re-propose merging them without a
-  third concern showing up that actually needs the same table.
+  (a staff tap vs. a gateway callback) and, before migration `0056`, lived
+  in different runtimes with no shared-code bridge (`tsconfig.json`
+  excludes `supabase/functions` entirely). Moving the payment-confirmation
+  side into a Postgres RPC (reachable from both runtimes) resolved the
+  actual duplication without touching `NEXT_STATUS` — don't re-propose
+  merging `NEXT_STATUS` itself without a third concern showing up that
+  actually needs the same table.
 - **Any code reading `profiles.role` directly** (not via
   `current_user_role()` or a function built on it) risks ignoring
   `is_active` — three call sites needed fixing for exactly this once;

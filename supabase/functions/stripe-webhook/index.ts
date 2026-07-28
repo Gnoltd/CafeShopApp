@@ -8,14 +8,14 @@
 // real trust boundary here; there is no Supabase session on this
 // request at all.
 //
-// Both handled event types guard their UPDATE with
-// `payment_status = 'pending'`, and handle_order_paid (migration 0007)
-// has its own `old is distinct from 'paid'` check — together these make
-// Stripe's automatic webhook retries a safe no-op rather than a double
+// Both branches delegate to a Postgres RPC (confirm_order_payment /
+// cancel_pending_order) that guards on `payment_status = 'pending'`
+// itself, and handle_order_paid (migration 0007) has its own
+// `old is distinct from 'paid'` check — together these make Stripe's
+// automatic webhook retries a safe no-op rather than a double
 // inventory deduction or double loyalty award.
 
 import { createClient } from "jsr:@supabase/supabase-js@2"
-import { buildPaidUpdate } from "../_shared/order-status.ts"
 
 async function verifyStripeSignature(rawBody: string, signatureHeader: string, secret: string): Promise<boolean> {
   const parts = Object.fromEntries(
@@ -71,25 +71,13 @@ Deno.serve(async (req) => {
 
   const serviceClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!)
 
-  if ((event.type === "checkout.session.completed" || event.type === "checkout.session.expired") && orderId) {
-    const { data: order } = await serviceClient.from("orders").select("status").eq("id", orderId).maybeSingle()
-
-    if (event.type === "checkout.session.completed") {
-      await serviceClient
-        .from("orders")
-        .update(buildPaidUpdate(order?.status))
-        .eq("id", orderId)
-        .eq("payment_status", "pending")
-    } else if (order?.status === "pending_payment") {
-      // Only a still-pre-kitchen order should be cancelled on expiry --
-      // a served order whose deferred payment attempt expired just
-      // stays served/unpaid, awaiting a retry.
-      await serviceClient
-        .from("orders")
-        .update({ status: "cancelled" })
-        .eq("id", orderId)
-        .eq("payment_status", "pending")
-    }
+  if (orderId && event.type === "checkout.session.completed") {
+    await serviceClient.rpc("confirm_order_payment", { p_order_id: orderId })
+  } else if (orderId && event.type === "checkout.session.expired") {
+    // Only a still-pre-kitchen order is cancellable -- cancel_pending_order
+    // no-ops for a served Pay Later order whose deferred attempt expired,
+    // which correctly just stays served/unpaid awaiting a retry.
+    await serviceClient.rpc("cancel_pending_order", { p_order_id: orderId })
   }
 
   return new Response(JSON.stringify({ received: true }), {

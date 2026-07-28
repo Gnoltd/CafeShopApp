@@ -8,15 +8,16 @@
 // does. verify_jwt is disabled — VNPay's own signature is the real
 // trust boundary; there is no Supabase session on this request at all.
 //
-// Every guarded UPDATE below uses payment_status = 'pending', and
-// handle_order_paid (migration 0007) has its own `old is distinct from
-// 'paid'` check — together these make VNPay's IPN retries a safe no-op
-// (returning RspCode "02") rather than a double inventory deduction or
-// double loyalty award.
+// The "already confirmed" early-return below and handle_order_paid
+// (migration 0007)'s own `old is distinct from 'paid'` check together
+// make VNPay's IPN retries a safe no-op (returning RspCode "02") rather
+// than a double inventory deduction or double loyalty award; the two
+// write branches delegate to Postgres RPCs (confirm_order_payment /
+// cancel_pending_order) that guard on `payment_status = 'pending'`
+// themselves.
 
 import { createClient } from "jsr:@supabase/supabase-js@2"
 import { verifyVnpaySignature } from "../_shared/vnpay.ts"
-import { buildPaidUpdate } from "../_shared/order-status.ts"
 
 function ipnResponse(rspCode: string, message: string): Response {
   return new Response(JSON.stringify({ RspCode: rspCode, Message: message }), {
@@ -45,7 +46,7 @@ Deno.serve(async (req) => {
 
   const { data: order } = await serviceClient
     .from("orders")
-    .select("id, total, status, payment_status")
+    .select("id, total, payment_status")
     .eq("id", orderId)
     .maybeSingle()
 
@@ -62,19 +63,12 @@ Deno.serve(async (req) => {
   }
 
   if (responseCode === "00") {
-    await serviceClient
-      .from("orders")
-      .update(buildPaidUpdate(order.status))
-      .eq("id", orderId)
-      .eq("payment_status", "pending")
-  } else if (order.status === "pending_payment") {
-    // Only cancel a still-pre-kitchen order -- a served order whose
-    // deferred payment failed just stays served/unpaid for a retry.
-    await serviceClient
-      .from("orders")
-      .update({ status: "cancelled" })
-      .eq("id", orderId)
-      .eq("payment_status", "pending")
+    await serviceClient.rpc("confirm_order_payment", { p_order_id: orderId })
+  } else {
+    // Only a still-pre-kitchen order is cancellable -- cancel_pending_order
+    // no-ops for a served Pay Later order whose deferred attempt failed,
+    // which correctly just stays served/unpaid awaiting a retry.
+    await serviceClient.rpc("cancel_pending_order", { p_order_id: orderId })
   }
 
   return ipnResponse("00", "Confirm Success")
