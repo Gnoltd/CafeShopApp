@@ -20,6 +20,7 @@ import {
 } from "@/lib/supabase/inventory-data"
 import { RecipeChecklist, type RecipeSelection } from "@/components/admin/recipe-checklist"
 import { MenuItemReviewsPanel } from "@/components/admin/menu-item-reviews-panel"
+import { validateMenuItemForm, validateExtraFields, validateRecipeEntries } from "@/lib/validate-menu-item-form"
 
 const ICON_OPTIONS: MenuIcon[] = ["coffee", "cup-soda", "cookie", "milk"]
 
@@ -172,8 +173,8 @@ export function MenuItemForm({
   }
 
   async function handleAddExtra() {
-    const parsedPrice = Number(newExtraPrice)
-    if (!newExtraNameVi.trim() || !newExtraNameEn.trim() || !Number.isFinite(parsedPrice) || parsedPrice < 0) {
+    const validated = validateExtraFields(newExtraNameVi, newExtraNameEn, newExtraPrice)
+    if (!validated) {
       setExtrasError(t("extraRequiredFieldsError"))
       return
     }
@@ -182,7 +183,7 @@ export function MenuItemForm({
       const created = await createModifierGroup(supabase, {
         nameVi: newExtraNameVi.trim(),
         nameEn: newExtraNameEn.trim(),
-        priceDelta: parsedPrice,
+        priceDelta: validated.priceDelta,
       })
       setExtraGroups((prev) => [...prev, created])
       setSelectedExtraIds((prev) => [...prev, created.id])
@@ -210,16 +211,13 @@ export function MenuItemForm({
   }
 
   async function handleSaveExtraEdit(group: MenuModifierGroup) {
-    const parsedPrice = Number(editExtraPrice)
-    if (!editExtraNameVi.trim() || !editExtraNameEn.trim() || !Number.isFinite(parsedPrice) || parsedPrice < 0) {
+    const validated = validateExtraFields(editExtraNameVi, editExtraNameEn, editExtraPrice)
+    if (!validated) {
       setEditExtraError(t("extraRequiredFieldsError"))
       return
     }
-    const recipeEntries = Object.entries(editExtraRecipe).map(([ingredientId, quantityUsed]) => ({
-      ingredientId,
-      quantityUsed,
-    }))
-    if (recipeEntries.some((entry) => !Number.isFinite(entry.quantityUsed) || entry.quantityUsed <= 0)) {
+    const recipeEntries = validateRecipeEntries(editExtraRecipe)
+    if (!recipeEntries) {
       setEditExtraError(t("recipeQuantityRequiredError"))
       return
     }
@@ -229,7 +227,7 @@ export function MenuItemForm({
       const updated = await updateModifierGroup(supabase, group.id, {
         nameVi: editExtraNameVi.trim(),
         nameEn: editExtraNameEn.trim(),
-        priceDelta: parsedPrice,
+        priceDelta: validated.priceDelta,
       })
       await setModifierIngredients(supabase, updated.options[0].id, recipeEntries)
       setExtraGroups((prev) => prev.map((g) => (g.id === group.id ? updated : g)))
@@ -242,32 +240,24 @@ export function MenuItemForm({
   }
 
   async function handleSave() {
-    const parsedPrice = Number(price)
-    if (!nameVi.trim() || !nameEn.trim() || !categoryId || !Number.isFinite(parsedPrice) || parsedPrice <= 0) {
-      setError(t("requiredFieldsError"))
+    const validated = validateMenuItemForm({
+      nameVi,
+      nameEn,
+      categoryId,
+      price,
+      recipe: selectedRecipe,
+      sizes,
+    })
+    if (!validated.ok) {
+      if (validated.error === "required_fields") setError(t("requiredFieldsError"))
+      if (validated.error === "recipe_quantity_required") setRecipeError(t("recipeQuantityRequiredError"))
+      if (validated.error === "size_required_fields") setSizesError(t("sizeRequiredFieldsError"))
       return
     }
-
-    const recipeEntries: RecipeEntry[] = Object.entries(selectedRecipe).map(([ingredientId, quantityUsed]) => ({
-      ingredientId,
-      quantityUsed,
-    }))
-    if (recipeEntries.some((entry) => !Number.isFinite(entry.quantityUsed) || entry.quantityUsed <= 0)) {
-      setRecipeError(t("recipeQuantityRequiredError"))
-      return
-    }
+    setError(null)
     setRecipeError(null)
-
-    if (sizes.some((s) => !s.name.trim())) {
-      setSizesError(t("sizeRequiredFieldsError"))
-      return
-    }
-    const parsedSizes: MenuItemSizeInput[] = sizes.map((s) => ({ name: s.name.trim(), priceDelta: Number(s.price) }))
-    if (parsedSizes.some((s) => !Number.isFinite(s.priceDelta) || s.priceDelta < 0)) {
-      setSizesError(t("sizeRequiredFieldsError"))
-      return
-    }
     setSizesError(null)
+    const { basePrice: parsedPrice, recipeEntries, sizes: parsedSizes } = validated.value
 
     // imagePreviewUrl is a blob: URL only when imageFile is also set (see
     // selectFile/removeImage above, which always set/clear both together) —
