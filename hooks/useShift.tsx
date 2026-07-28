@@ -20,8 +20,8 @@ type ShiftContextValue = {
   currentUserId: string | null
   isCurrentUserWorking: boolean
   refetch: () => void
-  openShift: (startingCash: number, plannedStartAt?: number | null, plannedEndAt?: number | null) => Promise<void>
-  closeShift: (countedCash: number, notes?: string) => Promise<void>
+  openShift: (startingCash: number, plannedStartAt?: number | null, plannedEndAt?: number | null) => Promise<ShiftReport>
+  closeShift: (countedCash: number, notes?: string) => Promise<ShiftReport>
   joinShift: () => Promise<void>
   leaveShift: () => Promise<void>
 }
@@ -71,11 +71,13 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   async function openShift(startingCash: number, plannedStartAt?: number | null, plannedEndAt?: number | null) {
     const result = await openShiftQuery(supabase, startingCash, plannedStartAt, plannedEndAt)
     setReport(result)
+    return result
   }
 
   async function closeShift(countedCash: number, notes?: string) {
     const result = await closeShiftQuery(supabase, countedCash, notes)
     setReport(result)
+    return result
   }
 
   async function joinShift() {
