@@ -32,7 +32,7 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2"
 import { createStripeCheckoutSession } from "../_shared/stripe.ts"
-import { buildVnpayCheckoutUrl } from "../_shared/vnpay.ts"
+import { buildVnpayCheckoutUrl, buildVnpayReturnUrl, extractClientIp } from "../_shared/vnpay.ts"
 
 // The browser calls this cross-origin (app on vercel.app, function on
 // supabase.co) via supabase.functions.invoke, which sends a CORS
@@ -120,15 +120,12 @@ Deno.serve(async (req) => {
     }
 
     if (needsVnpayUrl) {
-      const ipAddr = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "127.0.0.1"
-      const returnUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/vnpay-return?orderId=${data.orderId}&locale=${locale}`
-
       const checkoutUrl = await buildVnpayCheckoutUrl({
         orderId: data.orderId,
         total: data.total,
-        ipAddr,
+        ipAddr: extractClientIp(req),
         locale,
-        returnUrl,
+        returnUrl: buildVnpayReturnUrl(data.orderId, locale),
       })
 
       return new Response(JSON.stringify({ ...data, checkoutUrl }), {
