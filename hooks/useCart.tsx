@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react"
+import { buildOrderLineKey } from "@/lib/order-line"
 
 export type CartModifier = {
   groupId: string
@@ -55,14 +56,12 @@ const VALID_PROMO_CODES: Record<string, number> = {
 }
 
 function buildCartItemId(item: AddToCartInput): string {
-  const modifierKey = item.modifiers
-    .map((m) => m.optionId)
-    .sort()
-    .join(",")
-  // Note is part of the identity key so two adds of the same drink with
-  // different notes (e.g. "less sugar" vs "extra ice") stay separate lines
-  // instead of silently merging and dropping one note.
-  return [item.menuItemId, item.size?.id ?? "no-size", modifierKey, item.note ?? ""].join("|")
+  return buildOrderLineKey({
+    menuItemId: item.menuItemId,
+    sizeId: item.size?.id ?? null,
+    modifierIds: item.modifiers.map((m) => m.optionId),
+    note: item.note,
+  })
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
