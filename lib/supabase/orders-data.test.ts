@@ -6,8 +6,7 @@ import {
   getMyOrders,
   getKitchenOrders,
   advanceOrderStatus,
-  confirmCashPayment,
-  confirmServedCashPayment,
+  confirmOrderPayment,
   payExistingOrder,
   setOrderPaymentMethodCash,
   changeOrderPaymentMethod,
@@ -179,14 +178,29 @@ describe("advanceOrderStatus", () => {
   })
 })
 
-describe("confirmCashPayment", () => {
-  it("updates both status and payment_status to paid", async () => {
-    const eqSpy = vi.fn(() => Promise.resolve({ error: null }))
-    const updateSpy = vi.fn(() => ({ eq: eqSpy }))
-    const supabase = { from: () => ({ update: updateSpy }) } as unknown as SupabaseClient
+describe("confirmOrderPayment", () => {
+  it("calls the RPC and returns its boolean result", async () => {
+    const rpcSpy = vi.fn(() => Promise.resolve({ data: true, error: null }))
+    const supabase = { rpc: rpcSpy } as unknown as SupabaseClient
 
-    await confirmCashPayment(supabase, "ord-1")
-    expect(updateSpy).toHaveBeenCalledWith({ status: "paid", payment_status: "paid" })
+    const result = await confirmOrderPayment(supabase, "ord-1")
+
+    expect(rpcSpy).toHaveBeenCalledWith("confirm_order_payment", { p_order_id: "ord-1" })
+    expect(result).toBe(true)
+  })
+
+  it("returns false when the RPC reports the order wasn't pending", async () => {
+    const rpcSpy = vi.fn(() => Promise.resolve({ data: false, error: null }))
+    const supabase = { rpc: rpcSpy } as unknown as SupabaseClient
+
+    expect(await confirmOrderPayment(supabase, "ord-2")).toBe(false)
+  })
+
+  it("throws on RPC error", async () => {
+    const rpcSpy = vi.fn(() => Promise.resolve({ data: null, error: new Error("boom") }))
+    const supabase = { rpc: rpcSpy } as unknown as SupabaseClient
+
+    await expect(confirmOrderPayment(supabase, "ord-1")).rejects.toThrow("boom")
   })
 })
 
@@ -343,19 +357,6 @@ describe("getOrderHistoryDetail", () => {
 
     const result = await getOrderHistoryDetail(supabase, "unknown-id")
     expect(result).toBeNull()
-  })
-})
-
-describe("confirmServedCashPayment", () => {
-  it("updates only payment_status, not status", async () => {
-    const eqSpy = vi.fn(() => Promise.resolve({ error: null }))
-    const updateSpy = vi.fn(() => ({ eq: eqSpy }))
-    const supabase = { from: () => ({ update: updateSpy }) } as unknown as SupabaseClient
-
-    await confirmServedCashPayment(supabase, "order-1")
-
-    expect(updateSpy).toHaveBeenCalledWith({ payment_status: "paid" })
-    expect(eqSpy).toHaveBeenCalledWith("id", "order-1")
   })
 })
 

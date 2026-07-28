@@ -231,14 +231,10 @@ export async function advanceOrderStatus(
   if (error) throw error
 }
 
-export async function confirmCashPayment(supabase: SupabaseClient, orderId: string): Promise<void> {
-  const { error } = await supabase.from("orders").update({ status: "paid", payment_status: "paid" }).eq("id", orderId)
+export async function confirmOrderPayment(supabase: SupabaseClient, orderId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc("confirm_order_payment", { p_order_id: orderId })
   if (error) throw error
-}
-
-export async function confirmServedCashPayment(supabase: SupabaseClient, orderId: string): Promise<void> {
-  const { error } = await supabase.from("orders").update({ payment_status: "paid" }).eq("id", orderId)
-  if (error) throw error
+  return data as boolean
 }
 
 export async function payExistingOrder(

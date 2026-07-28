@@ -5,8 +5,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useRealtimeChannel } from "@/hooks/useRealtimeChannel"
 import {
   advanceOrderStatus,
-  confirmCashPayment as confirmCashPaymentQuery,
-  confirmServedCashPayment as confirmServedCashPaymentQuery,
+  confirmOrderPayment,
   getKitchenOrders,
   getPendingPaymentOrders,
   setOrderPaymentMethodCash,
@@ -108,12 +107,7 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
   }
 
   async function confirmCashPayment(orderId: string) {
-    const order = orders.find((o) => o.id === orderId) ?? pendingPaymentOrders.find((o) => o.id === orderId)
-    if (order?.status === "served") {
-      await confirmServedCashPaymentQuery(supabase, orderId)
-    } else {
-      await confirmCashPaymentQuery(supabase, orderId)
-    }
+    await confirmOrderPayment(supabase, orderId)
   }
 
   async function markCashPayment(orderId: string) {
