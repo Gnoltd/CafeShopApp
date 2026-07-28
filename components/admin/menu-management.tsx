@@ -23,6 +23,7 @@ import {
 } from "@/lib/supabase/menu-data"
 import { setMenuItemIngredients, type RecipeEntry } from "@/lib/supabase/inventory-data"
 import { MenuItemForm } from "@/components/admin/menu-item-form"
+import { Pagination } from "@/components/admin/pagination"
 
 const ICONS: Record<MenuIcon, typeof Coffee> = {
   coffee: Coffee,
@@ -279,46 +280,14 @@ export function MenuManagement({
         })}
 
         <div className="flex flex-col items-center justify-between gap-3 rounded-xl border bg-muted/40 px-4 py-3">
-          <span className="text-xs text-muted-foreground">
-            {t("showingItems", {
-              start: visibleItems.length === 0 ? 0 : pageStart + 1,
-              end: Math.min(pageStart + PAGE_SIZE, visibleItems.length),
-              total: visibleItems.length,
-            })}
-          </span>
-          <div className="flex gap-1">
-            <button
-              type="button"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="nb-border-sm nb-press-sm rounded-lg bg-card px-3 py-1 text-xs font-extrabold text-muted-foreground disabled:pointer-events-none disabled:opacity-40"
-            >
-              {t("previous")}
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                type="button"
-                onClick={() => setCurrentPage(page)}
-                className={cn(
-                  "nb-border-sm nb-press-sm rounded-lg px-3 py-1 text-xs font-extrabold",
-                  page === currentPage
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-card text-muted-foreground"
-                )}
-              >
-                {page}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="nb-border-sm nb-press-sm rounded-lg bg-card px-3 py-1 text-xs font-extrabold text-muted-foreground disabled:pointer-events-none disabled:opacity-40"
-            >
-              {t("next")}
-            </button>
-          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            rangeStart={visibleItems.length === 0 ? 0 : pageStart + 1}
+            rangeEnd={Math.min(pageStart + PAGE_SIZE, visibleItems.length)}
+            totalCount={visibleItems.length}
+            onPageChange={setCurrentPage}
+          />
         </div>
       </div>
 
@@ -417,46 +386,14 @@ export function MenuManagement({
         </table>
 
         <div className="flex flex-col items-center justify-between gap-3 border-t bg-muted/40 px-4 py-3 sm:flex-row">
-          <span className="text-xs text-muted-foreground">
-            {t("showingItems", {
-              start: visibleItems.length === 0 ? 0 : pageStart + 1,
-              end: Math.min(pageStart + PAGE_SIZE, visibleItems.length),
-              total: visibleItems.length,
-            })}
-          </span>
-          <div className="flex gap-1">
-            <button
-              type="button"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="nb-border-sm nb-press-sm rounded-lg bg-card px-3 py-1 text-xs font-extrabold text-muted-foreground disabled:pointer-events-none disabled:opacity-40"
-            >
-              {t("previous")}
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                type="button"
-                onClick={() => setCurrentPage(page)}
-                className={cn(
-                  "nb-border-sm nb-press-sm rounded-lg px-3 py-1 text-xs font-extrabold",
-                  page === currentPage
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-card text-muted-foreground"
-                )}
-              >
-                {page}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="nb-border-sm nb-press-sm rounded-lg bg-card px-3 py-1 text-xs font-extrabold text-muted-foreground disabled:pointer-events-none disabled:opacity-40"
-            >
-              {t("next")}
-            </button>
-          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            rangeStart={visibleItems.length === 0 ? 0 : pageStart + 1}
+            rangeEnd={Math.min(pageStart + PAGE_SIZE, visibleItems.length)}
+            totalCount={visibleItems.length}
+            onPageChange={setCurrentPage}
+          />
         </div>
       </div>
     </div>
