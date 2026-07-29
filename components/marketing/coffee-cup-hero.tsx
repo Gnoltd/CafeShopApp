@@ -5,7 +5,6 @@ import { QrCode } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { Link } from "@/i18n/navigation"
 import { computeCameraOrbit } from "@/lib/coffee-cup-orbit"
-import { cn } from "@/lib/utils"
 
 type RenderMode = "checking" | "model" | "fallback"
 
@@ -23,11 +22,9 @@ function isWebGLAvailable(): boolean {
 
 export function CoffeeCupHero({
   onScanQr,
-  baseImages,
   revealImage,
 }: {
   onScanQr: () => void
-  baseImages: string[]
   revealImage: string | null
 }) {
   const t = useTranslations("Landing")
@@ -104,113 +101,85 @@ export function CoffeeCupHero({
   return (
     <section
       id="coffee-cup-hero"
-      className="relative h-screen w-full overflow-hidden bg-black"
-      style={{ height: "100dvh" }}
+      className="relative flex min-h-screen w-full items-center overflow-hidden bg-black"
+      style={{ minHeight: "100dvh" }}
     >
-      {/* The photo crossfade and the 3D cup don't read well layered together
-          (flat photography behind a synthetically-lit 3D render looks like a
-          sticker, not one scene) — the photos only show when there's no 3D
-          model on top: while WebGL support is still being checked, or as the
-          permanent fallback. The 3D layer gets its own brand-colored glow
-          below instead of competing photography. */}
-      {renderMode !== "model" &&
-        baseImages.map((image, index) => (
+      <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-10 px-6 py-28 md:flex-row md:items-center md:justify-between md:gap-8 md:px-12 md:py-0">
+        <div className="flex flex-col items-center gap-6 text-center sm:gap-8 md:max-w-md md:items-start md:text-left">
+          <h1 className="leading-[0.95] text-white">
+            <span
+              className="hero-anim hero-reveal font-playfair block text-5xl font-normal italic sm:text-7xl md:text-6xl"
+              style={{ letterSpacing: "-0.05em", animationDelay: "0.25s" }}
+            >
+              {t("heroLine1")}
+            </span>
+            <span
+              className="hero-anim hero-reveal -mt-1 block text-5xl font-normal sm:text-7xl md:text-6xl"
+              style={{ letterSpacing: "-0.08em", animationDelay: "0.42s" }}
+            >
+              {t("heroLine2")}
+            </span>
+          </h1>
           <div
-            key={image}
-            className={cn(
-              "hero-crossfade absolute inset-0 z-10 bg-cover bg-center bg-no-repeat",
-              index === 0 && "hero-crossfade-first"
-            )}
-            style={{ backgroundImage: `url(${image})`, animationDelay: `${index * 6}s` }}
-          />
-        ))}
-
-      {renderMode === "model" && (
-        <div
-          className="pointer-events-none absolute inset-0 z-20"
-          style={{
-            background:
-              "radial-gradient(circle at 50% 55%, color-mix(in srgb, var(--primary) 20%, transparent), transparent 60%)",
-          }}
-          aria-hidden
-        />
-      )}
-
-      {renderMode === "model" && (
-        <model-viewer
-          ref={modelRef}
-          // A root-relative path here gets mis-resolved by model-viewer's
-          // internal loader against the current locale route (producing
-          // "/en/models/..." instead of "/models/..."), so it's resolved
-          // to a fully-qualified URL up front instead. Safe to read
-          // window.location here — this branch only renders client-side,
-          // after the WebGL-availability effect above has already run.
-          src={new URL(MODEL_PATH, window.location.origin).toString()}
-          poster={revealImage ?? undefined}
-          alt=""
-          scale={`${MODEL_SCALE} ${MODEL_SCALE} ${MODEL_SCALE}`}
-          camera-orbit={computeCameraOrbit({ mouseX: 0, mouseY: 0, scrollProgress: 0 })}
-          exposure="1"
-          shadow-intensity="1"
-          loading="eager"
-          className="absolute inset-0 z-30 h-full w-full"
-        />
-      )}
-
-      {renderMode !== "model" && revealImage && (
-        <div
-          className="pointer-events-none absolute inset-0 z-30 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${revealImage})` }}
-        />
-      )}
-
-      <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-40 h-28 bg-gradient-to-t from-background to-transparent"
-        aria-hidden
-      />
-
-      <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-6 px-6 text-center sm:gap-8">
-        <h1 className="leading-[0.95] text-white">
-          <span
-            className="hero-anim hero-reveal font-playfair block text-5xl font-normal italic sm:text-7xl md:text-8xl"
-            style={{ letterSpacing: "-0.05em", animationDelay: "0.25s" }}
+            className="hero-anim hero-fade flex max-w-sm flex-col gap-2 sm:max-w-md"
+            style={{ animationDelay: "0.6s" }}
           >
-            {t("heroLine1")}
-          </span>
-          <span
-            className="hero-anim hero-reveal -mt-1 block text-5xl font-normal sm:text-7xl md:text-8xl"
-            style={{ letterSpacing: "-0.08em", animationDelay: "0.42s" }}
+            <p className="hidden text-sm leading-relaxed text-white/80 sm:block sm:text-base">
+              {t("heroLeftText")}
+            </p>
+            <p className="text-sm leading-relaxed text-white/80 sm:text-base">{t("heroRightText")}</p>
+          </div>
+          <div
+            className="hero-anim hero-fade flex w-full max-w-xs flex-col items-center gap-4 md:max-w-none md:flex-row md:items-start"
+            style={{ animationDelay: "0.85s" }}
           >
-            {t("heroLine2")}
-          </span>
-        </h1>
-        <div
-          className="hero-anim hero-fade flex max-w-sm flex-col gap-2 sm:max-w-md"
-          style={{ animationDelay: "0.6s" }}
-        >
-          <p className="hidden text-sm leading-relaxed text-white/80 sm:block sm:text-base">
-            {t("heroLeftText")}
-          </p>
-          <p className="text-sm leading-relaxed text-white/80 sm:text-base">{t("heroRightText")}</p>
+            <Link
+              href="/menu"
+              className="w-full rounded-full bg-primary px-7 py-3 text-center text-sm font-medium text-primary-foreground transition-all hover:scale-[1.03] hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/30 active:scale-95 md:w-auto"
+            >
+              {t("orderNow")}
+            </Link>
+            <button
+              type="button"
+              onClick={onScanQr}
+              className="flex w-full items-center justify-center gap-2 rounded-full border border-white/70 px-7 py-3 text-sm font-medium text-white transition-all hover:scale-[1.03] hover:bg-white/10 active:scale-95 md:w-auto"
+            >
+              <QrCode className="h-4 w-4" aria-hidden />
+              {t("scanQr")}
+            </button>
+          </div>
         </div>
-        <div
-          className="hero-anim hero-fade flex w-full max-w-xs flex-col items-center gap-4"
-          style={{ animationDelay: "0.85s" }}
-        >
-          <Link
-            href="/menu"
-            className="w-full rounded-full bg-primary px-7 py-3 text-sm font-medium text-primary-foreground transition-all hover:scale-[1.03] hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/30 active:scale-95"
-          >
-            {t("orderNow")}
-          </Link>
-          <button
-            type="button"
-            onClick={onScanQr}
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-white/70 px-7 py-3 text-sm font-medium text-white transition-all hover:scale-[1.03] hover:bg-white/10 active:scale-95"
-          >
-            <QrCode className="h-4 w-4" aria-hidden />
-            {t("scanQr")}
-          </button>
+
+        <div className="relative flex h-[280px] w-full items-center justify-center sm:h-[360px] md:h-[440px] md:w-1/2">
+          <div className="absolute aspect-square w-[85%] rounded-full bg-primary" aria-hidden />
+
+          {renderMode === "model" && (
+            <model-viewer
+              ref={modelRef}
+              // A root-relative path here gets mis-resolved by model-viewer's
+              // internal loader against the current locale route (producing
+              // "/en/models/..." instead of "/models/..."), so it's resolved
+              // to a fully-qualified URL up front instead. Safe to read
+              // window.location here — this branch only renders client-side,
+              // after the WebGL-availability effect above has already run.
+              src={new URL(MODEL_PATH, window.location.origin).toString()}
+              poster={revealImage ?? undefined}
+              alt=""
+              scale={`${MODEL_SCALE} ${MODEL_SCALE} ${MODEL_SCALE}`}
+              camera-orbit={computeCameraOrbit({ mouseX: 0, mouseY: 0, scrollProgress: 0 })}
+              exposure="1"
+              shadow-intensity="1"
+              loading="eager"
+              className="relative z-10 h-full w-full"
+            />
+          )}
+
+          {renderMode !== "model" && revealImage && (
+            <div
+              className="relative z-10 h-[70%] w-[70%] rounded-full bg-cover bg-center bg-no-repeat"
+              style={{ backgroundImage: `url(${revealImage})` }}
+            />
+          )}
         </div>
       </div>
     </section>
