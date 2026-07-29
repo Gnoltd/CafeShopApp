@@ -1,0 +1,23 @@
+-- 0061_revoke_check_rate_limit_public_grants.sql
+-- Second instance of the same Supabase auto-re-grant-on-CREATE-FUNCTION
+-- gotcha found in this same live-grant audit (see
+-- 0060_revoke_confirm_order_payment_anon_grant.sql): 0057 explicitly
+-- wrote "revoke all ... from public; grant execute ... to
+-- service_role;" for check_rate_limit, but anon and authenticated ended
+-- up with EXECUTE anyway. check_rate_limit is SECURITY DEFINER (bypasses
+-- RLS) with no internal caller check and no self-scoping (the key/
+-- max_requests/window_seconds are all caller-supplied), so this was a
+-- real vulnerability: any anon caller could invoke
+-- check_rate_limit('place-order:<victim-ip>', 1, 999999) repeatedly to
+-- pre-load an arbitrary IP's counter past its real limit, triggering
+-- false 429s against a legitimate customer -- a targeted DoS -- or
+-- otherwise manipulate the shared counter state place-order/pay-order
+-- rely on. Only place-order/pay-order's own service-role client should
+-- ever call this.
+--
+-- Verified live immediately after applying: a direct anon-key RPC call
+-- now returns "permission denied for function check_rate_limit"
+-- (Postgres 42501); place-order's own internal call (via its
+-- service-role client) still succeeds.
+
+revoke execute on function public.check_rate_limit(text, int, int) from anon, authenticated;

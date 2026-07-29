@@ -1,0 +1,29 @@
+-- 0060_revoke_confirm_order_payment_anon_grant.sql
+-- CRITICAL fix, found live 2026-07-29 during a routine repo/prod
+-- migration-drift audit: 0059's own "revoke all ... from public; grant
+-- ... to authenticated, service_role" did NOT prevent anon from ending
+-- up with EXECUTE on confirm_order_payment in production -- the same
+-- Supabase-platform auto-re-grant-on-CREATE-FUNCTION behavior already
+-- documented and worked around for other functions via follow-up
+-- migrations (0045 for set_initial_staff_role, 0047 for grants 0046
+-- didn't narrow). A single migration's own revoke+grant statements do
+-- not reliably survive whatever the platform does after CREATE FUNCTION
+-- runs; a distinct, later migration is required, per that established
+-- pattern.
+--
+-- Impact while live: any anonymous caller (the public API key alone,
+-- no login) could call confirm_order_payment(<any pending order's
+-- UUID>) and mark that order 'paid' with no real payment -- a direct
+-- payment-bypass/fraud vector. A guest who placed their own order knows
+-- their own order_id from their tracking page URL, so this was
+-- reachable by an ordinary customer, not just a determined attacker.
+-- confirm_order_payment was not yet called from any client code at the
+-- time this was found (see 0059's note), so the exposure was to anyone
+-- calling the RPC directly (e.g. via curl/fetch against the Supabase
+-- REST endpoint), not through any existing app UI flow.
+--
+-- Verified live immediately after applying: an anon-key RPC call now
+-- returns "permission denied for function confirm_order_payment"
+-- (Postgres 42501) instead of executing.
+
+revoke execute on function public.confirm_order_payment(uuid) from anon;
