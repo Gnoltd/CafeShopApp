@@ -4,16 +4,21 @@ import { useEffect, useRef, useState } from "react"
 import { QrCode } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { Link } from "@/i18n/navigation"
-import { SPOTLIGHT_R, spotlightMask } from "@/lib/spotlight-mask"
+import { computeCameraOrbit } from "@/lib/coffee-cup-orbit"
 import { cn } from "@/lib/utils"
 
-// Phone viewports get a 40% smaller reveal radius — the 260px desktop default
-// (tuned for mouse-cursor use) covers more than half the width of a phone
-// screen and swallows the whole reveal image at rest.
-const MOBILE_SPOTLIGHT_R = SPOTLIGHT_R * 0.6
-const MOBILE_BREAKPOINT = 640
+type RenderMode = "checking" | "model" | "fallback"
 
-export function SpotlightHero({
+function isWebGLAvailable(): boolean {
+  try {
+    const canvas = document.createElement("canvas")
+    return !!(window.WebGLRenderingContext && (canvas.getContext("webgl") || canvas.getContext("experimental-webgl")))
+  } catch {
+    return false
+  }
+}
+
+export function CoffeeCupHero({
   onScanQr,
   baseImages,
   revealImage,
@@ -23,56 +28,79 @@ export function SpotlightHero({
   revealImage: string | null
 }) {
   const t = useTranslations("Landing")
+  const [renderMode, setRenderMode] = useState<RenderMode>("checking")
+  const modelRef = useRef<HTMLElement>(null)
   const mouse = useRef({ x: 0, y: 0 })
   const smooth = useRef({ x: 0, y: 0 })
+  const scrollProgress = useRef(0)
   const rafRef = useRef(0)
-  const [cursorPos, setCursorPos] = useState({ x: -999, y: -999 })
-  const [radius, setRadius] = useState(SPOTLIGHT_R)
+
+  // Feature-detect WebGL, then lazily register the <model-viewer> custom
+  // element client-side only — importing it at module scope would call
+  // customElements.define() during Next.js SSR, where it doesn't exist.
+  useEffect(() => {
+    if (!isWebGLAvailable()) {
+      setRenderMode("fallback")
+      return
+    }
+    import("@google/model-viewer").then(() => setRenderMode("model"))
+  }, [])
 
   useEffect(() => {
-    // Start at screen center so touch devices see the reveal immediately.
-    const center = { x: window.innerWidth / 2, y: window.innerHeight / 2 }
-    mouse.current = { ...center }
-    smooth.current = { ...center }
-    setCursorPos(center)
+    if (renderMode !== "model") return
+    const el = modelRef.current
+    if (!el) return
+    const handleError = () => setRenderMode("fallback")
+    el.addEventListener("error", handleError)
+    return () => el.removeEventListener("error", handleError)
+  }, [renderMode])
 
-    const updateRadius = () => {
-      setRadius(window.innerWidth < MOBILE_BREAKPOINT ? MOBILE_SPOTLIGHT_R : SPOTLIGHT_R)
-    }
-    updateRadius()
-    window.addEventListener("resize", updateRadius)
+  useEffect(() => {
+    if (renderMode !== "model") return
 
     const onMouseMove = (e: MouseEvent) => {
-      mouse.current = { x: e.clientX, y: e.clientY }
+      mouse.current = {
+        x: (e.clientX / window.innerWidth) * 2 - 1,
+        y: (e.clientY / window.innerHeight) * 2 - 1,
+      }
     }
-    const onTouchMove = (e: TouchEvent) => {
-      const touch = e.touches[0]
-      if (touch) mouse.current = { x: touch.clientX, y: touch.clientY }
+    const onScroll = () => {
+      const hero = document.getElementById("coffee-cup-hero")
+      if (!hero) return
+      const rect = hero.getBoundingClientRect()
+      scrollProgress.current = Math.min(1, Math.max(0, -rect.top / Math.max(rect.height, 1)))
     }
     window.addEventListener("mousemove", onMouseMove)
-    window.addEventListener("touchmove", onTouchMove, { passive: true })
+    window.addEventListener("scroll", onScroll, { passive: true })
 
     const tick = () => {
       smooth.current.x += (mouse.current.x - smooth.current.x) * 0.1
       smooth.current.y += (mouse.current.y - smooth.current.y) * 0.1
-      setCursorPos({ x: smooth.current.x, y: smooth.current.y })
+      // Updated imperatively (not via React state) because this runs every
+      // animation frame — routing it through React re-renders would be
+      // wasteful and isn't needed since nothing else in the tree depends on it.
+      modelRef.current?.setAttribute(
+        "camera-orbit",
+        computeCameraOrbit({
+          mouseX: smooth.current.x,
+          mouseY: smooth.current.y,
+          scrollProgress: scrollProgress.current,
+        })
+      )
       rafRef.current = requestAnimationFrame(tick)
     }
     rafRef.current = requestAnimationFrame(tick)
 
     return () => {
-      window.removeEventListener("resize", updateRadius)
       window.removeEventListener("mousemove", onMouseMove)
-      window.removeEventListener("touchmove", onTouchMove)
+      window.removeEventListener("scroll", onScroll)
       cancelAnimationFrame(rafRef.current)
     }
-  }, [])
-
-  const mask = spotlightMask(cursorPos.x, cursorPos.y, radius)
+  }, [renderMode])
 
   return (
     <section
-      id="spotlight-hero"
+      id="coffee-cup-hero"
       className="relative h-screen w-full overflow-hidden bg-black"
       style={{ height: "100dvh" }}
     >
@@ -86,20 +114,33 @@ export function SpotlightHero({
           style={{ backgroundImage: `url(${image})`, animationDelay: `${index * 6}s` }}
         />
       ))}
-      {revealImage && (
-        <div
-          className="pointer-events-none absolute inset-0 z-30 bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: `url(${revealImage})`,
-            maskImage: mask,
-            WebkitMaskImage: mask,
-          }}
+
+      {renderMode === "model" && (
+        <model-viewer
+          ref={modelRef}
+          src="/models/coffee-cup.glb"
+          poster={revealImage ?? undefined}
+          alt=""
+          camera-orbit={computeCameraOrbit({ mouseX: 0, mouseY: 0, scrollProgress: 0 })}
+          exposure="1"
+          shadow-intensity="1"
+          loading="eager"
+          className="absolute inset-0 z-30 h-full w-full"
         />
       )}
+
+      {renderMode !== "model" && revealImage && (
+        <div
+          className="pointer-events-none absolute inset-0 z-30 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${revealImage})` }}
+        />
+      )}
+
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 z-40 h-28 bg-gradient-to-t from-background to-transparent"
         aria-hidden
       />
+
       <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-6 px-6 text-center sm:gap-8">
         <h1 className="leading-[0.95] text-white">
           <span

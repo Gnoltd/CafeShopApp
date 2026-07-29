@@ -7,8 +7,8 @@ import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { LanguageSwitcher } from "@/components/shared/language-switcher"
 import { cn } from "@/lib/utils"
 
-// The landing page ("/") opens on a full-bleed hero (spotlight-hero.tsx,
-// id="spotlight-hero") that's meant to show only the brand name, image, and
+// The landing page ("/") opens on a full-bleed hero (coffee-cup-hero.tsx,
+// id="coffee-cup-hero") that's meant to show only the brand name, 3D cup, and
 // CTAs — no admin/theme/language clutter. This stack stays hidden while that
 // hero is in view and fades in once the user scrolls past it.
 export function HeaderActionsStack({ role }: { role: string | null }) {
@@ -22,7 +22,7 @@ export function HeaderActionsStack({ role }: { role: string | null }) {
       return
     }
     setHiddenByHero(true)
-    const hero = document.getElementById("spotlight-hero")
+    const hero = document.getElementById("coffee-cup-hero")
     if (!hero) return
 
     const observer = new IntersectionObserver(([entry]) => setHiddenByHero(entry.isIntersecting), {

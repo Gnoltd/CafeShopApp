@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl"
 import { Sparkles, ArrowRight } from "lucide-react"
 import { Link } from "@/i18n/navigation"
 import { LandingNav } from "@/components/marketing/landing-nav"
-import { SpotlightHero } from "@/components/marketing/spotlight-hero"
+import { CoffeeCupHero } from "@/components/marketing/coffee-cup-hero"
 import { formatVND } from "@/lib/format"
 import { QrScannerOverlay } from "@/components/customer/qr-scanner-overlay"
 import { ItemImage } from "@/components/customer/item-image"
@@ -36,7 +36,7 @@ export function LandingView({
     <div className="w-full">
       <div className="relative">
         <LandingNav userName={userName} />
-        <SpotlightHero
+        <CoffeeCupHero
           onScanQr={() => setIsScannerOpen(true)}
           baseImages={landingHero.baseImages}
           revealImage={landingHero.revealImage}
