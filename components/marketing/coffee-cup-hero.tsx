@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils"
 
 type RenderMode = "checking" | "model" | "fallback"
 
+const MODEL_PATH = "/models/coffee-cup.glb"
+
 function isWebGLAvailable(): boolean {
   try {
     const canvas = document.createElement("canvas")
@@ -118,7 +120,13 @@ export function CoffeeCupHero({
       {renderMode === "model" && (
         <model-viewer
           ref={modelRef}
-          src="/models/coffee-cup.glb"
+          // A root-relative path here gets mis-resolved by model-viewer's
+          // internal loader against the current locale route (producing
+          // "/en/models/..." instead of "/models/..."), so it's resolved
+          // to a fully-qualified URL up front instead. Safe to read
+          // window.location here — this branch only renders client-side,
+          // after the WebGL-availability effect above has already run.
+          src={new URL(MODEL_PATH, window.location.origin).toString()}
           poster={revealImage ?? undefined}
           alt=""
           camera-orbit={computeCameraOrbit({ mouseX: 0, mouseY: 0, scrollProgress: 0 })}
