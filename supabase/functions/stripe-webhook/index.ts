@@ -17,6 +17,11 @@
 import { createClient } from "jsr:@supabase/supabase-js@2"
 import { buildPaidUpdate } from "../_shared/order-status.ts"
 
+// Matches Stripe's own SDK default (DEFAULT_TOLERANCE, 300s) -- generous
+// enough to absorb normal delivery/retry latency, tight enough that a
+// captured signature+payload pair can't be replayed indefinitely.
+const WEBHOOK_TOLERANCE_SECONDS = 300
+
 async function verifyStripeSignature(rawBody: string, signatureHeader: string, secret: string): Promise<boolean> {
   const parts = Object.fromEntries(
     signatureHeader.split(",").map((part) => {
@@ -27,6 +32,11 @@ async function verifyStripeSignature(rawBody: string, signatureHeader: string, s
   const timestamp = parts["t"]
   const expectedSig = parts["v1"]
   if (!timestamp || !expectedSig) return false
+
+  const timestampSeconds = Number(timestamp)
+  if (!Number.isFinite(timestampSeconds)) return false
+  const ageSeconds = Math.abs(Math.floor(Date.now() / 1000) - timestampSeconds)
+  if (ageSeconds > WEBHOOK_TOLERANCE_SECONDS) return false
 
   const key = await crypto.subtle.importKey(
     "raw",
