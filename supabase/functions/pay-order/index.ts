@@ -14,6 +14,7 @@
 import { createClient } from "jsr:@supabase/supabase-js@2"
 import { createStripeCheckoutSession } from "../_shared/stripe.ts"
 import { buildVnpayCheckoutUrl, buildVnpayReturnUrl, extractClientIp } from "../_shared/vnpay.ts"
+import { rateLimitOrNull } from "../_shared/rate-limit.ts"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,6 +22,13 @@ const corsHeaders = {
 }
 
 const VALID_LOCALES = ["vi", "en"]
+
+// 2026-07-29 review, finding M-5. A known served-unpaid order UUID lets
+// anyone mint unlimited Stripe/VNPay sessions against it; 10/minute/IP
+// gives real headroom for a genuine payment retry (e.g. a declined card)
+// without leaving mass session creation unthrottled.
+const RATE_LIMIT_MAX_REQUESTS = 10
+const RATE_LIMIT_WINDOW_SECONDS = 60
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -43,6 +51,16 @@ Deno.serve(async (req) => {
     }
 
     const serviceClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!)
+
+    const clientIp = extractClientIp(req)
+    const rateLimitResponse = await rateLimitOrNull(
+      serviceClient,
+      `pay-order:${clientIp}`,
+      RATE_LIMIT_MAX_REQUESTS,
+      RATE_LIMIT_WINDOW_SECONDS,
+      corsHeaders
+    )
+    if (rateLimitResponse) return rateLimitResponse
 
     const { data: order, error: fetchError } = await serviceClient
       .from("orders")
@@ -127,7 +145,7 @@ Deno.serve(async (req) => {
     const checkoutUrl = await buildVnpayCheckoutUrl({
       orderId: order.id,
       total: order.total,
-      ipAddr: extractClientIp(req),
+      ipAddr: clientIp,
       locale,
       returnUrl: buildVnpayReturnUrl(order.id, locale),
     })
