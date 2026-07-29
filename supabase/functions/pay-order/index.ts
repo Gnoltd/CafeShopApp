@@ -13,7 +13,7 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2"
 import { createStripeCheckoutSession } from "../_shared/stripe.ts"
-import { buildVnpayCheckoutUrl } from "../_shared/vnpay.ts"
+import { buildVnpayCheckoutUrl, buildVnpayReturnUrl, extractClientIp } from "../_shared/vnpay.ts"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -124,14 +124,12 @@ Deno.serve(async (req) => {
       })
     }
 
-    const ipAddr = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "127.0.0.1"
-    const returnUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/vnpay-return?orderId=${order.id}&locale=${locale}`
     const checkoutUrl = await buildVnpayCheckoutUrl({
       orderId: order.id,
       total: order.total,
-      ipAddr,
+      ipAddr: extractClientIp(req),
       locale,
-      returnUrl,
+      returnUrl: buildVnpayReturnUrl(order.id, locale),
     })
     return new Response(JSON.stringify({ checkoutUrl }), {
       status: 200,
