@@ -4,6 +4,7 @@ type ModelViewerAttributes = DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTML
   src?: string
   poster?: string
   alt?: string
+  scale?: string
   "camera-orbit"?: string
   "field-of-view"?: string
   exposure?: string

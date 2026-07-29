@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 type RenderMode = "checking" | "model" | "fallback"
 
 const MODEL_PATH = "/models/coffee-cup.glb"
+const MODEL_SCALE = 0.55
 
 function isWebGLAvailable(): boolean {
   try {
@@ -106,16 +107,34 @@ export function CoffeeCupHero({
       className="relative h-screen w-full overflow-hidden bg-black"
       style={{ height: "100dvh" }}
     >
-      {baseImages.map((image, index) => (
+      {/* The photo crossfade and the 3D cup don't read well layered together
+          (flat photography behind a synthetically-lit 3D render looks like a
+          sticker, not one scene) — the photos only show when there's no 3D
+          model on top: while WebGL support is still being checked, or as the
+          permanent fallback. The 3D layer gets its own brand-colored glow
+          below instead of competing photography. */}
+      {renderMode !== "model" &&
+        baseImages.map((image, index) => (
+          <div
+            key={image}
+            className={cn(
+              "hero-crossfade absolute inset-0 z-10 bg-cover bg-center bg-no-repeat",
+              index === 0 && "hero-crossfade-first"
+            )}
+            style={{ backgroundImage: `url(${image})`, animationDelay: `${index * 6}s` }}
+          />
+        ))}
+
+      {renderMode === "model" && (
         <div
-          key={image}
-          className={cn(
-            "hero-crossfade absolute inset-0 z-10 bg-cover bg-center bg-no-repeat",
-            index === 0 && "hero-crossfade-first"
-          )}
-          style={{ backgroundImage: `url(${image})`, animationDelay: `${index * 6}s` }}
+          className="pointer-events-none absolute inset-0 z-20"
+          style={{
+            background:
+              "radial-gradient(circle at 50% 55%, color-mix(in srgb, var(--primary) 20%, transparent), transparent 60%)",
+          }}
+          aria-hidden
         />
-      ))}
+      )}
 
       {renderMode === "model" && (
         <model-viewer
@@ -129,6 +148,7 @@ export function CoffeeCupHero({
           src={new URL(MODEL_PATH, window.location.origin).toString()}
           poster={revealImage ?? undefined}
           alt=""
+          scale={`${MODEL_SCALE} ${MODEL_SCALE} ${MODEL_SCALE}`}
           camera-orbit={computeCameraOrbit({ mouseX: 0, mouseY: 0, scrollProgress: 0 })}
           exposure="1"
           shadow-intensity="1"
