@@ -69,6 +69,26 @@ function isJwtShaped(token: string): boolean {
 
 const VALID_LOCALES = ["vi", "en"]
 
+// place_order raises a mix of machine-readable snake_case codes and
+// plain-English sentences/dynamic-interpolated text (e.g. "menu item %
+// not found"); checkout-view.tsx/pos-terminal.tsx only ever check for
+// codes in this list via .includes(), never render raw error.message.
+// Allowlisting here (2026-07-29 review, L-3) means any *unexpected*
+// Postgres error text -- which could vary release to release -- can
+// never reach the client verbatim.
+const KNOWN_PLACE_ORDER_ERROR_CODES = new Set([
+  "no_open_shift",
+  "not_authorized",
+  "loyalty_program_disabled",
+  "invalid_redemption_code",
+  "redemption_already_used",
+  "redemption_expired",
+])
+
+function mapPlaceOrderError(message: string): string {
+  return KNOWN_PLACE_ORDER_ERROR_CODES.has(message) ? message : "Unable to place order"
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
@@ -108,7 +128,7 @@ Deno.serve(async (req) => {
     const { data, error } = await serviceClient.rpc("place_order", { p_payload: payload })
 
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: mapPlaceOrderError(error.message) }), { status: 400, headers: corsHeaders })
     }
 
     const locale = VALID_LOCALES.includes(payload.locale) ? payload.locale : "vi"

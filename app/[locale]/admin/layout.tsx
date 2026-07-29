@@ -1,23 +1,29 @@
-"use client"
+import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
+import { getCurrentRole } from "@/lib/get-current-role"
+import { ROLE_HOME, canAccessAdmin } from "@/lib/roles"
+import { AdminLayoutClient } from "@/components/admin/admin-layout-client"
 
-import { useState } from "react"
-import { AdminSidebar } from "@/components/admin/admin-sidebar"
-import { AdminMobileHeader } from "@/components/admin/admin-mobile-header"
-import { InventoryProvider } from "@/hooks/useInventory"
-import { ShiftProvider } from "@/hooks/useShift"
+// Defense-in-depth (2026-07-29 review, L-4): middleware.ts is the real
+// gate for /admin/*, but if it were ever bypassed this would otherwise
+// still render the full admin UI shell (data itself stays RLS-gated
+// regardless). Mirrors middleware's own resolveRedirect target exactly
+// -- a wrong-role login goes to its own ROLE_HOME, a logged-out visitor
+// to /login.
+export default async function AdminLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode
+  params: Promise<{ locale: string }>
+}) {
+  const { locale } = await params
+  const supabase = await createClient()
+  const role = await getCurrentRole(supabase)
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  if (!canAccessAdmin(role)) {
+    redirect(`/${locale}${role ? (ROLE_HOME[role] ?? "/menu") : "/login"}`)
+  }
 
-  return (
-    <InventoryProvider>
-      <ShiftProvider>
-        <div className="flex h-dvh flex-col overflow-hidden md:flex-row">
-          <AdminMobileHeader onOpenMenu={() => setIsDrawerOpen(true)} />
-          <AdminSidebar open={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
-          <main className="flex-1 overflow-y-auto bg-muted/30 p-6 md:pt-16">{children}</main>
-        </div>
-      </ShiftProvider>
-    </InventoryProvider>
-  )
+  return <AdminLayoutClient>{children}</AdminLayoutClient>
 }

@@ -50,6 +50,10 @@ function buildCsp(nonce: string): string {
 
 function applySecurityHeaders(headers: Headers, csp: string) {
   headers.set("Content-Security-Policy", csp)
+  // Vercel injects HSTS on *.vercel.app, but that's not guaranteed for a
+  // future custom domain -- set it explicitly rather than relying on the
+  // platform default (2026-07-29 review, L-1).
+  headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
   // frame-ancestors above already covers modern browsers; this is the
   // legacy fallback for the same "don't let anyone iframe this app" intent
   // (real payment/admin/staff surfaces make clickjacking a live concern).
