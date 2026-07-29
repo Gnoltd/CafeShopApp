@@ -20,10 +20,22 @@ const corsHeaders = {
 const VALID_ROLES = ["staff", "manager", "admin"]
 
 function randomPassword(): string {
+  // This is the initial credential for a privileged staff/manager/admin
+  // account, so it must be cryptographically unpredictable. Math.random()
+  // is NOT a CSPRNG (V8's xorshift128+ state is recoverable from outputs),
+  // so draw from crypto.getRandomValues() and rejection-sample to keep the
+  // mapping onto `chars` uniform (no modulo bias).
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
+  const targetLength = 16
+  const maxUnbiased = Math.floor(256 / chars.length) * chars.length
   let password = ""
-  for (let i = 0; i < 16; i++) {
-    password += chars[Math.floor(Math.random() * chars.length)]
+  while (password.length < targetLength) {
+    const bytes = crypto.getRandomValues(new Uint8Array(targetLength))
+    for (const byte of bytes) {
+      if (byte >= maxUnbiased) continue
+      password += chars[byte % chars.length]
+      if (password.length === targetLength) break
+    }
   }
   return password
 }

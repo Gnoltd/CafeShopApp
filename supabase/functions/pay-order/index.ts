@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
 
     const { data: order, error: fetchError } = await serviceClient
       .from("orders")
-      .select("id, total, payment_status, status")
+      .select("id, total, payment_status, status, customer_id")
       .eq("id", orderId)
       .maybeSingle()
 
@@ -60,7 +60,37 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "This order isn't ready for payment yet" }), { status: 400, headers: corsHeaders })
     }
 
-    const { error: updateError } = await serviceClient.from("orders").update({ payment_method: paymentMethod }).eq("id", orderId)
+    // Ownership check (2026-07-29 review, finding M-3). supabase-js always
+    // attaches an Authorization header, but for a guest it's the client's
+    // own publishable key, not a JWT (see the JWT-forwarding gotcha in
+    // CLAUDE.md), so only treat it as a caller identity when JWT-shaped
+    // (3 dot-separated segments). An order owned by a real account may
+    // only be paid by that account; a guest order (customer_id null) stays
+    // open to any UUID holder, matching the project's guest-safe model.
+    if (order.customer_id) {
+      const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "")
+      const isJwt = token.split(".").length === 3
+      let callerId: string | null = null
+      if (isJwt) {
+        const userClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+          global: { headers: { Authorization: `Bearer ${token}` } },
+        })
+        const {
+          data: { user },
+        } = await userClient.auth.getUser()
+        callerId = user?.id ?? null
+      }
+      if (callerId !== order.customer_id) {
+        return new Response(JSON.stringify({ error: "Not authorized to pay for this order" }), { status: 403, headers: corsHeaders })
+      }
+    }
+
+    const { error: updateError } = await serviceClient
+      .from("orders")
+      .update({ payment_method: paymentMethod })
+      .eq("id", orderId)
+      .eq("payment_status", "pending")
+      .eq("status", "served")
     if (updateError) {
       return new Response(JSON.stringify({ error: "Failed to record payment method" }), { status: 500, headers: corsHeaders })
     }
