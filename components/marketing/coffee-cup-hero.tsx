@@ -5,6 +5,7 @@ import { QrCode } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { Link } from "@/i18n/navigation"
 import { computeCameraOrbit } from "@/lib/coffee-cup-orbit"
+import { cn } from "@/lib/utils"
 
 type RenderMode = "checking" | "model" | "fallback"
 
@@ -22,9 +23,11 @@ function isWebGLAvailable(): boolean {
 
 export function CoffeeCupHero({
   onScanQr,
+  baseImages,
   revealImage,
 }: {
   onScanQr: () => void
+  baseImages: string[]
   revealImage: string | null
 }) {
   const t = useTranslations("Landing")
@@ -104,7 +107,22 @@ export function CoffeeCupHero({
       className="relative flex min-h-screen w-full items-center overflow-hidden bg-black"
       style={{ minHeight: "100dvh" }}
     >
-      <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-10 px-6 py-28 md:flex-row md:items-center md:justify-between md:gap-8 md:px-12 md:py-0">
+      {baseImages.map((image, index) => (
+        <div
+          key={image}
+          className={cn(
+            "hero-crossfade absolute inset-0 z-0 bg-cover bg-center bg-no-repeat",
+            index === 0 && "hero-crossfade-first"
+          )}
+          style={{ backgroundImage: `url(${image})`, animationDelay: `${index * 6}s` }}
+        />
+      ))}
+      <div
+        className="pointer-events-none absolute inset-0 z-0 bg-black/50"
+        aria-hidden
+      />
+
+      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center gap-10 px-6 py-28 md:flex-row md:items-center md:justify-between md:gap-8 md:px-12 md:py-0">
         <div className="flex flex-col items-center gap-6 text-center sm:gap-8 md:max-w-md md:items-start md:text-left">
           <h1 className="leading-[0.95] text-white">
             <span

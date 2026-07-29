@@ -36,7 +36,11 @@ export function LandingView({
     <div className="w-full">
       <div className="relative">
         <LandingNav userName={userName} />
-        <CoffeeCupHero onScanQr={() => setIsScannerOpen(true)} revealImage={landingHero.revealImage} />
+        <CoffeeCupHero
+          onScanQr={() => setIsScannerOpen(true)}
+          baseImages={landingHero.baseImages}
+          revealImage={landingHero.revealImage}
+        />
       </div>
 
       <div className="mx-auto w-full max-w-2xl md:max-w-6xl md:px-8">
