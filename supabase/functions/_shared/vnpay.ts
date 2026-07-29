@@ -15,6 +15,16 @@ export function vnpayEncode(value: string): string {
   return encodeURIComponent(value).replace(/%20/g, "+")
 }
 
+/** The caller's real IP for VNPay's vnp_IpAddr field -- the same one-liner was previously copy-pasted into both place-order and pay-order. */
+export function extractClientIp(req: Request): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "127.0.0.1"
+}
+
+/** VNPay always redirects here after a checkout attempt, regardless of whether it was built by place-order or pay-order. */
+export function buildVnpayReturnUrl(orderId: string, locale: string): string {
+  return `${Deno.env.get("SUPABASE_URL")}/functions/v1/vnpay-return?orderId=${orderId}&locale=${locale}`
+}
+
 async function hmacSha512Hex(signString: string, secret: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw",

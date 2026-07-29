@@ -32,7 +32,17 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2"
 import { createStripeCheckoutSession } from "../_shared/stripe.ts"
-import { buildVnpayCheckoutUrl } from "../_shared/vnpay.ts"
+import { buildVnpayCheckoutUrl, extractClientIp } from "../_shared/vnpay.ts"
+import { rateLimitOrNull } from "../_shared/rate-limit.ts"
+
+// This is the highest-leverage endpoint to throttle (2026-07-29 review,
+// finding M-5): a payAt:'later' order goes straight to the kitchen
+// display board with no payment gate at all, so unlimited anonymous
+// calls here is a direct DoS/spam vector on the staff workflow, not just
+// a cost/abuse concern. 5 orders/minute/IP comfortably covers a real
+// customer placing (and retrying a failed) order.
+const RATE_LIMIT_MAX_REQUESTS = 5
+const RATE_LIMIT_WINDOW_SECONDS = 60
 
 // The browser calls this cross-origin (app on vercel.app, function on
 // supabase.co) via supabase.functions.invoke, which sends a CORS
@@ -85,6 +95,16 @@ Deno.serve(async (req) => {
       { global: { headers: forwardedAuthHeader ? { Authorization: forwardedAuthHeader } : {} } }
     )
 
+    const clientIp = extractClientIp(req)
+    const rateLimitResponse = await rateLimitOrNull(
+      serviceClient,
+      `place-order:${clientIp}`,
+      RATE_LIMIT_MAX_REQUESTS,
+      RATE_LIMIT_WINDOW_SECONDS,
+      corsHeaders
+    )
+    if (rateLimitResponse) return rateLimitResponse
+
     const { data, error } = await serviceClient.rpc("place_order", { p_payload: payload })
 
     if (error) {
@@ -120,13 +140,12 @@ Deno.serve(async (req) => {
     }
 
     if (needsVnpayUrl) {
-      const ipAddr = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "127.0.0.1"
       const returnUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/vnpay-return?orderId=${data.orderId}&locale=${locale}`
 
       const checkoutUrl = await buildVnpayCheckoutUrl({
         orderId: data.orderId,
         total: data.total,
-        ipAddr,
+        ipAddr: clientIp,
         locale,
         returnUrl,
       })
