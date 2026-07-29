@@ -32,8 +32,14 @@ export function ProfileSettingsView() {
   }
 
   useEffect(() => {
-    const oauthError = searchParams.get("error_description") ?? searchParams.get("error")
-    if (oauthError) setIdentitiesError(oauthError)
+    // Never render error/error_description verbatim (2026-07-29 review,
+    // L-12) -- a crafted link could otherwise display arbitrary
+    // attacker-chosen text inside this trusted screen. Only the
+    // presence of an OAuth error is meaningful here; the actual message
+    // is always the translated generic one.
+    if (searchParams.get("error_description") || searchParams.get("error")) {
+      setIdentitiesError(t("connectGoogleError"))
+    }
     loadIdentities()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

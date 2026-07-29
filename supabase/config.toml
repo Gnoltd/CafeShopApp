@@ -1,0 +1,26 @@
+# Version-controlled record of this project's Edge Function auth
+# posture (2026-07-29 review, I-2). Previously each function's verify_jwt
+# state existed only as an in-code comment -- a redeploy without the
+# right flag could silently change auth behavior with no diff to review.
+# Values below match what's actually configured live; keep them in sync
+# whenever a function's verify_jwt setting changes.
+
+project_id = "qhiypdqnrnzndxdwqxbx"
+
+[functions.place-order]
+verify_jwt = false
+
+[functions.pay-order]
+verify_jwt = false
+
+[functions.create-staff-account]
+verify_jwt = true
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.vnpay-ipn]
+verify_jwt = false
+
+[functions.vnpay-return]
+verify_jwt = false
