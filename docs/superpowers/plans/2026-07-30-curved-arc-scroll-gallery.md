@@ -1,3 +1,33 @@
+# Custom Scroll-Linked Curved Arc Image Gallery Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Build a sticky-pinned, scroll-driven image gallery where best seller drink items enter sequentially from bottom-right, sweep along a smooth parabolic arc trajectory to center focus, and exit top-left.
+
+**Architecture:** Update `components/marketing/best-sellers-gallery.tsx` using Framer Motion's `useScroll` and `useTransform` to bind scroll progress across a `h-[350vh]` sticky container to parabolic mathematical transformations for `x`, `y`, `scale`, `opacity`, and `rotate`.
+
+**Tech Stack:** Next.js (App Router), React, Tailwind v4 CSS, Framer Motion, TypeScript.
+
+## Global Constraints
+
+- Follow `CLAUDE.md` design rules: Tailwind v4 theme tokens (`--primary`, `--secondary`, `--accent`, `--background`, `--foreground`).
+- Must pass `npm run build` with zero TypeScript or lint errors.
+- Clicking any drink card must navigate directly to `/menu/[itemId]`.
+
+---
+
+### Task 1: Implement Sticky Arc Trajectory Gallery Component
+
+**Files:**
+- Modify: `components/marketing/best-sellers-gallery.tsx`
+
+**Interfaces:**
+- Consumes: `MenuItem` from `@/lib/supabase/menu-data`, `formatVND` from `@/lib/format`
+- Produces: `BestSellersGallery({ items }: { items: MenuItem[] })`
+
+- [ ] **Step 1: Write `best-sellers-gallery.tsx` with parabolic arc math transforms**
+
+```tsx
 "use client"
 
 import { useRef } from "react"
@@ -168,3 +198,30 @@ export function BestSellersGallery({ items }: { items: MenuItem[] }) {
     </section>
   )
 }
+```
+
+- [ ] **Step 2: Commit Task 1**
+
+```bash
+git add components/marketing/best-sellers-gallery.tsx
+git commit -m "feat(landing): implement sticky curved arc trajectory motion gallery"
+```
+
+---
+
+### Task 2: Build Verification & Testing
+
+**Files:**
+- None (Build verification step)
+
+- [ ] **Step 1: Check TypeScript compilation**
+
+Run: `npx tsc --noEmit`
+Expected output: 0 errors.
+
+- [ ] **Step 2: Check production build**
+
+Run: `npm run build`
+Expected output: `✓ Compiled successfully`.
+
+---
