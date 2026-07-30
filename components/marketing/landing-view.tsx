@@ -46,38 +46,56 @@ export function LandingView({
       {/* 2. Custom Scroll-Linked Curved Arc Motion Gallery Section */}
       <BestSellersGallery items={bestSellers} />
 
-      {/* 3. End of Gallery: Promotion Banner Card & Category Chips (Matching exact reference layout) */}
-      <div className="mx-auto w-full max-w-2xl py-12 md:max-w-6xl md:px-8 md:py-20">
-        <section className="px-4 md:px-0">
-          <div className="nb-border nb-shadow relative overflow-hidden rounded-3xl bg-card p-6 md:p-10">
-            <div className="mb-2 flex items-center gap-2 text-[#b3341f]">
-              <Sparkles className="h-4 w-4" />
+      {/* 3. Merged Promotion Card & Category Buttons Section at End of Gallery */}
+      <div className="mx-auto w-full max-w-xl px-4 py-12 sm:max-w-2xl md:max-w-4xl md:px-8 md:py-20 lg:max-w-5xl">
+        <section className="nb-border nb-shadow relative overflow-hidden rounded-3xl bg-card p-6 sm:p-8 md:p-10">
+          {/* Top Promotion Content */}
+          <div className="flex flex-col gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 text-[#b3341f]">
+              <Sparkles className="h-4 w-4 shrink-0" />
               <span className="text-xs font-black uppercase tracking-wider">{t("promoLabel")}</span>
             </div>
-            <h3 className="mb-1 text-xl font-extrabold text-card-foreground md:text-3xl">{t("promoTitle")}</h3>
-            <p className="mb-5 text-sm text-muted-foreground md:text-base md:max-w-2xl">{t("promoDescription")}</p>
-            <span className="nb-border-sm nb-shadow-sm inline-block rounded-full bg-[#b3341f] px-5 py-2 text-sm font-black text-white">
-              {t("promoBadge")}
-            </span>
-          </div>
-        </section>
+            
+            <div className="flex flex-col gap-1.5">
+              <h3 className="text-xl font-extrabold text-card-foreground sm:text-2xl md:text-3xl">
+                {t("promoTitle")}
+              </h3>
+              <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+                {t("promoDescription")}
+              </p>
+            </div>
 
-        {/* 4 Category Pill Buttons */}
-        <section className="mt-8 flex gap-3 overflow-x-auto px-4 pb-4 md:flex-wrap md:justify-center md:gap-5 md:px-0">
-          <span className="sr-only">{t("categories")}</span>
-          {CATEGORY_CHIPS.map((category) => {
-            const label = locale === "vi" ? category.labelVi : category.labelEn
-            return (
-              <Link
-                key={category.id}
-                href="/menu"
-                className="nb-border-sm nb-shadow-sm nb-press-sm flex shrink-0 items-center gap-1.5 rounded-full bg-card px-6 py-2.5 text-sm font-extrabold text-foreground transition-all hover:bg-card/80"
-              >
-                <span>{label}</span>
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            )
-          })}
+            <div>
+              <span className="nb-border-sm nb-shadow-sm inline-block rounded-full bg-[#b3341f] px-5 py-2 text-xs font-black text-white sm:text-sm">
+                {t("promoBadge")}
+              </span>
+            </div>
+          </div>
+
+          {/* Seamless Inner Separator */}
+          <div className="my-6 h-px w-full bg-border/60 sm:my-8" />
+
+          {/* Integrated Responsive Category Pill Buttons */}
+          <div className="flex flex-col items-center gap-3">
+            <span className="text-xs font-extrabold uppercase tracking-widest text-muted-foreground">
+              {t("categories")}
+            </span>
+            <div className="flex w-full flex-wrap items-center justify-center gap-2.5 sm:gap-3.5">
+              {CATEGORY_CHIPS.map((category) => {
+                const label = locale === "vi" ? category.labelVi : category.labelEn
+                return (
+                  <Link
+                    key={category.id}
+                    href="/menu"
+                    className="nb-border-sm nb-shadow-sm nb-press-sm flex items-center gap-1.5 rounded-full bg-card px-5 py-2 text-xs font-extrabold text-foreground transition-all hover:bg-muted/80 sm:px-6 sm:py-2.5 sm:text-sm"
+                  >
+                    <span>{label}</span>
+                    <ArrowRight className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
         </section>
       </div>
 
