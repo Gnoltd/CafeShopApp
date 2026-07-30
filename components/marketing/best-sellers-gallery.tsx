@@ -51,7 +51,7 @@ function ArcItem({
       windowMid + (windowEnd - windowMid) * 0.5,
       windowEnd,
     ],
-    [0.7, 0.95, 1.15, 0.95, 0.7]
+    [0.75, 1.1, 1.55, 1.1, 0.75]
   )
 
   const opacity = useTransform(
@@ -85,23 +85,23 @@ function ArcItem({
     >
       <Link
         href={`/menu/${item.id}` as any}
-        className="group relative flex w-[78vw] max-w-[340px] flex-col overflow-hidden rounded-2xl bg-[#160f0b] p-4 shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-white/10 transition-all duration-300 hover:border-primary/50 hover:shadow-primary/20 sm:max-w-[420px] md:max-w-[480px] md:p-5"
+        className="group relative flex w-[88vw] max-w-[480px] flex-col overflow-hidden rounded-3xl bg-[#160f0b] p-5 shadow-[0_25px_60px_rgba(0,0,0,0.9)] border border-white/10 transition-all duration-300 hover:border-primary/50 hover:shadow-primary/30 sm:max-w-[580px] md:max-w-[650px] md:p-6"
       >
-        <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-muted">
+        <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl bg-muted">
           <ItemImage
             item={item}
             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-85 transition-opacity group-hover:opacity-70" />
 
-          <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between text-white md:bottom-4 md:left-5 md:right-5">
+          <div className="absolute bottom-4 left-5 right-5 flex items-end justify-between text-white md:bottom-6 md:left-7 md:right-7">
             <div className="max-w-[70%]">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-accent md:text-xs">
+              <span className="text-[11px] font-extrabold uppercase tracking-widest text-accent md:text-sm">
                 PhaDin Selection
               </span>
-              <h4 className="line-clamp-1 text-lg font-black md:text-2xl">{name}</h4>
+              <h4 className="line-clamp-1 text-xl font-black md:text-3xl">{name}</h4>
             </div>
-            <span className="rounded-full bg-primary px-3.5 py-1 text-xs font-black text-primary-foreground shadow-lg md:text-sm">
+            <span className="rounded-full bg-primary px-4 py-1.5 text-xs font-black text-primary-foreground shadow-lg md:text-base">
               {formatVND(item.basePrice)}
             </span>
           </div>
