@@ -6,9 +6,9 @@ import { Sparkles, ArrowRight } from "lucide-react"
 import { Link } from "@/i18n/navigation"
 import { LandingNav } from "@/components/marketing/landing-nav"
 import { CoffeeCupHero } from "@/components/marketing/coffee-cup-hero"
-import { formatVND } from "@/lib/format"
+import { BestSellersGallery } from "@/components/marketing/best-sellers-gallery"
+import { BestSellersMarquee } from "@/components/marketing/best-sellers-marquee"
 import { QrScannerOverlay } from "@/components/customer/qr-scanner-overlay"
-import { ItemImage } from "@/components/customer/item-image"
 import type { MenuItem } from "@/lib/supabase/menu-data"
 import type { LandingHeroSettings } from "@/lib/supabase/settings-data"
 
@@ -33,7 +33,7 @@ export function LandingView({
   const [isScannerOpen, setIsScannerOpen] = useState(false)
 
   return (
-    <div className="w-full">
+    <div className="w-full bg-background">
       <div className="relative">
         <LandingNav userName={userName} />
         <CoffeeCupHero
@@ -43,8 +43,12 @@ export function LandingView({
         />
       </div>
 
+      {/* High-Impact Motion Sections */}
+      <BestSellersGallery items={bestSellers} />
+      <BestSellersMarquee items={bestSellers} />
+
       <div className="mx-auto w-full max-w-2xl md:max-w-6xl md:px-8">
-        <section className="px-4 pt-6 md:px-0">
+        <section className="px-4 pt-10 md:px-0">
           <div className="nb-border nb-shadow relative overflow-hidden rounded-xl bg-card p-5 md:p-8">
             <div className="mb-2 flex items-center gap-2 text-primary">
               <Sparkles className="h-4 w-4" />
@@ -58,35 +62,7 @@ export function LandingView({
           </div>
         </section>
 
-        <section className="mt-8">
-          <div className="mb-4 flex items-end justify-between px-4 md:px-0">
-            <div>
-              <h3 className="font-bold text-card-foreground md:text-xl">{t("bestSellers")}</h3>
-              <div className="mt-1 h-1 w-10 rounded-full bg-primary" />
-            </div>
-            <Link href="/menu" className="text-sm font-medium text-secondary hover:underline">
-              {t("viewAll")}
-            </Link>
-          </div>
-          <div className="flex gap-3 overflow-x-auto px-4 pb-2 md:grid md:grid-cols-4 md:gap-6 md:overflow-x-visible md:px-0">
-            {bestSellers.map((item) => {
-              const name = locale === "vi" ? item.nameVi : item.nameEn
-              return (
-                <Link
-                  key={item.id}
-                  href="/menu"
-                  className="nb-border nb-shadow nb-press flex w-36 shrink-0 flex-col gap-2 rounded-xl bg-card p-2 md:w-auto md:shrink"
-                >
-                  <ItemImage item={item} className="h-32 w-full rounded-lg md:h-40" />
-                  <h4 className="text-sm font-bold leading-tight text-card-foreground">{name}</h4>
-                  <span className="font-extrabold text-price">{formatVND(item.basePrice)}</span>
-                </Link>
-              )
-            })}
-          </div>
-        </section>
-
-        <section className="mt-8 flex gap-2 overflow-x-auto px-4 pb-8 md:flex-wrap md:justify-center md:gap-4 md:px-0">
+        <section className="my-10 flex gap-2 overflow-x-auto px-4 pb-8 md:flex-wrap md:justify-center md:gap-4 md:px-0">
           <span className="mb-1 sr-only">{t("categories")}</span>
           {CATEGORY_CHIPS.map((category) => {
             const label = locale === "vi" ? category.labelVi : category.labelEn
@@ -108,3 +84,4 @@ export function LandingView({
     </div>
   )
 }
+
