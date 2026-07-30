@@ -1,3 +1,33 @@
+# Merged Promotion Card & Category Buttons in Curved Arc Gallery Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Integrate the Merged Promotion Card & 4 Category Buttons as the final card item inside the sticky curved arc motion track (`BestSellersGallery`), coming to rest in center viewport focus at the end of the scroll sequence.
+
+**Architecture:** Update `components/marketing/best-sellers-gallery.tsx` to handle both drink cards (`ArcItem`) and a dedicated final promotion card (`ArcPromotionItem`). Update `components/marketing/landing-view.tsx` to clean up separate promotion sections so the entire gallery and promotion experience flows seamlessly inside `BestSellersGallery`.
+
+**Tech Stack:** Next.js (App Router), React, Tailwind v4 CSS, Framer Motion, TypeScript.
+
+## Global Constraints
+
+- Follow `CLAUDE.md` design rules: Tailwind v4 theme tokens (`--primary`, `--secondary`, `--accent`, `--background`, `--foreground`).
+- Must pass `npm run build` with zero TypeScript or lint errors.
+- Fully responsive across Mobile (<640px), Tablet/Laptop (640px-1024px), and PC (>1024px).
+
+---
+
+### Task 1: Update BestSellersGallery to include ArcPromotionItem
+
+**Files:**
+- Modify: `components/marketing/best-sellers-gallery.tsx`
+
+**Interfaces:**
+- Consumes: `MenuItem` from `@/lib/supabase/menu-data`, `formatVND` from `@/lib/format`
+- Produces: `BestSellersGallery({ items }: { items: MenuItem[] })`
+
+- [ ] **Step 1: Write `best-sellers-gallery.tsx` with `ArcPromotionItem` as final arc card**
+
+```tsx
 "use client"
 
 import { useRef } from "react"
@@ -288,3 +318,88 @@ export function BestSellersGallery({ items }: { items: MenuItem[] }) {
     </section>
   )
 }
+```
+
+- [ ] **Step 2: Commit Task 1**
+
+```bash
+git add components/marketing/best-sellers-gallery.tsx
+git commit -m "feat(landing): integrate ArcPromotionItem as final card in curved arc gallery"
+```
+
+---
+
+### Task 2: Update LandingView Component
+
+**Files:**
+- Modify: `components/marketing/landing-view.tsx`
+
+**Interfaces:**
+- Consumes: `BestSellersGallery`
+- Produces: Streamlined `LandingView`
+
+- [ ] **Step 1: Simplify `landing-view.tsx` to render Hero + BestSellersGallery cleanly**
+
+```tsx
+"use client"
+
+import { useState } from "react"
+import { LandingNav } from "@/components/marketing/landing-nav"
+import { CoffeeCupHero } from "@/components/marketing/coffee-cup-hero"
+import { BestSellersGallery } from "@/components/marketing/best-sellers-gallery"
+import { QrScannerOverlay } from "@/components/customer/qr-scanner-overlay"
+import type { MenuItem } from "@/lib/supabase/menu-data"
+import type { LandingHeroSettings } from "@/lib/supabase/settings-data"
+
+export function LandingView({
+  bestSellers,
+  landingHero,
+  userName = null,
+}: {
+  bestSellers: MenuItem[]
+  landingHero: LandingHeroSettings
+  userName?: string | null
+}) {
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
+
+  return (
+    <div className="w-full bg-background">
+      {/* 1. Hero Section */}
+      <div className="relative">
+        <LandingNav userName={userName} />
+        <CoffeeCupHero
+          onScanQr={() => setIsScannerOpen(true)}
+          baseImages={landingHero.baseImages}
+          revealImage={landingHero.revealImage}
+        />
+      </div>
+
+      {/* 2. Scroll-Linked Curved Arc Gallery + Integrated Merged Promotion Card */}
+      <BestSellersGallery items={bestSellers} />
+
+      {isScannerOpen && <QrScannerOverlay onClose={() => setIsScannerOpen(false)} />}
+    </div>
+  )
+}
+```
+
+- [ ] **Step 2: Commit Task 2**
+
+```bash
+git add components/marketing/landing-view.tsx
+git commit -m "refactor(landing): streamline LandingView to render Hero and integrated BestSellersGallery"
+```
+
+---
+
+### Task 3: Build Verification & Testing
+
+**Files:**
+- None (Build verification step)
+
+- [ ] **Step 1: Check TypeScript compilation**
+
+Run: `npx tsc --noEmit`
+Expected output: 0 errors.
+
+---
