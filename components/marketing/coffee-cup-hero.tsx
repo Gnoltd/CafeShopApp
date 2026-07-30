@@ -5,11 +5,13 @@ import { QrCode } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { Link } from "@/i18n/navigation"
 import { computeCameraOrbit } from "@/lib/coffee-cup-orbit"
+import { cn } from "@/lib/utils"
 
 type RenderMode = "checking" | "model" | "fallback"
 
 const MODEL_PATH = "/models/coffee-cup.glb"
-const MODEL_SCALE = 0.55
+const MODEL_SCALE = 0.275
+const AUTO_ROTATE_DEG_PER_SEC = 6
 
 function isWebGLAvailable(): boolean {
   try {
@@ -22,16 +24,19 @@ function isWebGLAvailable(): boolean {
 
 export function CoffeeCupHero({
   onScanQr,
+  baseImages,
   revealImage,
 }: {
   onScanQr: () => void
+  baseImages: string[]
   // Kept in the props contract (landing-view.tsx still passes it from
-  // admin-configurable settings-data.ts) even though this dark/red-circle
-  // hero design doesn't render a photo background — avoids touching the
-  // caller or the Admin Settings hero-image plumbing for a purely visual
-  // restyle.
-  baseImages?: string[]
-  revealImage: string | null
+  // admin-configurable settings-data.ts) even though this hero no longer
+  // uses it for anything — the circle only ever shows the 3D cup (never a
+  // photo, not even during model load or as a no-WebGL/error fallback),
+  // and the full-bleed background crossfade below uses baseImages instead.
+  // Avoids touching the caller or the Admin Settings hero-image plumbing
+  // for a purely visual restyle.
+  revealImage?: string | null
 }) {
   const t = useTranslations("Landing")
   const [renderMode, setRenderMode] = useState<RenderMode>("checking")
@@ -39,6 +44,8 @@ export function CoffeeCupHero({
   const mouse = useRef({ x: 0, y: 0 })
   const smooth = useRef({ x: 0, y: 0 })
   const scrollProgress = useRef(0)
+  const rotation = useRef(0)
+  const lastFrameTime = useRef<number | null>(null)
   const rafRef = useRef(0)
 
   // Feature-detect WebGL, then lazily register the <model-viewer> custom
@@ -79,7 +86,12 @@ export function CoffeeCupHero({
     window.addEventListener("mousemove", onMouseMove)
     window.addEventListener("scroll", onScroll, { passive: true })
 
-    const tick = () => {
+    const tick = (timestamp: number) => {
+      const last = lastFrameTime.current ?? timestamp
+      const deltaSeconds = (timestamp - last) / 1000
+      lastFrameTime.current = timestamp
+      rotation.current += AUTO_ROTATE_DEG_PER_SEC * deltaSeconds
+
       smooth.current.x += (mouse.current.x - smooth.current.x) * 0.1
       smooth.current.y += (mouse.current.y - smooth.current.y) * 0.1
       // Updated imperatively (not via React state) because this runs every
@@ -91,6 +103,7 @@ export function CoffeeCupHero({
           mouseX: smooth.current.x,
           mouseY: smooth.current.y,
           scrollProgress: scrollProgress.current,
+          rotationDeg: rotation.current,
         })
       )
       rafRef.current = requestAnimationFrame(tick)
@@ -110,11 +123,30 @@ export function CoffeeCupHero({
       className="relative flex min-h-screen w-full items-center overflow-hidden bg-[#2b2118]"
       style={{ minHeight: "100dvh" }}
     >
+      {/* Full-bleed background crossfade through Admin Settings' hero
+          photos, sitting behind everything else — the circle/cup never
+          shows a photo (not during load, not as a no-WebGL/error
+          fallback), only this background does. */}
+      {baseImages.map((image, index) => (
+        <div
+          key={image}
+          className={cn(
+            "hero-crossfade absolute inset-0 z-0 bg-cover bg-center bg-no-repeat",
+            index === 0 && "hero-crossfade-first"
+          )}
+          style={{ backgroundImage: `url(${image})`, animationDelay: `${index * 6}s` }}
+        />
+      ))}
+      {/* Dark scrim between the crossfade and the foreground so the
+          light-on-dark headline/CTAs stay legible regardless of which
+          photo is currently showing. */}
+      <div className="absolute inset-0 z-[1] bg-[#2b2118]/70" aria-hidden />
+
       {/* Giant brand-red circle, bleeding off the top-right corner — sized as
           a % of the section so it scales down gracefully on narrow screens
           instead of overflowing the viewport horizontally. */}
       <div
-        className="absolute -right-[14%] -top-[18%] z-[1] aspect-square w-[85%] rounded-full bg-primary sm:w-[70%] md:w-[62%]"
+        className="absolute -right-[14%] -top-[18%] z-[2] aspect-square w-[85%] rounded-full bg-primary sm:w-[70%] md:w-[62%]"
         aria-hidden
       />
       <div className="absolute -right-[14%] -top-[18%] z-[5] flex aspect-square w-[85%] items-center justify-center sm:w-[70%] md:w-[62%]">
@@ -128,7 +160,6 @@ export function CoffeeCupHero({
             // window.location here — this branch only renders client-side,
             // after the WebGL-availability effect above has already run.
             src={new URL(MODEL_PATH, window.location.origin).toString()}
-            poster={revealImage ?? undefined}
             alt=""
             scale={`${MODEL_SCALE} ${MODEL_SCALE} ${MODEL_SCALE}`}
             camera-orbit={computeCameraOrbit({ mouseX: 0, mouseY: 0, scrollProgress: 0 })}
@@ -136,13 +167,6 @@ export function CoffeeCupHero({
             shadow-intensity="1"
             loading="eager"
             className="h-full w-full"
-          />
-        )}
-
-        {renderMode !== "model" && revealImage && (
-          <div
-            className="h-[70%] w-[70%] rounded-full bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: `url(${revealImage})` }}
           />
         )}
       </div>
