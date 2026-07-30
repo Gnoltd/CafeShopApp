@@ -748,6 +748,16 @@ has RLS enabled (confirmed via `list_tables`/`get_advisors`).
 | `0057` | `edge_rate_limits` table + `check_rate_limit()` RPC — DB-backed per-key rate limiting for the guest-callable `place-order`/`pay-order` Edge Functions |
 | `0058` | Fixed an off-by-one in `0057`'s `check_rate_limit()` (allowed one fewer request than configured) |
 | `0059`–`0060` | Backfilled `confirm_order_payment()` (applied live 2026-07-28 outside the repo) and revoked an anon `EXECUTE` grant the platform auto-added — was a live payment-bypass (any anon caller could mark any pending order "paid") |
+
+**Check later:** a separate, not-yet-merged branch
+(`docs/superpowers/plans/2026-07-29-architecture-deepening.md`, worked
+in a `.worktrees/architecture-deepening` git worktree) wires
+`confirm_order_payment()` into `stripe-webhook`/`vnpay-ipn` and deletes
+`_shared/order-status.ts`'s `buildPaidUpdate` helper. When that branch
+merges, reconcile it against the `stripe-webhook` amount-cross-check
+(L-2) and multi-`v1=` signature fix (I-5) shipped in the 2026-07-29
+security review's P2 pass (`0063`-`0067`, PR #4) — both touched the same
+file independently and haven't been merged against each other yet.
 | `0061` | Revoked the same platform auto-re-grant on `check_rate_limit` (anon/authenticated could otherwise manipulate arbitrary rate-limit counters) |
 | `0062` | Defense-in-depth role checks added to `get_dashboard_stats`/`get_order_history`/`get_shift_history`/`get_shift_report`/`find_redemption_by_code` (not currently exploitable — RLS-backstopped — but were missing the check every sibling staff-only function has) |
 | `0063` | `menu_item_reviews` direct SELECT scoped to own-or-staff (was `using (true)`, leaking raw `customer_id` UUIDs per review) |
@@ -787,8 +797,12 @@ auto-deploys, no manual `vercel deploy` needed).
 
 - Vercel env vars: `NEXT_PUBLIC_SUPABASE_URL`,
   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_SITE_URL`,
-  `SUPABASE_SECRET_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
-  `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`, `VNPAY_RETURN_URL` (dead —
+  `SUPABASE_SECRET_KEY` (**check later, 2026-07-29 review I-4** — not
+  referenced by any Next.js code, service-role logic lives only in Edge
+  Functions with their own separate secret store; safe to remove from
+  Vercel to shrink blast radius, just needs someone with dashboard
+  access), `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `VNPAY_TMN_CODE`,
+  `VNPAY_HASH_SECRET`, `VNPAY_RETURN_URL` (dead —
   VNPay's real return URL is built dynamically pointing at the Supabase
   function URL, not this var). The Stripe/VNPay secrets are *also*
   separately required as **Supabase Edge Function secrets** — see
