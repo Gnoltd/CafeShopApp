@@ -9,8 +9,13 @@ const BASE_PHI = 75
 const THETA_RANGE = 25
 const PHI_MOUSE_RANGE = 10
 const PHI_SCROLL_RANGE = 15
-const BASE_RADIUS = 105
-const RADIUS_SCROLL_RANGE = 20
+// Percent of model-viewer's own auto-computed "ideal fit" distance, not an
+// absolute unit — so this (not MODEL_SCALE in coffee-cup-hero.tsx) is what
+// actually controls the cup's apparent on-screen size, since auto-fit
+// distance scales with the model's bounding box and cancels out any change
+// to MODEL_SCALE.
+const BASE_RADIUS = 210
+const RADIUS_SCROLL_RANGE = 40
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
