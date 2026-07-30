@@ -14,8 +14,8 @@ const PHI_SCROLL_RANGE = 15
 // actually controls the cup's apparent on-screen size, since auto-fit
 // distance scales with the model's bounding box and cancels out any change
 // to MODEL_SCALE.
-const BASE_RADIUS = 210
-const RADIUS_SCROLL_RANGE = 40
+const BASE_RADIUS = 325
+const RADIUS_SCROLL_RANGE = 62
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
