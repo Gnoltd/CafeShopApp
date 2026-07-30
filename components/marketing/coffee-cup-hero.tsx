@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 type RenderMode = "checking" | "model" | "fallback"
 
 const MODEL_PATH = "/models/coffee-cup.glb"
-const MODEL_SCALE = 0.275
+const MODEL_SCALE = 0.1375
 const AUTO_ROTATE_DEG_PER_SEC = 6
 
 function isWebGLAvailable(): boolean {
