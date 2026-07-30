@@ -243,10 +243,10 @@ export function BestSellersGallery({ items }: { items: MenuItem[] }) {
 
   return (
     <section ref={containerRef} className="relative h-[400vh] bg-[#070504]">
-      <div className="sticky top-0 flex h-screen w-full flex-col items-center justify-between overflow-hidden py-8 md:py-12">
+      <div className="sticky top-0 flex h-dvh w-full flex-col items-center justify-between overflow-hidden py-8 md:py-12">
         {/* Ambient background glows */}
-        <div className="pointer-events-none absolute -left-32 top-1/3 h-[500px] w-[500px] rounded-full bg-primary/10 blur-[150px]" />
-        <div className="pointer-events-none absolute -right-32 bottom-1/3 h-[500px] w-[500px] rounded-full bg-accent/10 blur-[150px]" />
+        <div className="pointer-events-none absolute -left-16 top-1/3 h-[280px] w-[280px] rounded-full bg-primary/10 blur-[150px] sm:-left-24 sm:h-[380px] sm:w-[380px] md:-left-32 md:h-[500px] md:w-[500px]" />
+        <div className="pointer-events-none absolute -right-16 bottom-1/3 h-[280px] w-[280px] rounded-full bg-accent/10 blur-[150px] sm:-right-24 sm:h-[380px] sm:w-[380px] md:-right-32 md:h-[500px] md:w-[500px]" />
 
         {/* Section Title */}
         <div className="relative z-10 text-center px-4">

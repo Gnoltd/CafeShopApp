@@ -120,7 +120,7 @@ export function CoffeeCupHero({
   return (
     <section
       id="coffee-cup-hero"
-      className="relative flex min-h-screen w-full items-center overflow-hidden bg-[#2b2118]"
+      className="relative flex min-h-dvh w-full items-center overflow-hidden bg-[#2b2118]"
       style={{ minHeight: "100dvh" }}
     >
       {/* Full-bleed background crossfade through Admin Settings' hero

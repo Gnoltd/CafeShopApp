@@ -6,7 +6,7 @@ import { BottomNav } from "@/components/customer/bottom-nav"
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <div className="min-h-screen pb-20 md:pb-0">{children}</div>
+      <div className="min-h-dvh pb-20 md:pb-0">{children}</div>
       <BottomNav />
     </>
   )

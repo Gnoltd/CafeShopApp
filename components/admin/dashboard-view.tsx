@@ -242,7 +242,7 @@ export function DashboardView({ locale }: { locale: string }) {
             </span>
           )}
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="rounded-lg bg-green-50 p-3 text-center dark:bg-green-950/20">
             <p className="text-xl font-bold text-green-700">{availableCount}</p>
             <p className="text-xs text-muted-foreground">{t("tableAvailable")}</p>
