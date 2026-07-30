@@ -90,7 +90,7 @@ function ArcItem({
     >
       <Link
         href={`/menu/${item.id}` as any}
-        className="group relative flex w-[82vw] max-w-[380px] flex-col overflow-hidden rounded-2xl bg-[#160f0b] p-4 shadow-[0_20px_50px_rgba(0,0,0,0.85)] border border-white/10 transition-all duration-300 hover:border-primary/50 hover:shadow-primary/30 sm:max-w-[460px] md:max-w-[520px] md:p-5"
+        className="group relative flex w-[78vw] max-w-[360px] flex-col overflow-hidden rounded-2xl bg-[#160f0b] p-3.5 shadow-[0_20px_50px_rgba(0,0,0,0.85)] border border-white/10 transition-all duration-300 hover:border-primary/50 hover:shadow-primary/30 sm:w-[82vw] sm:max-w-[460px] sm:p-4 md:max-w-[520px] md:p-5"
       >
         <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-muted">
           <ItemImage
