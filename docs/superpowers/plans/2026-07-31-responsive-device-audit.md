@@ -116,8 +116,12 @@ mode, both `vi` and `en` locales where text-length matters.
 - Landing: coffee-cup hero — does the rotation feel smooth on a mid-range
   phone, or janky? Does `prefers-reduced-motion` (enable it in OS
   accessibility settings) actually stop it after Phase 0's fix?
-- Landing: best-sellers gallery scroll section — any visible jank scrolling
-  through the 400vh pinned section?
+- ~~Landing: best-sellers gallery scroll section — any visible jank
+  scrolling through the 400vh pinned section?~~ **CONFIRMED broken and
+  fixed 2026-07-31** — windowed rendering (only `WINDOW_RADIUS` items
+  mounted at once) + reduced mobile blur radius, see the design doc's
+  residual-findings update. Re-check on a real phone/iPad after this
+  lands to confirm the fix actually resolved it, not just in theory.
 - Product detail page: modifier options grid at 375px — cramped with real
   (especially Vietnamese) option names?
 

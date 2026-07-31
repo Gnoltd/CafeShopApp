@@ -1,7 +1,7 @@
 "use client"
 
-import { useRef } from "react"
-import { motion, useScroll, useTransform } from "framer-motion"
+import { useRef, useState } from "react"
+import { motion, useScroll, useTransform, useMotionValueEvent } from "framer-motion"
 import { useLocale, useTranslations } from "next-intl"
 import { Sparkles, ArrowRight } from "lucide-react"
 import { Link } from "@/i18n/navigation"
@@ -228,9 +228,17 @@ function ArcPromotionItem({
   )
 }
 
+// How many items on either side of the currently-active one stay mounted.
+// Each item's own animation window spans step*1.4 while windows start
+// step*0.7 apart, so at most ~2 neighbors can have nonzero opacity at once
+// (see ArcItem's windowStart/windowEnd) -- 2 gives a safety margin so
+// nothing pops in/out at the edge of its fade.
+const WINDOW_RADIUS = 2
+
 export function BestSellersGallery({ items }: { items: MenuItem[] }) {
   const t = useTranslations("Landing")
   const containerRef = useRef<HTMLDivElement>(null)
+  const [activeIndex, setActiveIndex] = useState(0)
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -238,17 +246,31 @@ export function BestSellersGallery({ items }: { items: MenuItem[] }) {
   })
 
   const displayItems = items.length > 0 ? items : []
+  const totalCount = displayItems.length + 1
+
+  // Previously every item (and the promo card) was mounted for the entire
+  // 400vh scroll section, each running 5 live useTransform chains
+  // regardless of visibility -- confirmed as real jank on phone/iPad.
+  // Only the items whose window overlaps the current scroll position stay
+  // mounted; everything else unmounts entirely (not just opacity: 0) so
+  // its transforms stop being recomputed every scroll frame. Only updates
+  // state when the active item actually changes, not on every frame.
+  useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    const step = 1 / Math.max(totalCount, 1)
+    const nextIndex = Math.min(totalCount - 1, Math.max(0, Math.round(latest / (step * 0.7))))
+    setActiveIndex((current) => (current === nextIndex ? current : nextIndex))
+  })
 
   if (displayItems.length === 0) return null
-
-  const totalCount = displayItems.length + 1
 
   return (
     <section ref={containerRef} className="relative h-[400vh] bg-[#070504]">
       <div className="sticky top-0 flex h-dvh w-full flex-col items-center justify-between overflow-hidden py-8 md:py-12">
-        {/* Ambient background glows */}
-        <div className="pointer-events-none absolute -left-16 top-1/3 h-[280px] w-[280px] rounded-full bg-primary/10 blur-[150px] sm:-left-24 sm:h-[380px] sm:w-[380px] md:-left-32 md:h-[500px] md:w-[500px]" />
-        <div className="pointer-events-none absolute -right-16 bottom-1/3 h-[280px] w-[280px] rounded-full bg-accent/10 blur-[150px] sm:-right-24 sm:h-[380px] sm:w-[380px] md:-right-32 md:h-[500px] md:w-[500px]" />
+        {/* Ambient background glows. Blur radius (not just box size) now
+            scales down below md too -- a large blur filter is expensive to
+            paint on a mobile GPU regardless of how small the box is. */}
+        <div className="pointer-events-none absolute -left-16 top-1/3 h-[280px] w-[280px] rounded-full bg-primary/10 blur-[80px] sm:-left-24 sm:h-[380px] sm:w-[380px] sm:blur-[110px] md:-left-32 md:h-[500px] md:w-[500px] md:blur-[150px]" />
+        <div className="pointer-events-none absolute -right-16 bottom-1/3 h-[280px] w-[280px] rounded-full bg-accent/10 blur-[80px] sm:-right-24 sm:h-[380px] sm:w-[380px] sm:blur-[110px] md:-right-32 md:h-[500px] md:w-[500px] md:blur-[150px]" />
 
         {/* Section Title */}
         <div className="relative z-10 text-center px-4">
@@ -262,18 +284,23 @@ export function BestSellersGallery({ items }: { items: MenuItem[] }) {
 
         {/* Arc Trajectory Motion Viewport */}
         <div className="relative flex h-full w-full items-center justify-center">
-          {displayItems.map((item, index) => (
-            <ArcItem
-              key={item.id}
-              item={item}
-              index={index}
-              total={totalCount}
-              scrollYProgress={scrollYProgress}
-            />
-          ))}
+          {displayItems.map((item, index) => {
+            if (Math.abs(index - activeIndex) > WINDOW_RADIUS) return null
+            return (
+              <ArcItem
+                key={item.id}
+                item={item}
+                index={index}
+                total={totalCount}
+                scrollYProgress={scrollYProgress}
+              />
+            )
+          })}
 
           {/* Final Arc Item: Merged Promotion Card & Category Buttons */}
-          <ArcPromotionItem total={totalCount} scrollYProgress={scrollYProgress} />
+          {Math.abs(totalCount - 1 - activeIndex) <= WINDOW_RADIUS && (
+            <ArcPromotionItem total={totalCount} scrollYProgress={scrollYProgress} />
+          )}
         </div>
 
         {/* Footer Navigation Link */}

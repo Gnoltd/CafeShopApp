@@ -179,9 +179,13 @@ maintainability defect; not itself a visible bug today.
   is a real mis-tap risk worth a live check. NEEDS-LIVE-VERIFICATION.
 - `best-sellers-gallery.tsx:245` — `h-[400vh]` scroll-pinned section running
   5 `useTransform` chains per item, all items mounted simultaneously (not
-  virtualized) — plausible jank source on a low/mid phone GPU, compounding
-  with RC-5's still-running hero loop on the same page.
-  NEEDS-LIVE-VERIFICATION.
+  virtualized) — plausible jank source on a low/mid phone GPU. **CONFIRMED
+  via live device testing 2026-07-31** (RC-5's hero loop was already fixed
+  by the time this was checked, so it wasn't a compounding factor). Fixed
+  same day: only items within `WINDOW_RADIUS` (2) of the current scroll
+  position stay mounted, the rest unmount entirely instead of animating to
+  `opacity: 0`; the ambient glow `blur-[150px]` radius (not just box size)
+  now also scales down below `md`.
 - `best-sellers-marquee.tsx` — confirmed **dead code**, not rendered
   anywhere (`landing-view.tsx` renders `BestSellersGallery` instead). Has
   its own reduced-motion/hover-only-pause gaps, but since nothing mounts it,
