@@ -70,11 +70,11 @@ export function CoffeeCupHero({
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(CAMERA_FOV_DEG, 1, 0.01, 10)
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
-    // Reproduces three@0.128 (the reference's pinned version)'s rendering
-    // defaults on a current three.js release, which changed its default
-    // output color space / tone mapping — without this the same scene
-    // renders visibly brighter/different than the reference.
-    renderer.outputColorSpace = THREE.LinearSRGBColorSpace
+    // SRGBColorSpace (the modern default) gamma-corrects the linear-lit
+    // scene for display — three@0.128's actual old default (LinearEncoding)
+    // skipped this step entirely, a well-known footgun that renders scenes
+    // far too dark on screen; it's not something worth reproducing.
+    renderer.outputColorSpace = THREE.SRGBColorSpace
     renderer.toneMapping = THREE.NoToneMapping
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
