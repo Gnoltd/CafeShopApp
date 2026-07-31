@@ -90,7 +90,7 @@ function ArcItem({
     >
       <Link
         href={`/menu/${item.id}` as any}
-        className="group relative flex w-[78vw] max-w-[360px] flex-col overflow-hidden rounded-2xl bg-[#160f0b] p-3.5 shadow-[0_20px_50px_rgba(0,0,0,0.85)] border border-white/10 transition-all duration-300 hover:border-primary/50 hover:shadow-primary/30 sm:w-[82vw] sm:max-w-[460px] sm:p-4 md:max-w-[520px] md:p-5"
+        className="group relative flex w-[78vw] max-w-[360px] flex-col overflow-hidden rounded-2xl bg-[#160f0b] p-3.5 shadow-[0_20px_50px_rgba(0,0,0,0.85)] border border-white/10 transition-all duration-300 hover:border-primary/50 hover:shadow-primary/30 sm:w-[74vw] sm:max-w-[415px] sm:p-3.5 md:max-w-[468px] md:p-4 lg:max-w-[520px] lg:p-5"
       >
         <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-muted">
           <ItemImage
@@ -176,7 +176,7 @@ function ArcPromotionItem({
         zIndex: 120,
       }}
     >
-      <div className="nb-border nb-shadow relative w-[86vw] max-w-[380px] overflow-hidden rounded-3xl bg-card p-5 sm:max-w-[480px] sm:p-7 md:max-w-[560px] lg:max-w-[620px]">
+      <div className="nb-border nb-shadow relative w-[80vw] max-w-[352px] overflow-hidden rounded-3xl bg-card p-4 sm:w-[86vw] sm:max-w-[480px] sm:p-7 md:max-w-[560px] lg:max-w-[620px]">
         <div className="flex flex-col gap-2.5 sm:gap-3.5">
           <div className="flex items-center gap-2 text-[#b3341f]">
             <Sparkles className="h-4 w-4 shrink-0" />
