@@ -1,12 +1,14 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import Image from "next/image"
 import { motion, useScroll, useTransform, useMotionValueEvent } from "framer-motion"
 import { useLocale, useTranslations } from "next-intl"
 import { Sparkles, ArrowRight, ChevronRight } from "lucide-react"
 import { Link } from "@/i18n/navigation"
 import { ItemImage } from "@/components/customer/item-image"
 import { formatVND } from "@/lib/format"
+import { isInPreloadBuffer } from "@/lib/gallery-preload"
 import type { MenuItem } from "@/lib/supabase/menu-data"
 
 const CATEGORY_CHIPS = [
@@ -15,6 +17,8 @@ const CATEGORY_CHIPS = [
   { id: "pastries", labelVi: "Bánh Ngọt", labelEn: "Pastries" },
   { id: "blended", labelVi: "Đá Xay", labelEn: "Blended" },
 ]
+
+const ARC_ITEM_IMAGE_SIZES = "(max-width: 640px) 82vw, (max-width: 768px) 460px, 520px"
 
 function ArcItem({
   item,
@@ -97,7 +101,7 @@ function ArcItem({
             item={item}
             className="h-full w-full"
             imageClassName="transition-transform duration-700 group-hover:scale-110"
-            sizes="(max-width: 640px) 82vw, (max-width: 768px) 460px, 520px"
+            sizes={ARC_ITEM_IMAGE_SIZES}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-85 transition-opacity group-hover:opacity-70" />
 
@@ -115,6 +119,15 @@ function ArcItem({
         </div>
       </Link>
     </motion.div>
+  )
+}
+
+function PreloadImage({ item }: { item: MenuItem }) {
+  if (!item.imageUrl) return null
+  return (
+    <div aria-hidden className="pointer-events-none absolute h-px w-px overflow-hidden opacity-0">
+      <Image src={item.imageUrl} alt="" fill sizes={ARC_ITEM_IMAGE_SIZES} loading="eager" />
+    </div>
   )
 }
 
@@ -229,6 +242,8 @@ function ArcPromotionItem({
 }
 
 const WINDOW_RADIUS = 2
+const PRELOAD_BUFFER = 2
+const PRELOAD_RADIUS = WINDOW_RADIUS + PRELOAD_BUFFER
 
 export function BestSellersGallery({ items }: { items: MenuItem[] }) {
   const locale = useLocale()
@@ -292,6 +307,11 @@ export function BestSellersGallery({ items }: { items: MenuItem[] }) {
                 scrollYProgress={scrollYProgress}
               />
             )
+          })}
+
+          {displayItems.map((item, index) => {
+            if (!isInPreloadBuffer(index, activeIndex, WINDOW_RADIUS, PRELOAD_RADIUS)) return null
+            return <PreloadImage key={`preload-${item.id}`} item={item} />
           })}
 
           {/* Final Arc Item: Merged Promotion Card & Category Buttons */}
