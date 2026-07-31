@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
-import { motion } from "framer-motion"
+import { AnimatePresence, motion } from "framer-motion"
 import { Search, Plus, Ban } from "lucide-react"
 import { Link, useRouter } from "@/i18n/navigation"
 import { Input } from "@/components/ui/input"
@@ -108,6 +108,7 @@ export function MenuBrowser({ categories, items }: { categories: MenuCategory[];
               <ItemImage
                 item={item}
                 className={cn("h-28 w-28 shrink-0 rounded-lg md:h-48 md:w-full md:rounded-none", !item.isAvailable && "grayscale")}
+                sizes="(max-width: 768px) 112px, 400px"
               />
               <div className="flex min-w-0 flex-1 flex-col gap-1 md:p-4">
                 <div className="flex items-start justify-between gap-2">
@@ -131,7 +132,7 @@ export function MenuBrowser({ categories, items }: { categories: MenuCategory[];
                         e.stopPropagation()
                         quickAdd(item)
                       }}
-                      className="nb-border-sm nb-shadow-sm flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                      className="nb-border-sm nb-shadow-sm flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
                     >
                       <Plus className="h-4 w-4" />
                     </motion.span>
@@ -159,9 +160,11 @@ export function MenuBrowser({ categories, items }: { categories: MenuCategory[];
         </Link>
       )}
 
-      {quickAddItem && (
-        <QuickAddPopup item={quickAddItem} onClose={() => setQuickAddItem(null)} />
-      )}
+      <AnimatePresence>
+        {quickAddItem && (
+          <QuickAddPopup key="quick-add-popup" item={quickAddItem} onClose={() => setQuickAddItem(null)} />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

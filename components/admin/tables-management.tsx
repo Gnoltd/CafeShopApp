@@ -250,7 +250,7 @@ export function TablesManagement() {
                     <button
                       type="button"
                       onClick={() => startEditing(table.id, table.number, table.locationVi, table.locationEn)}
-                      className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:text-primary"
+                      className="flex h-9 w-9 items-center justify-center rounded text-muted-foreground hover:text-primary"
                       aria-label={t("rename")}
                       title={t("rename")}
                     >

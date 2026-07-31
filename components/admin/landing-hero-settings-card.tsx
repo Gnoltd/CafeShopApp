@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Image from "next/image"
 import { useTranslations } from "next-intl"
 import { ImageIcon, Check, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -125,22 +126,28 @@ export function LandingHeroSettingsCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {SLOTS.map(({ key, labelKey }) => {
-            const displayUrl = previewUrls[key] ?? currentUrls[key]
+            const pendingPreview = previewUrls[key]
+            const uploadedUrl = currentUrls[key]
             return (
               <div key={key} className="space-y-1.5">
                 <label className="block text-xs font-medium text-muted-foreground">{t(labelKey)}</label>
-                <label className="nb-border-sm block aspect-video cursor-pointer overflow-hidden rounded-lg bg-card">
+                <label className="nb-border-sm relative block aspect-video cursor-pointer overflow-hidden rounded-lg bg-card">
                   <input
                     type="file"
                     accept="image/*"
                     className="hidden"
                     onChange={(e) => selectFile(key, e.target.files?.[0] ?? null)}
                   />
-                  {displayUrl ? (
+                  {pendingPreview ? (
+                    // Local blob: URL from a just-selected file — next/image
+                    // can't optimize object URLs, so this branch stays a raw
+                    // <img> (only the already-uploaded branch below migrates).
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={displayUrl} alt="" className="h-full w-full object-cover" />
+                    <img src={pendingPreview} alt="" className="h-full w-full object-cover" />
+                  ) : uploadedUrl ? (
+                    <Image src={uploadedUrl} alt="" fill sizes="(max-width: 640px) 45vw, 200px" className="object-cover" />
                   ) : (
                     <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-muted-foreground">
                       <ImageIcon className="h-6 w-6" />

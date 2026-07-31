@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Image from "next/image"
 import { useLocale, useTranslations } from "next-intl"
 import { motion } from "framer-motion"
 import { Coffee, CupSoda, Cookie, Milk, Check } from "lucide-react"
@@ -94,10 +95,16 @@ export function ProductDetail({ item }: { item: MenuItem }) {
       <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-10">
         {/* Left Column: Hero image (sticky) */}
         <div className="w-full md:w-[40%] md:sticky md:top-20 md:self-start">
-          <div className="nb-border nb-shadow flex h-64 w-full items-center justify-center bg-chip text-muted-foreground sm:h-80 md:h-[400px] md:rounded-2xl md:overflow-hidden">
+          <div className="nb-border nb-shadow relative flex h-64 w-full items-center justify-center overflow-hidden bg-chip text-muted-foreground sm:h-80 md:h-[400px] md:rounded-2xl">
             {item.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={item.imageUrl} alt={name} className="h-full w-full object-cover" />
+              <Image
+                src={item.imageUrl}
+                alt={name}
+                fill
+                sizes="(max-width: 768px) 100vw, 40vw"
+                className="object-cover"
+                priority
+              />
             ) : (
               <Icon className="h-20 w-20" />
             )}

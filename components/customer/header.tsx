@@ -39,7 +39,7 @@ export function CustomerHeader({ showBack = false }: { showBack?: boolean }) {
           <button
             type="button"
             onClick={() => router.back()}
-            className="mr-1 shrink-0 md:hidden"
+            className="-ml-1.5 mr-1 flex h-10 w-10 shrink-0 items-center justify-center md:hidden"
             aria-label={tCustomer("back")}
           >
             <ChevronLeft className="h-5 w-5 text-muted-foreground" />

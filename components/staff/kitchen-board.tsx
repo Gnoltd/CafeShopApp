@@ -44,7 +44,7 @@ export function KitchenBoard({
   const [activeColumn, setActiveColumn] = useState<BoardColumnKey>("paid")
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-hidden p-4 md:grid md:grid-cols-4">
+    <div className="flex h-full flex-col gap-4 overflow-hidden p-4 md:grid md:grid-cols-2 lg:grid-cols-4">
       <SegmentedControl
         variant="tabs"
         layoutId="kds-column-pill"

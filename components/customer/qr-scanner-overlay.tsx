@@ -101,7 +101,7 @@ export function QrScannerOverlay({ onClose }: { onClose: () => void }) {
         <button
           type="button"
           onClick={handleClose}
-          className="rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
           aria-label={t("closeScanner")}
         >
           <X className="h-5 w-5" />

@@ -216,7 +216,7 @@ export function PosTerminal({ categories, items }: { categories: MenuCategory[];
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 pb-24 md:pb-4">
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {visibleItems.map((item) => {
               const Icon = ICONS[item.icon]
               return (
@@ -309,13 +309,16 @@ export function PosTerminal({ categories, items }: { categories: MenuCategory[];
         )}
       </AnimatePresence>
 
-      {pickerItem && (
-        <PosItemPicker
-          item={pickerItem}
-          onAdd={(selection) => addLine(pickerItem, selection)}
-          onClose={() => setPickerItem(null)}
-        />
-      )}
+      <AnimatePresence>
+        {pickerItem && (
+          <PosItemPicker
+            key="pos-item-picker"
+            item={pickerItem}
+            onAdd={(selection) => addLine(pickerItem, selection)}
+            onClose={() => setPickerItem(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

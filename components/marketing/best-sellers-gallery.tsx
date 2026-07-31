@@ -95,7 +95,9 @@ function ArcItem({
         <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-muted">
           <ItemImage
             item={item}
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+            className="h-full w-full"
+            imageClassName="transition-transform duration-700 group-hover:scale-110"
+            sizes="(max-width: 640px) 82vw, (max-width: 768px) 460px, 520px"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-85 transition-opacity group-hover:opacity-70" />
 

@@ -89,7 +89,7 @@ function CartRow({
             <button
               type="button"
               onClick={() => onUpdateQuantity(item.cartItemId, item.quantity - 1)}
-              className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-background"
+              className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-background"
               aria-label={t("decrease")}
             >
               <Minus className="h-4 w-4" />
@@ -98,7 +98,7 @@ function CartRow({
             <button
               type="button"
               onClick={() => onUpdateQuantity(item.cartItemId, item.quantity + 1)}
-              className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-background"
+              className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-background"
               aria-label={t("increase")}
             >
               <Plus className="h-4 w-4" />

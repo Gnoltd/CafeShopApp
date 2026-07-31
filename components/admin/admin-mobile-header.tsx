@@ -3,13 +3,18 @@
 import { useTranslations } from "next-intl"
 import { Coffee, Menu } from "lucide-react"
 import { Link } from "@/i18n/navigation"
+import { useHeaderActionsClearance } from "@/hooks/useHeaderActionsClearance"
 
 export function AdminMobileHeader({ onOpenMenu }: { onOpenMenu: () => void }) {
   const tBrand = useTranslations("Brand")
   const tNav = useTranslations("Nav")
+  const clearance = useHeaderActionsClearance()
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-card pl-2 pr-64 md:hidden">
+    <header
+      className="flex h-14 shrink-0 items-center gap-2 border-b bg-card pl-2 md:hidden"
+      style={{ paddingRight: `${clearance}px` } as React.CSSProperties}
+    >
       <button
         type="button"
         onClick={onOpenMenu}

@@ -124,51 +124,86 @@ export function OrderHistoryList() {
       ) : rows.length === 0 ? (
         <p className="py-16 text-center text-muted-foreground">{t("empty")}</p>
       ) : (
-        <div className="nb-border nb-shadow-sm overflow-x-auto rounded-xl bg-card">
-          <table className="w-full text-sm">
-            <thead className="border-b-2 border-ink/15 bg-muted/40 text-left text-xs font-bold uppercase text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3">{t("columnOrderId")}</th>
-                <th className="px-4 py-3">{t("columnDateTime")}</th>
-                <th className="px-4 py-3">{t("columnCustomer")}</th>
-                <th className="px-4 py-3">{t("columnTable")}</th>
-                <th className="px-4 py-3">{t("columnPayment")}</th>
-                <th className="px-4 py-3">{t("columnStatus")}</th>
-                <th className="px-4 py-3 text-right">{t("columnTotal")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((order) => (
-                <tr key={order.id} className="border-b-2 border-ink/15 last:border-0 hover:bg-muted/20">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/staff/orders/history/${order.id}`}
-                      className="font-bold text-primary hover:underline"
-                    >
-                      #{formatOrderId(order.id)}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{formatDateTime(order.createdAt, locale)}</td>
-                  <td className="px-4 py-3">{order.customerName ?? t("guestLabel")}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {order.orderType === "dine-in" ? order.table : t("orderTypePickup")}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{order.paymentMethod}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                        STATUS_BADGE[order.status as "completed" | "cancelled"]
-                      }`}
-                    >
-                      {order.status === "completed" ? t("statusCompleted") : t("statusCancelled")}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right font-bold text-primary">{formatVND(order.total)}</td>
+        <>
+          {/* Mobile: card list — the 7-column table below is unreadable at
+              phone width, unlike menu-management.tsx which already got this
+              treatment (2026-07-31 responsive audit). */}
+          <div className="flex flex-col gap-3 md:hidden">
+            {rows.map((order) => (
+              <Link
+                key={order.id}
+                href={`/staff/orders/history/${order.id}`}
+                className="nb-border-sm nb-shadow-sm nb-press-sm flex flex-col gap-2 rounded-xl bg-card p-4"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-primary">#{formatOrderId(order.id)}</span>
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                      STATUS_BADGE[order.status as "completed" | "cancelled"]
+                    }`}
+                  >
+                    {order.status === "completed" ? t("statusCompleted") : t("statusCancelled")}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">{formatDateTime(order.createdAt, locale)}</p>
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span className="truncate text-muted-foreground">{order.customerName ?? t("guestLabel")}</span>
+                  <span className="shrink-0 font-bold text-card-foreground">{formatVND(order.total)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span>{order.orderType === "dine-in" ? order.table : t("orderTypePickup")}</span>
+                  <span>{order.paymentMethod}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <div className="nb-border nb-shadow-sm hidden overflow-x-auto rounded-xl bg-card md:block">
+            <table className="w-full text-sm">
+              <thead className="border-b-2 border-ink/15 bg-muted/40 text-left text-xs font-bold uppercase text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3">{t("columnOrderId")}</th>
+                  <th className="px-4 py-3">{t("columnDateTime")}</th>
+                  <th className="px-4 py-3">{t("columnCustomer")}</th>
+                  <th className="px-4 py-3">{t("columnTable")}</th>
+                  <th className="px-4 py-3">{t("columnPayment")}</th>
+                  <th className="px-4 py-3">{t("columnStatus")}</th>
+                  <th className="px-4 py-3 text-right">{t("columnTotal")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {rows.map((order) => (
+                  <tr key={order.id} className="border-b-2 border-ink/15 last:border-0 hover:bg-muted/20">
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/staff/orders/history/${order.id}`}
+                        className="font-bold text-primary hover:underline"
+                      >
+                        #{formatOrderId(order.id)}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{formatDateTime(order.createdAt, locale)}</td>
+                    <td className="px-4 py-3">{order.customerName ?? t("guestLabel")}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {order.orderType === "dine-in" ? order.table : t("orderTypePickup")}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{order.paymentMethod}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                          STATUS_BADGE[order.status as "completed" | "cancelled"]
+                        }`}
+                      >
+                        {order.status === "completed" ? t("statusCompleted") : t("statusCancelled")}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right font-bold text-primary">{formatVND(order.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">

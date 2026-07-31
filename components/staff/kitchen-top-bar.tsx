@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { AnimatePresence } from "framer-motion"
 import { useTranslations } from "next-intl"
 import { Coffee, Bell, Settings, Wallet, LogIn, LogOut } from "lucide-react"
 import { Link } from "@/i18n/navigation"
@@ -111,7 +112,11 @@ export function KitchenTopBar() {
           </button>
         </div>
       </div>
-      {dialogMode && <ShiftControlsDialog mode={dialogMode} onClose={() => setDialogMode(null)} />}
+      <AnimatePresence>
+        {dialogMode && (
+          <ShiftControlsDialog key="shift-controls-dialog" mode={dialogMode} onClose={() => setDialogMode(null)} />
+        )}
+      </AnimatePresence>
     </header>
   )
 }

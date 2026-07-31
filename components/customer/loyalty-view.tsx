@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
+import { AnimatePresence } from "framer-motion"
 import { Star, Info, Gift, ArrowRight, CheckCircle2, Wallet, Sparkles, Ticket } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { formatNumber, formatDateVN, formatOrderId } from "@/lib/format"
@@ -179,13 +180,16 @@ export function LoyaltyView() {
         </div>
       </div>
 
-      {rewardsOpen && (
-        <RewardsCatalogModal
-          balance={balance}
-          onClose={() => setRewardsOpen(false)}
-          onRedeemed={refreshLoyalty}
-        />
-      )}
+      <AnimatePresence>
+        {rewardsOpen && (
+          <RewardsCatalogModal
+            key="rewards-catalog-modal"
+            balance={balance}
+            onClose={() => setRewardsOpen(false)}
+            onRedeemed={refreshLoyalty}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

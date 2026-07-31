@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import Image from "next/image"
 import { useLocale, useTranslations } from "next-intl"
 import { UploadCloud, X, Plus, Pencil, ChevronUp, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -401,8 +402,17 @@ export function MenuItemForm({
             />
             {imagePreviewUrl ? (
               <div className="nb-border-sm flex items-center gap-3 rounded-lg bg-card p-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={imagePreviewUrl} alt="" className="h-24 w-24 rounded-lg object-cover" />
+                {ownsPreviewUrl ? (
+                  // Local blob: URL from a just-selected file — next/image
+                  // can't optimize object URLs without `unoptimized`, so
+                  // this branch stays a raw <img>.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={imagePreviewUrl} alt="" className="h-24 w-24 rounded-lg object-cover" />
+                ) : (
+                  <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg">
+                    <Image src={imagePreviewUrl} alt="" fill sizes="96px" className="object-cover" />
+                  </div>
+                )}
                 <span className="flex-1 truncate text-sm text-muted-foreground">
                   {imageFile?.name ?? t("currentPhoto")}
                 </span>

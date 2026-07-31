@@ -1,5 +1,6 @@
 "use client"
 
+import { AnimatePresence } from "framer-motion"
 import { useTranslations } from "next-intl"
 import {
   Coffee,
@@ -99,13 +100,15 @@ export function AdminSidebar({ open, onClose }: { open: boolean; onClose: () => 
       <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto border-r bg-card py-4 md:flex">
         <AdminNavContent />
       </aside>
-      {open && (
-        <SideDrawer onClose={onClose}>
-          <div className="flex h-full flex-col overflow-y-auto py-4">
-            <AdminNavContent onNavigate={onClose} />
-          </div>
-        </SideDrawer>
-      )}
+      <AnimatePresence>
+        {open && (
+          <SideDrawer key="admin-side-drawer" onClose={onClose}>
+            <div className="flex h-full flex-col overflow-y-auto py-4">
+              <AdminNavContent onNavigate={onClose} />
+            </div>
+          </SideDrawer>
+        )}
+      </AnimatePresence>
     </>
   )
 }

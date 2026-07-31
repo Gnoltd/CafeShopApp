@@ -1,3 +1,4 @@
+import { MotionConfig } from "framer-motion"
 import { BottomNav } from "@/components/customer/bottom-nav"
 
 // No CustomerHeader here: the landing hero's LandingNav is the header for this
@@ -5,9 +6,9 @@ import { BottomNav } from "@/components/customer/bottom-nav"
 // underneath the fixed BottomNav.
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
+    <MotionConfig reducedMotion="user">
       <div className="min-h-dvh pb-20 md:pb-0">{children}</div>
       <BottomNav />
-    </>
+    </MotionConfig>
   )
 }

@@ -28,7 +28,7 @@ export function KitchenPendingPayment({
             <span className="text-muted-foreground">
               {order.orderType === "pickup" ? t("pickup") : t("table", { table: order.table ?? "" })}
             </span>
-            <Button size="sm" variant="neubrutal" className="h-7" onClick={() => onConfirm(order.id)}>
+            <Button variant="neubrutal" onClick={() => onConfirm(order.id)}>
               {t("confirmCashReceived")}
             </Button>
           </div>

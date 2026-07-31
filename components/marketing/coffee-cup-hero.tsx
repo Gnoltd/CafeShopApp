@@ -10,7 +10,6 @@ import { cn } from "@/lib/utils"
 type RenderMode = "checking" | "model" | "fallback"
 
 const MODEL_PATH = "/models/coffee-cup.glb"
-const MODEL_SCALE = 0.1375
 const AUTO_ROTATE_DEG_PER_SEC = 6
 
 function isWebGLAvailable(): boolean {
@@ -70,6 +69,17 @@ export function CoffeeCupHero({
 
   useEffect(() => {
     if (renderMode !== "model") return
+    const el = modelRef.current
+
+    // Respect the OS-level reduced-motion preference: freeze on a static
+    // orbit instead of the continuous auto-rotate/parallax loop. This runs
+    // outside Framer Motion (imperative model-viewer attribute updates), so
+    // the (marketing) layout's MotionConfig reducedMotion="user" doesn't
+    // cover it — needs its own check.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      el?.setAttribute("camera-orbit", computeCameraOrbit({ mouseX: 0, mouseY: 0, scrollProgress: 0 }))
+      return
+    }
 
     const onMouseMove = (e: MouseEvent) => {
       mouse.current = {
@@ -83,8 +93,6 @@ export function CoffeeCupHero({
       const rect = hero.getBoundingClientRect()
       scrollProgress.current = Math.min(1, Math.max(0, -rect.top / Math.max(rect.height, 1)))
     }
-    window.addEventListener("mousemove", onMouseMove)
-    window.addEventListener("scroll", onScroll, { passive: true })
 
     const tick = (timestamp: number) => {
       const last = lastFrameTime.current ?? timestamp
@@ -108,12 +116,41 @@ export function CoffeeCupHero({
       )
       rafRef.current = requestAnimationFrame(tick)
     }
-    rafRef.current = requestAnimationFrame(tick)
+    const startLoop = () => {
+      if (rafRef.current) return
+      lastFrameTime.current = null
+      rafRef.current = requestAnimationFrame(tick)
+    }
+    const stopLoop = () => {
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = 0
+    }
+
+    window.addEventListener("mousemove", onMouseMove)
+    window.addEventListener("scroll", onScroll, { passive: true })
+
+    // Stop burning GPU/battery once the hero scrolls out of view (the loop
+    // previously ran indefinitely, including hundreds of vh past the hero
+    // into the gallery below), and resume if the user scrolls back up.
+    const heroEl = document.getElementById("coffee-cup-hero")
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) startLoop()
+        else stopLoop()
+      },
+      { threshold: 0 }
+    )
+    if (heroEl) {
+      observer.observe(heroEl)
+    } else {
+      startLoop()
+    }
 
     return () => {
       window.removeEventListener("mousemove", onMouseMove)
       window.removeEventListener("scroll", onScroll)
-      cancelAnimationFrame(rafRef.current)
+      stopLoop()
+      observer.disconnect()
     }
   }, [renderMode])
 
@@ -161,7 +198,11 @@ export function CoffeeCupHero({
             // after the WebGL-availability effect above has already run.
             src={new URL(MODEL_PATH, window.location.origin).toString()}
             alt=""
-            scale={`${MODEL_SCALE} ${MODEL_SCALE} ${MODEL_SCALE}`}
+            // No `scale` attribute: model-viewer's default camera auto-fits to
+            // the model's bounding box regardless of `scale`, so it has no
+            // effect on apparent on-screen size (see BASE_RADIUS in
+            // lib/coffee-cup-orbit.ts for the constant that actually controls
+            // this — this dead lever misled two prior "shrink the cup" commits).
             camera-orbit={computeCameraOrbit({ mouseX: 0, mouseY: 0, scrollProgress: 0 })}
             exposure="1"
             shadow-intensity="1"

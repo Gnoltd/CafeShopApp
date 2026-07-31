@@ -198,7 +198,7 @@ export function AddressBookView() {
                     type="button"
                     onClick={() => startEdit(addr)}
                     aria-label={t("editTitle")}
-                    className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
@@ -206,7 +206,7 @@ export function AddressBookView() {
                     type="button"
                     onClick={() => handleDelete(addr.id)}
                     aria-label={t("deleteButton")}
-                    className="flex h-8 w-8 items-center justify-center rounded-full text-destructive hover:bg-destructive/10"
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>

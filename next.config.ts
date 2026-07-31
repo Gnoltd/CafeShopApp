@@ -10,6 +10,18 @@ const nextConfig: NextConfig = {
   // headers (which next.config.js's own `headers()` can't express, since
   // this app needs a per-request CSP nonce that only middleware can mint).
   poweredByHeader: false,
+  images: {
+    // All admin-uploaded content (menu item photos, landing hero images)
+    // is served from this Supabase project's public Storage buckets —
+    // next/image requires external hostnames explicitly allow-listed.
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "qhiypdqnrnzndxdwqxbx.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+  },
 };
 
 export default withNextIntl(nextConfig);

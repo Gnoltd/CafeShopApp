@@ -58,7 +58,9 @@ export function LandingNav({ userName = null }: { userName?: string | null }) {
       <div className="hidden shrink-0 items-center gap-3 md:flex" style={{ marginRight: signUpClearance }}>
         {userName ? (
           <>
-            <span className="text-sm font-medium text-white/90">{t("navGreeting", { name: userName })}</span>
+            <span className="max-w-[160px] truncate text-sm font-medium text-white/90">
+              {t("navGreeting", { name: userName })}
+            </span>
             <button
               type="button"
               onClick={handleLogout}

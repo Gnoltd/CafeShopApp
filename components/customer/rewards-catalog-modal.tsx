@@ -77,7 +77,7 @@ export function RewardsCatalogModal({
         <button
           type="button"
           onClick={onClose}
-          className="nb-border-sm nb-press-sm rounded-full bg-card p-1 text-muted-foreground"
+          className="nb-border-sm nb-press-sm flex h-10 w-10 items-center justify-center rounded-full bg-card text-muted-foreground"
           aria-label={tMenu("close")}
         >
           <X className="h-5 w-5" />

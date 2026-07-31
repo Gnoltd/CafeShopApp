@@ -227,11 +227,18 @@
     box-shadow: 2px 2px 0 var(--ink);
   }
   .nb-press {
-    transition: transform 100ms ease, box-shadow 100ms ease;
+    /* !important: without it, any element that also carries a transition-all
+       (e.g. Button's base class) wins on transition-duration/timing per
+       Tailwind v4's @layer utilities-after-components ordering, silently
+       replacing this 100ms snap with Tailwind's default 150ms curve. */
+    transition: transform 100ms ease, box-shadow 100ms ease !important;
   }
   .nb-press:active {
     transform: translate(4px, 4px);
     box-shadow: 0 0 0 var(--ink);
+  }
+  .nb-press-sm {
+    transition: transform 100ms ease, box-shadow 100ms ease !important;
   }
   .nb-press-sm:active {
     transform: translate(2px, 2px);
@@ -240,7 +247,9 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .nb-press,
-  .nb-press:active {
+  .nb-press:active,
+  .nb-press-sm,
+  .nb-press-sm:active {
     transition: none;
   }
 }
