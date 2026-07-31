@@ -77,7 +77,8 @@ export function CoffeeCupHero({
     renderer.outputColorSpace = THREE.SRGBColorSpace
     renderer.toneMapping = THREE.ACESFilmicToneMapping
     renderer.toneMappingExposure = 1.35
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    const isMobileDevice = typeof window !== "undefined" && window.innerWidth < 768
+    renderer.setPixelRatio(isMobileDevice ? 1 : Math.min(window.devicePixelRatio, 2))
 
     const setSize = () => {
       const w = canvas.clientWidth || 1
@@ -258,14 +259,13 @@ export function CoffeeCupHero({
           photo is currently showing. */}
       <div className="absolute inset-0 z-[1] bg-[#2b2118]/70" aria-hidden />
 
-      {/* Giant brand-red circle anchored to top-right corner, bleeding past
-          top/right/bottom edges on Laptop & Desktop (matching reference) and
-          scaling gracefully on Tablet & Mobile. */}
+      {/* Giant brand-red circle anchored to top-right edge on Laptop & Desktop
+          (matching reference) and positioned gracefully on right edge on Mobile. */}
       <div
-        className="absolute -right-[14vw] -top-[12vh] z-[2] aspect-square h-[124vh] rounded-full bg-primary max-lg:-right-[18vw] max-lg:-top-[8vh] max-lg:h-[112vh] max-md:top-[12vh] max-md:-right-[22vw] max-md:h-[62vh] max-md:w-[115vw]"
+        className="pointer-events-none absolute -right-[22vw] top-[18%] z-[2] aspect-square w-[80vw] rounded-full bg-primary sm:w-[65vw] md:-right-[14vw] md:-top-[12vh] md:w-auto md:h-[124vh]"
         aria-hidden
       />
-      <div className="absolute -right-[14vw] -top-[12vh] z-[5] flex aspect-square h-[124vh] items-center justify-center max-lg:-right-[18vw] max-lg:-top-[8vh] max-lg:h-[112vh] max-md:top-[12vh] max-md:-right-[22vw] max-md:h-[62vh] max-md:w-[115vw]">
+      <div className="pointer-events-none absolute -right-[22vw] top-[18%] z-[5] flex aspect-square w-[80vw] items-center justify-center sm:w-[65vw] md:-right-[14vw] md:-top-[12vh] md:w-auto md:h-[124vh]">
         {renderMode === "model" && <canvas ref={canvasRef} className="h-full w-full" aria-hidden />}
       </div>
 

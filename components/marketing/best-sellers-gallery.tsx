@@ -255,7 +255,6 @@ export function BestSellersGallery({ items }: { items: MenuItem[] }) {
   const totalCount = displayItems.length + 1
 
   useMotionValueEvent(scrollYProgress, "change", (latest) => {
-    if (isMobileView) return
     const step = 1 / Math.max(totalCount, 1)
     const nextIndex = Math.min(totalCount - 1, Math.max(0, Math.round(latest / (step * 0.7))))
     setActiveIndex((current) => (current === nextIndex ? current : nextIndex))
@@ -263,23 +262,24 @@ export function BestSellersGallery({ items }: { items: MenuItem[] }) {
 
   if (displayItems.length === 0) return null
 
-  // ----------------------------------------------------
-  // MOBILE VIEW (< 768px): Butter-Smooth 60fps Native Touch Carousel
-  // ----------------------------------------------------
-  if (isMobileView) {
-    return (
-      <section className="relative overflow-hidden bg-[#070504] py-12">
+  return (
+    <>
+      {/* ----------------------------------------------------
+          MOBILE VIEW (< 768px): Butter-Smooth 60fps Native Touch Carousel
+          Instant CSS rendering on mobile with ZERO JS delay or scroll-jacking
+         ---------------------------------------------------- */}
+      <section className="relative block overflow-hidden bg-[#070504] py-10 md:hidden">
         <div className="pointer-events-none absolute -left-16 top-1/3 h-[240px] w-[240px] rounded-full bg-primary/10 blur-[70px]" />
         <div className="pointer-events-none absolute -right-16 bottom-1/3 h-[240px] w-[240px] rounded-full bg-accent/10 blur-[70px]" />
 
         <div className="mx-auto w-full px-5">
-          <div className="mb-6 flex items-end justify-between">
+          <div className="mb-5 flex items-end justify-between">
             <div>
               <div className="flex items-center gap-2 text-accent">
                 <Sparkles className="h-4 w-4" />
                 <span className="text-xs font-extrabold uppercase tracking-widest">Craft & Passion</span>
               </div>
-              <h2 className="mt-1 text-3xl font-black text-white">{t("bestSellers")}</h2>
+              <h2 className="mt-1 text-2xl font-black text-white sm:text-3xl">{t("bestSellers")}</h2>
               <p className="mt-0.5 text-xs text-white/60">Swipe to explore signature creations</p>
             </div>
 
@@ -294,7 +294,7 @@ export function BestSellersGallery({ items }: { items: MenuItem[] }) {
 
           {/* Native Touch Swipe Carousel */}
           <div
-            className="no-scrollbar flex w-full snap-x snap-mandatory gap-4 overflow-x-auto pb-6 pt-2"
+            className="no-scrollbar flex w-full snap-x snap-mandatory gap-4 overflow-x-auto pb-4 pt-1"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
           >
             {displayItems.map((item) => {
@@ -308,7 +308,8 @@ export function BestSellersGallery({ items }: { items: MenuItem[] }) {
                     <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-muted">
                       <ItemImage
                         item={item}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        className="h-full w-full object-cover"
+                        imageClassName="transition-transform duration-500 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-80" />
                       <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between text-white">
@@ -380,61 +381,59 @@ export function BestSellersGallery({ items }: { items: MenuItem[] }) {
           </div>
         </div>
       </section>
-    )
-  }
 
-  // ----------------------------------------------------
-  // DESKTOP & LAPTOP VIEW (>= 768px): 3D Curved Arc Trajectory Motion
-  // ----------------------------------------------------
-  return (
-    <section ref={containerRef} className="relative h-[400vh] bg-[#070504]">
-      <div className="sticky top-0 flex h-dvh w-full flex-col items-center justify-between overflow-hidden py-8 md:py-12">
-        {/* Ambient background glows */}
-        <div className="pointer-events-none absolute -left-32 top-1/3 h-[500px] w-[500px] rounded-full bg-primary/10 blur-[150px]" />
-        <div className="pointer-events-none absolute -right-32 bottom-1/3 h-[500px] w-[500px] rounded-full bg-accent/10 blur-[150px]" />
+      {/* ----------------------------------------------------
+          DESKTOP & LAPTOP VIEW (>= 768px): 3D Curved Arc Trajectory Motion
+         ---------------------------------------------------- */}
+      <section ref={containerRef} className="relative hidden h-[400vh] bg-[#070504] md:block">
+        <div className="sticky top-0 flex h-dvh w-full flex-col items-center justify-between overflow-hidden py-8 md:py-12">
+          {/* Ambient background glows */}
+          <div className="pointer-events-none absolute -left-32 top-1/3 h-[500px] w-[500px] rounded-full bg-primary/10 blur-[150px]" />
+          <div className="pointer-events-none absolute -right-32 bottom-1/3 h-[500px] w-[500px] rounded-full bg-accent/10 blur-[150px]" />
 
-        {/* Section Title */}
-        <div className="relative z-10 text-center px-4">
-          <div className="flex items-center justify-center gap-2 text-accent">
-            <Sparkles className="h-4 w-4" />
-            <span className="text-xs font-extrabold uppercase tracking-widest">Craft & Motion</span>
+          {/* Section Title */}
+          <div className="relative z-10 text-center px-4">
+            <div className="flex items-center justify-center gap-2 text-accent">
+              <Sparkles className="h-4 w-4" />
+              <span className="text-xs font-extrabold uppercase tracking-widest">Craft & Motion</span>
+            </div>
+            <h2 className="mt-1 text-3xl font-black text-white md:text-5xl">{t("bestSellers")}</h2>
+            <p className="mt-1 text-xs text-white/60 md:text-sm">Scroll down to explore signature creations</p>
           </div>
-          <h2 className="mt-1 text-3xl font-black text-white md:text-5xl">{t("bestSellers")}</h2>
-          <p className="mt-1 text-xs text-white/60 md:text-sm">Scroll down to explore signature creations</p>
-        </div>
 
-        {/* Arc Trajectory Motion Viewport */}
-        <div className="relative flex h-full w-full items-center justify-center">
-          {displayItems.map((item, index) => {
-            if (Math.abs(index - activeIndex) > WINDOW_RADIUS) return null
-            return (
-              <ArcItem
-                key={item.id}
-                item={item}
-                index={index}
-                total={totalCount}
-                scrollYProgress={scrollYProgress}
-              />
-            )
-          })}
+          {/* Arc Trajectory Motion Viewport */}
+          <div className="relative flex h-full w-full items-center justify-center">
+            {displayItems.map((item, index) => {
+              if (Math.abs(index - activeIndex) > WINDOW_RADIUS) return null
+              return (
+                <ArcItem
+                  key={item.id}
+                  item={item}
+                  index={index}
+                  total={totalCount}
+                  scrollYProgress={scrollYProgress}
+                />
+              )
+            })}
 
-          {/* Final Arc Item: Merged Promotion Card & Category Buttons */}
-          {Math.abs(totalCount - 1 - activeIndex) <= WINDOW_RADIUS && (
-            <ArcPromotionItem total={totalCount} scrollYProgress={scrollYProgress} />
-          )}
-        </div>
+            {/* Final Arc Item: Merged Promotion Card & Category Buttons */}
+            {Math.abs(totalCount - 1 - activeIndex) <= WINDOW_RADIUS && (
+              <ArcPromotionItem total={totalCount} scrollYProgress={scrollYProgress} />
+            )}
+          </div>
 
-        {/* Footer Navigation Link */}
-        <div className="relative z-10 px-4">
-          <Link
-            href="/menu"
-            className="flex items-center gap-2 rounded-full bg-white/10 px-6 py-2.5 text-sm font-extrabold text-white backdrop-blur-md transition-all hover:bg-primary hover:text-primary-foreground hover:shadow-lg"
-          >
-            <span>{t("viewAll")}</span>
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+          {/* Footer Navigation Link */}
+          <div className="relative z-10 px-4">
+            <Link
+              href="/menu"
+              className="flex items-center gap-2 rounded-full bg-white/10 px-6 py-2.5 text-sm font-extrabold text-white backdrop-blur-md transition-all hover:bg-primary hover:text-primary-foreground hover:shadow-lg"
+            >
+              <span>{t("viewAll")}</span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   )
 }
