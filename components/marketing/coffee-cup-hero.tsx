@@ -251,18 +251,26 @@ export function CoffeeCupHero({
           photo is currently showing. */}
       <div className="absolute inset-0 z-[1] bg-[#2b2118]/70" aria-hidden />
 
-      {/* Giant brand-red circle, bleeding off the top-right corner — sized as
-          a % of the section so it scales down gracefully on narrow screens
-          instead of overflowing the viewport horizontally. */}
+      {/* Giant brand-red circle. Below xl (1280px, the same cutoff the
+          composition below switches on): anchored bottom-right instead of
+          top-right — on a tall min-h-dvh phone/tablet section, "18% from
+          the top" is a huge distance, so the top-anchored version left only
+          a sliver of the circle on screen. Bottom-right keeps a small bleed
+          past the edge (matching the desktop aesthetic) while `bottom-[10%]`
+          (not a bleed) leaves clearance above the fixed mobile BottomNav.
+          At xl+: unchanged from the original top-right desktop position. */}
       <div
-        className="absolute -right-[14%] -top-[18%] z-[2] aspect-square w-[85%] rounded-full bg-primary sm:w-[70%] md:w-[62%]"
+        className="absolute -right-[6%] bottom-[10%] z-[2] aspect-square w-[85%] rounded-full bg-primary sm:w-[70%] md:w-[62%] xl:-right-[14%] xl:-top-[18%] xl:bottom-auto"
         aria-hidden
       />
-      <div className="absolute -right-[14%] -top-[18%] z-[5] flex aspect-square w-[85%] items-center justify-center sm:w-[70%] md:w-[62%]">
+      <div className="absolute -right-[6%] bottom-[10%] z-[5] flex aspect-square w-[85%] items-center justify-center sm:w-[70%] md:w-[62%] xl:-right-[14%] xl:-top-[18%] xl:bottom-auto">
         {renderMode === "model" && <canvas ref={canvasRef} className="h-full w-full" aria-hidden />}
       </div>
 
-      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-start justify-center gap-7 px-6 py-28 sm:gap-8 md:max-w-[1180px] md:px-12">
+      {/* Below xl, the circle now sits at the bottom, so the text starts at
+          the top instead of vertically centering — centering would put it
+          in the same vertical band the circle now occupies. */}
+      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-start justify-start gap-7 px-6 py-28 sm:gap-8 md:max-w-[1180px] md:px-12 xl:justify-center">
         <div className="flex max-w-[460px] flex-col items-start gap-7 sm:gap-8">
           <h1 className="leading-[0.95] text-[#fff8f2]">
             <span
