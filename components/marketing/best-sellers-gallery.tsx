@@ -265,46 +265,43 @@ export function BestSellersGallery({ items }: { items: MenuItem[] }) {
   return (
     <>
       {/* ----------------------------------------------------
-          MOBILE VIEW (< 768px): Butter-Smooth 60fps Native Touch Carousel
-          Instant CSS rendering on mobile with ZERO JS delay or scroll-jacking
+          MOBILE VIEW (< 768px): Staggered Vertical Luxury Motion Cards
+          Smooth native vertical scroll with zero lag and zero scrollbar clutter
          ---------------------------------------------------- */}
-      <section className="relative block overflow-hidden bg-[#070504] py-10 md:hidden">
-        <div className="pointer-events-none absolute -left-16 top-1/3 h-[240px] w-[240px] rounded-full bg-primary/10 blur-[70px]" />
-        <div className="pointer-events-none absolute -right-16 bottom-1/3 h-[240px] w-[240px] rounded-full bg-accent/10 blur-[70px]" />
+      <section className="relative block overflow-hidden bg-[#070504] py-12 md:hidden">
+        <div className="pointer-events-none absolute -left-16 top-1/3 h-[280px] w-[280px] rounded-full bg-primary/10 blur-[80px]" />
+        <div className="pointer-events-none absolute -right-16 bottom-1/3 h-[280px] w-[280px] rounded-full bg-accent/10 blur-[80px]" />
 
-        <div className="mx-auto w-full px-5">
-          <div className="mb-5 flex items-end justify-between">
-            <div>
-              <div className="flex items-center gap-2 text-accent">
-                <Sparkles className="h-4 w-4" />
-                <span className="text-xs font-extrabold uppercase tracking-widest">Craft & Passion</span>
-              </div>
-              <h2 className="mt-1 text-2xl font-black text-white sm:text-3xl">{t("bestSellers")}</h2>
-              <p className="mt-0.5 text-xs text-white/60">Swipe to explore signature creations</p>
+        <div className="mx-auto flex w-full flex-col items-center px-4">
+          <div className="mb-8 text-center">
+            <div className="flex items-center justify-center gap-2 text-accent">
+              <Sparkles className="h-4 w-4" />
+              <span className="text-xs font-extrabold uppercase tracking-widest">Craft & Passion</span>
             </div>
-
-            <Link
-              href="/menu"
-              className="flex items-center gap-1 text-xs font-extrabold text-accent transition-colors hover:text-white"
-            >
-              <span>{t("viewAll")}</span>
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Link>
+            <h2 className="mt-1 text-3xl font-black text-white">{t("bestSellers")}</h2>
+            <div className="mx-auto mt-2 h-1 w-12 rounded-full bg-primary" />
           </div>
 
-          {/* Native Touch Swipe Carousel */}
-          <div
-            className="no-scrollbar flex w-full snap-x snap-mandatory gap-4 overflow-x-auto pb-4 pt-1"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-          >
-            {displayItems.map((item) => {
+          {/* Staggered Vertical Card Stream */}
+          <div className="flex w-full flex-col items-center">
+            {displayItems.map((item, index) => {
               const name = locale === "vi" ? item.nameVi : item.nameEn
+              const STAGGER_OFFSETS = [-6, 6, -4, 8, -5, 5]
+              const offsetX = STAGGER_OFFSETS[index % STAGGER_OFFSETS.length]
+
               return (
-                <div
+                <motion.div
                   key={item.id}
-                  className="group relative flex w-[76vw] max-w-[320px] shrink-0 snap-center flex-col overflow-hidden rounded-2xl bg-[#160f0b] p-3.5 shadow-2xl border border-white/10"
+                  initial={{ opacity: 0, y: 25 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-40px" }}
+                  transition={{ duration: 0.45, delay: index * 0.05 }}
+                  className="relative my-3 w-[88%] max-w-[420px] overflow-hidden rounded-2xl bg-[#140e0a] p-3 shadow-2xl border border-white/10"
+                  style={{
+                    x: `${offsetX}%`,
+                  }}
                 >
-                  <Link href={`/menu/${item.id}` as any} className="block w-full overflow-hidden rounded-xl">
+                  <Link href={`/menu/${item.id}` as any} className="group block overflow-hidden rounded-xl">
                     <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-muted">
                       <ItemImage
                         item={item}
@@ -325,12 +322,18 @@ export function BestSellersGallery({ items }: { items: MenuItem[] }) {
                       </div>
                     </div>
                   </Link>
-                </div>
+                </motion.div>
               )
             })}
 
-            {/* Final Carousel Card: Merged Promotion Card & Category Buttons */}
-            <div className="nb-border nb-shadow relative flex w-[84vw] max-w-[360px] shrink-0 snap-center flex-col overflow-hidden rounded-3xl bg-card p-5">
+            {/* Merged Promotion Card & Category Buttons at bottom of mobile list */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-30px" }}
+              transition={{ duration: 0.5 }}
+              className="nb-border nb-shadow relative my-6 w-[92%] max-w-[440px] overflow-hidden rounded-3xl bg-card p-5"
+            >
               <div className="flex flex-col gap-2.5">
                 <div className="flex items-center gap-2 text-[#b3341f]">
                   <Sparkles className="h-4 w-4 shrink-0" />
@@ -377,7 +380,17 @@ export function BestSellersGallery({ items }: { items: MenuItem[] }) {
                   })}
                 </div>
               </div>
-            </div>
+            </motion.div>
+          </div>
+
+          <div className="mt-4">
+            <Link
+              href="/menu"
+              className="flex items-center gap-2 rounded-full bg-white/10 px-6 py-2.5 text-xs font-extrabold text-white backdrop-blur-md transition-all hover:bg-primary"
+            >
+              <span>{t("viewAll")}</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
         </div>
       </section>
