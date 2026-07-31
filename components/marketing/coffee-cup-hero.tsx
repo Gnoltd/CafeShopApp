@@ -259,14 +259,13 @@ export function CoffeeCupHero({
           photo is currently showing. */}
       <div className="absolute inset-0 z-[1] bg-[#2b2118]/70" aria-hidden />
 
-      {/* Giant brand-red circle arc anchored to bottom-right corner (matching
-          hand-drawn & iPhone annotated red line), bleeding past bottom & right edges across PC, Laptop,
+      {/* Giant brand-red circle arc anchored to bottom-right corner, bleeding past bottom & right edges across PC, Laptop,
           iPad, and Mobile viewports. */}
       <div
-        className="pointer-events-none absolute -right-[18vw] -bottom-[6vh] z-[2] aspect-square w-[110vw] sm:w-[62vw] sm:-right-[15vw] sm:-bottom-[16vh] md:w-[50vw] rounded-full bg-primary"
+        className="pointer-events-none absolute -right-[14vw] -bottom-[12vh] z-[2] aspect-square w-[90vw] sm:w-[62vw] sm:-right-[15vw] sm:-bottom-[16vh] md:w-[50vw] rounded-full bg-primary"
         aria-hidden
       />
-      <div className="pointer-events-none absolute -right-[18vw] -bottom-[2vh] z-[5] flex aspect-square w-[110vw] items-center justify-center sm:w-[62vw] sm:-right-[14vw] sm:-bottom-[16vh] md:-right-[9%] md:w-[50vw]">
+      <div className="pointer-events-none absolute -right-[14vw] -bottom-[8vh] z-[5] flex aspect-square w-[90vw] items-center justify-center sm:w-[62vw] sm:-right-[14vw] sm:-bottom-[16vh] md:-right-[9%] md:w-[50vw]">
         {renderMode === "model" && <canvas ref={canvasRef} className="h-full w-full" aria-hidden />}
       </div>
 
