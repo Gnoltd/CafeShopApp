@@ -1,9 +1,9 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { motion, useScroll, useTransform, useMotionValueEvent } from "framer-motion"
 import { useLocale, useTranslations } from "next-intl"
-import { Sparkles, ArrowRight } from "lucide-react"
+import { Sparkles, ArrowRight, ChevronRight } from "lucide-react"
 import { Link } from "@/i18n/navigation"
 import { ItemImage } from "@/components/customer/item-image"
 import { formatVND } from "@/lib/format"
@@ -78,7 +78,7 @@ function ArcItem({
 
   return (
     <motion.div
-      className="absolute flex items-center justify-center"
+      className="absolute flex items-center justify-center transform-gpu"
       style={{
         x,
         y,
@@ -166,7 +166,7 @@ function ArcPromotionItem({
 
   return (
     <motion.div
-      className="absolute flex items-center justify-center"
+      className="absolute flex items-center justify-center transform-gpu"
       style={{
         x,
         y,
@@ -228,17 +228,23 @@ function ArcPromotionItem({
   )
 }
 
-// How many items on either side of the currently-active one stay mounted.
-// Each item's own animation window spans step*1.4 while windows start
-// step*0.7 apart, so at most ~2 neighbors can have nonzero opacity at once
-// (see ArcItem's windowStart/windowEnd) -- 2 gives a safety margin so
-// nothing pops in/out at the edge of its fade.
 const WINDOW_RADIUS = 2
 
 export function BestSellersGallery({ items }: { items: MenuItem[] }) {
+  const locale = useLocale()
   const t = useTranslations("Landing")
   const containerRef = useRef<HTMLDivElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [isMobileView, setIsMobileView] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobileView(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener("resize", checkMobile)
+    return () => window.removeEventListener("resize", checkMobile)
+  }, [])
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -248,14 +254,8 @@ export function BestSellersGallery({ items }: { items: MenuItem[] }) {
   const displayItems = items.length > 0 ? items : []
   const totalCount = displayItems.length + 1
 
-  // Previously every item (and the promo card) was mounted for the entire
-  // 400vh scroll section, each running 5 live useTransform chains
-  // regardless of visibility -- confirmed as real jank on phone/iPad.
-  // Only the items whose window overlaps the current scroll position stay
-  // mounted; everything else unmounts entirely (not just opacity: 0) so
-  // its transforms stop being recomputed every scroll frame. Only updates
-  // state when the active item actually changes, not on every frame.
   useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    if (isMobileView) return
     const step = 1 / Math.max(totalCount, 1)
     const nextIndex = Math.min(totalCount - 1, Math.max(0, Math.round(latest / (step * 0.7))))
     setActiveIndex((current) => (current === nextIndex ? current : nextIndex))
@@ -263,14 +263,135 @@ export function BestSellersGallery({ items }: { items: MenuItem[] }) {
 
   if (displayItems.length === 0) return null
 
+  // ----------------------------------------------------
+  // MOBILE VIEW (< 768px): Butter-Smooth 60fps Native Touch Carousel
+  // ----------------------------------------------------
+  if (isMobileView) {
+    return (
+      <section className="relative overflow-hidden bg-[#070504] py-12">
+        <div className="pointer-events-none absolute -left-16 top-1/3 h-[240px] w-[240px] rounded-full bg-primary/10 blur-[70px]" />
+        <div className="pointer-events-none absolute -right-16 bottom-1/3 h-[240px] w-[240px] rounded-full bg-accent/10 blur-[70px]" />
+
+        <div className="mx-auto w-full px-5">
+          <div className="mb-6 flex items-end justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-accent">
+                <Sparkles className="h-4 w-4" />
+                <span className="text-xs font-extrabold uppercase tracking-widest">Craft & Passion</span>
+              </div>
+              <h2 className="mt-1 text-3xl font-black text-white">{t("bestSellers")}</h2>
+              <p className="mt-0.5 text-xs text-white/60">Swipe to explore signature creations</p>
+            </div>
+
+            <Link
+              href="/menu"
+              className="flex items-center gap-1 text-xs font-extrabold text-accent transition-colors hover:text-white"
+            >
+              <span>{t("viewAll")}</span>
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+
+          {/* Native Touch Swipe Carousel */}
+          <div
+            className="no-scrollbar flex w-full snap-x snap-mandatory gap-4 overflow-x-auto pb-6 pt-2"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            {displayItems.map((item) => {
+              const name = locale === "vi" ? item.nameVi : item.nameEn
+              return (
+                <div
+                  key={item.id}
+                  className="group relative flex w-[76vw] max-w-[320px] shrink-0 snap-center flex-col overflow-hidden rounded-2xl bg-[#160f0b] p-3.5 shadow-2xl border border-white/10"
+                >
+                  <Link href={`/menu/${item.id}` as any} className="block w-full overflow-hidden rounded-xl">
+                    <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-muted">
+                      <ItemImage
+                        item={item}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-80" />
+                      <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between text-white">
+                        <div className="max-w-[70%]">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-accent">
+                            PhaDin Selection
+                          </span>
+                          <h4 className="line-clamp-1 text-base font-extrabold">{name}</h4>
+                        </div>
+                        <span className="rounded-full bg-primary px-3 py-1 text-xs font-black text-primary-foreground shadow-md">
+                          {formatVND(item.basePrice)}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              )
+            })}
+
+            {/* Final Carousel Card: Merged Promotion Card & Category Buttons */}
+            <div className="nb-border nb-shadow relative flex w-[84vw] max-w-[360px] shrink-0 snap-center flex-col overflow-hidden rounded-3xl bg-card p-5">
+              <div className="flex flex-col gap-2.5">
+                <div className="flex items-center gap-2 text-[#b3341f]">
+                  <Sparkles className="h-4 w-4 shrink-0" />
+                  <span className="text-[11px] font-black uppercase tracking-wider">
+                    {t("promoLabel")}
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-lg font-extrabold text-card-foreground">
+                    {t("promoTitle")}
+                  </h3>
+                  <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                    {t("promoDescription")}
+                  </p>
+                </div>
+
+                <div>
+                  <span className="nb-border-sm nb-shadow-sm inline-block rounded-full bg-[#b3341f] px-4 py-1.5 text-xs font-black text-white">
+                    {t("promoBadge")}
+                  </span>
+                </div>
+              </div>
+
+              <div className="my-4 h-px w-full bg-border/60" />
+
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
+                  {t("categories")}
+                </span>
+                <div className="flex w-full flex-wrap items-center justify-center gap-2">
+                  {CATEGORY_CHIPS.map((category) => {
+                    const label = locale === "vi" ? category.labelVi : category.labelEn
+                    return (
+                      <Link
+                        key={category.id}
+                        href="/menu"
+                        className="nb-border-sm nb-shadow-sm nb-press-sm flex items-center gap-1 rounded-full bg-card px-3.5 py-1.5 text-xs font-extrabold text-foreground"
+                      >
+                        <span>{label}</span>
+                        <ArrowRight className="h-3 w-3 shrink-0" />
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  // ----------------------------------------------------
+  // DESKTOP & LAPTOP VIEW (>= 768px): 3D Curved Arc Trajectory Motion
+  // ----------------------------------------------------
   return (
     <section ref={containerRef} className="relative h-[400vh] bg-[#070504]">
       <div className="sticky top-0 flex h-dvh w-full flex-col items-center justify-between overflow-hidden py-8 md:py-12">
-        {/* Ambient background glows. Blur radius (not just box size) now
-            scales down below md too -- a large blur filter is expensive to
-            paint on a mobile GPU regardless of how small the box is. */}
-        <div className="pointer-events-none absolute -left-16 top-1/3 h-[280px] w-[280px] rounded-full bg-primary/10 blur-[80px] sm:-left-24 sm:h-[380px] sm:w-[380px] sm:blur-[110px] md:-left-32 md:h-[500px] md:w-[500px] md:blur-[150px]" />
-        <div className="pointer-events-none absolute -right-16 bottom-1/3 h-[280px] w-[280px] rounded-full bg-accent/10 blur-[80px] sm:-right-24 sm:h-[380px] sm:w-[380px] sm:blur-[110px] md:-right-32 md:h-[500px] md:w-[500px] md:blur-[150px]" />
+        {/* Ambient background glows */}
+        <div className="pointer-events-none absolute -left-32 top-1/3 h-[500px] w-[500px] rounded-full bg-primary/10 blur-[150px]" />
+        <div className="pointer-events-none absolute -right-32 bottom-1/3 h-[500px] w-[500px] rounded-full bg-accent/10 blur-[150px]" />
 
         {/* Section Title */}
         <div className="relative z-10 text-center px-4">

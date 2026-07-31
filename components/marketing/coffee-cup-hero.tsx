@@ -17,7 +17,7 @@ const MODEL_PATH = "/models/coffee-cup.glb"
 // relying on the source file's native scale) and the camera uses this FOV —
 // together these are what actually determine the cup's on-screen size,
 // unlike model-viewer's opaque "auto-fit %" this hero used previously.
-const MODEL_TARGET_HEIGHT = 0.203
+const MODEL_TARGET_HEIGHT = 0.2
 const CAMERA_FOV_DEG = 35
 // 0.006 rad/frame at 60fps in the reference, converted to a frame-rate-
 // independent rad/sec figure (the reference's raw per-frame increment would
@@ -75,7 +75,8 @@ export function CoffeeCupHero({
     // skipped this step entirely, a well-known footgun that renders scenes
     // far too dark on screen; it's not something worth reproducing.
     renderer.outputColorSpace = THREE.SRGBColorSpace
-    renderer.toneMapping = THREE.NoToneMapping
+    renderer.toneMapping = THREE.ACESFilmicToneMapping
+    renderer.toneMappingExposure = 1.35
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
     const setSize = () => {
@@ -87,10 +88,16 @@ export function CoffeeCupHero({
     }
     setSize()
 
-    scene.add(new THREE.HemisphereLight(0xfff2e0, 0x2b1710, 1.1))
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.4)
-    keyLight.position.set(0.3, 0.5, 0.4)
+    scene.add(new THREE.AmbientLight(0xffffff, 1.4))
+    scene.add(new THREE.HemisphereLight(0xfff5ea, 0x3d281c, 1.2))
+
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.2)
+    keyLight.position.set(0.8, 1.2, 1.0)
     scene.add(keyLight)
+
+    const fillLight = new THREE.DirectionalLight(0xffe8d6, 1.0)
+    fillLight.position.set(-1.0, -0.5, -0.8)
+    scene.add(fillLight)
 
     let cup: THREE.Object3D | null = null
     let disposed = false
@@ -251,19 +258,14 @@ export function CoffeeCupHero({
           photo is currently showing. */}
       <div className="absolute inset-0 z-[1] bg-[#2b2118]/70" aria-hidden />
 
-      {/* Giant brand-red circle. Below xl (1280px, the same cutoff the
-          composition below switches on): anchored bottom-right instead of
-          top-right — on a tall min-h-dvh phone/tablet section, "18% from
-          the top" is a huge distance, so the top-anchored version left only
-          a sliver of the circle on screen. Bottom-right keeps a small bleed
-          past the edge (matching the desktop aesthetic) while `bottom-[10%]`
-          (not a bleed) leaves clearance above the fixed mobile BottomNav.
-          At xl+: unchanged from the original top-right desktop position. */}
+      {/* Giant brand-red circle anchored to top-right corner, bleeding past
+          top/right/bottom edges on Laptop & Desktop (matching reference) and
+          scaling gracefully on Tablet & Mobile. */}
       <div
-        className="absolute -right-[6%] bottom-[10%] z-[2] aspect-square w-[85%] rounded-full bg-primary sm:w-[70%] md:w-[62%] xl:-right-[14%] xl:-top-[18%] xl:bottom-auto"
+        className="absolute -right-[14vw] -top-[12vh] z-[2] aspect-square h-[124vh] rounded-full bg-primary max-lg:-right-[18vw] max-lg:-top-[8vh] max-lg:h-[112vh] max-md:top-[12vh] max-md:-right-[22vw] max-md:h-[62vh] max-md:w-[115vw]"
         aria-hidden
       />
-      <div className="absolute -right-[6%] bottom-[10%] z-[5] flex aspect-square w-[85%] items-center justify-center sm:w-[70%] md:w-[62%] xl:-right-[14%] xl:-top-[18%] xl:bottom-auto">
+      <div className="absolute -right-[14vw] -top-[12vh] z-[5] flex aspect-square h-[124vh] items-center justify-center max-lg:-right-[18vw] max-lg:-top-[8vh] max-lg:h-[112vh] max-md:top-[12vh] max-md:-right-[22vw] max-md:h-[62vh] max-md:w-[115vw]">
         {renderMode === "model" && <canvas ref={canvasRef} className="h-full w-full" aria-hidden />}
       </div>
 
