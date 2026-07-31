@@ -263,190 +263,54 @@ export function BestSellersGallery({ items }: { items: MenuItem[] }) {
   if (displayItems.length === 0) return null
 
   return (
-    <>
-      {/* ----------------------------------------------------
-          MOBILE VIEW (< 768px): Staggered Vertical Luxury Motion Cards
-          Smooth native vertical scroll with zero lag and zero scrollbar clutter
-         ---------------------------------------------------- */}
-      <section className="relative block overflow-hidden bg-[#070504] py-12 md:hidden">
-        <div className="pointer-events-none absolute -left-16 top-1/3 h-[280px] w-[280px] rounded-full bg-primary/10 blur-[80px]" />
-        <div className="pointer-events-none absolute -right-16 bottom-1/3 h-[280px] w-[280px] rounded-full bg-accent/10 blur-[80px]" />
+    <section ref={containerRef} className="relative h-[320vh] sm:h-[360vh] md:h-[400vh] bg-[#070504]">
+      <div className="sticky top-0 flex h-dvh w-full flex-col items-center justify-between overflow-hidden py-6 sm:py-8 md:py-12">
+        {/* Ambient background glows */}
+        <div className="pointer-events-none absolute -left-20 top-1/3 h-[300px] w-[300px] rounded-full bg-primary/10 blur-[100px] sm:-left-32 sm:h-[500px] sm:w-[500px] sm:blur-[150px]" />
+        <div className="pointer-events-none absolute -right-20 bottom-1/3 h-[300px] w-[300px] rounded-full bg-accent/10 blur-[100px] sm:-right-32 sm:h-[500px] sm:w-[500px] sm:blur-[150px]" />
 
-        <div className="mx-auto flex w-full flex-col items-center px-4">
-          <div className="mb-8 text-center">
-            <div className="flex items-center justify-center gap-2 text-accent">
-              <Sparkles className="h-4 w-4" />
-              <span className="text-xs font-extrabold uppercase tracking-widest">Craft & Passion</span>
-            </div>
-            <h2 className="mt-1 text-3xl font-black text-white">{t("bestSellers")}</h2>
-            <div className="mx-auto mt-2 h-1 w-12 rounded-full bg-primary" />
+        {/* Section Title */}
+        <div className="relative z-10 text-center px-4">
+          <div className="flex items-center justify-center gap-2 text-accent">
+            <Sparkles className="h-4 w-4" />
+            <span className="text-xs font-extrabold uppercase tracking-widest">Craft & Motion</span>
           </div>
-
-          {/* Staggered Vertical Card Stream */}
-          <div className="flex w-full flex-col items-center">
-            {displayItems.map((item, index) => {
-              const name = locale === "vi" ? item.nameVi : item.nameEn
-              const STAGGER_OFFSETS = [-6, 6, -4, 8, -5, 5]
-              const offsetX = STAGGER_OFFSETS[index % STAGGER_OFFSETS.length]
-
-              return (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, y: 25 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-40px" }}
-                  transition={{ duration: 0.45, delay: index * 0.05 }}
-                  className="relative my-3 w-[88%] max-w-[420px] overflow-hidden rounded-2xl bg-[#140e0a] p-3 shadow-2xl border border-white/10"
-                  style={{
-                    x: `${offsetX}%`,
-                  }}
-                >
-                  <Link href={`/menu/${item.id}` as any} className="group block overflow-hidden rounded-xl">
-                    <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-muted">
-                      <ItemImage
-                        item={item}
-                        className="h-full w-full object-cover"
-                        imageClassName="transition-transform duration-500 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-80" />
-                      <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between text-white">
-                        <div className="max-w-[70%]">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-accent">
-                            PhaDin Selection
-                          </span>
-                          <h4 className="line-clamp-1 text-base font-extrabold">{name}</h4>
-                        </div>
-                        <span className="rounded-full bg-primary px-3 py-1 text-xs font-black text-primary-foreground shadow-md">
-                          {formatVND(item.basePrice)}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              )
-            })}
-
-            {/* Merged Promotion Card & Category Buttons at bottom of mobile list */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-30px" }}
-              transition={{ duration: 0.5 }}
-              className="nb-border nb-shadow relative my-6 w-[92%] max-w-[440px] overflow-hidden rounded-3xl bg-card p-5"
-            >
-              <div className="flex flex-col gap-2.5">
-                <div className="flex items-center gap-2 text-[#b3341f]">
-                  <Sparkles className="h-4 w-4 shrink-0" />
-                  <span className="text-[11px] font-black uppercase tracking-wider">
-                    {t("promoLabel")}
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <h3 className="text-lg font-extrabold text-card-foreground">
-                    {t("promoTitle")}
-                  </h3>
-                  <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                    {t("promoDescription")}
-                  </p>
-                </div>
-
-                <div>
-                  <span className="nb-border-sm nb-shadow-sm inline-block rounded-full bg-[#b3341f] px-4 py-1.5 text-xs font-black text-white">
-                    {t("promoBadge")}
-                  </span>
-                </div>
-              </div>
-
-              <div className="my-4 h-px w-full bg-border/60" />
-
-              <div className="flex flex-col items-center gap-2">
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
-                  {t("categories")}
-                </span>
-                <div className="flex w-full flex-wrap items-center justify-center gap-2">
-                  {CATEGORY_CHIPS.map((category) => {
-                    const label = locale === "vi" ? category.labelVi : category.labelEn
-                    return (
-                      <Link
-                        key={category.id}
-                        href="/menu"
-                        className="nb-border-sm nb-shadow-sm nb-press-sm flex items-center gap-1 rounded-full bg-card px-3.5 py-1.5 text-xs font-extrabold text-foreground"
-                      >
-                        <span>{label}</span>
-                        <ArrowRight className="h-3 w-3 shrink-0" />
-                      </Link>
-                    )
-                  })}
-                </div>
-              </div>
-            </motion.div>
-          </div>
-
-          <div className="mt-4">
-            <Link
-              href="/menu"
-              className="flex items-center gap-2 rounded-full bg-white/10 px-6 py-2.5 text-xs font-extrabold text-white backdrop-blur-md transition-all hover:bg-primary"
-            >
-              <span>{t("viewAll")}</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
+          <h2 className="mt-1 text-2xl font-black text-white sm:text-4xl md:text-5xl">{t("bestSellers")}</h2>
+          <p className="mt-1 text-xs text-white/60 md:text-sm">Scroll down to explore signature creations</p>
         </div>
-      </section>
 
-      {/* ----------------------------------------------------
-          DESKTOP & LAPTOP VIEW (>= 768px): 3D Curved Arc Trajectory Motion
-         ---------------------------------------------------- */}
-      <section ref={containerRef} className="relative hidden h-[400vh] bg-[#070504] md:block">
-        <div className="sticky top-0 flex h-dvh w-full flex-col items-center justify-between overflow-hidden py-8 md:py-12">
-          {/* Ambient background glows */}
-          <div className="pointer-events-none absolute -left-32 top-1/3 h-[500px] w-[500px] rounded-full bg-primary/10 blur-[150px]" />
-          <div className="pointer-events-none absolute -right-32 bottom-1/3 h-[500px] w-[500px] rounded-full bg-accent/10 blur-[150px]" />
+        {/* Arc Trajectory Motion Viewport across ALL devices */}
+        <div className="relative flex h-full w-full items-center justify-center">
+          {displayItems.map((item, index) => {
+            if (Math.abs(index - activeIndex) > WINDOW_RADIUS) return null
+            return (
+              <ArcItem
+                key={item.id}
+                item={item}
+                index={index}
+                total={totalCount}
+                scrollYProgress={scrollYProgress}
+              />
+            )
+          })}
 
-          {/* Section Title */}
-          <div className="relative z-10 text-center px-4">
-            <div className="flex items-center justify-center gap-2 text-accent">
-              <Sparkles className="h-4 w-4" />
-              <span className="text-xs font-extrabold uppercase tracking-widest">Craft & Motion</span>
-            </div>
-            <h2 className="mt-1 text-3xl font-black text-white md:text-5xl">{t("bestSellers")}</h2>
-            <p className="mt-1 text-xs text-white/60 md:text-sm">Scroll down to explore signature creations</p>
-          </div>
-
-          {/* Arc Trajectory Motion Viewport */}
-          <div className="relative flex h-full w-full items-center justify-center">
-            {displayItems.map((item, index) => {
-              if (Math.abs(index - activeIndex) > WINDOW_RADIUS) return null
-              return (
-                <ArcItem
-                  key={item.id}
-                  item={item}
-                  index={index}
-                  total={totalCount}
-                  scrollYProgress={scrollYProgress}
-                />
-              )
-            })}
-
-            {/* Final Arc Item: Merged Promotion Card & Category Buttons */}
-            {Math.abs(totalCount - 1 - activeIndex) <= WINDOW_RADIUS && (
-              <ArcPromotionItem total={totalCount} scrollYProgress={scrollYProgress} />
-            )}
-          </div>
-
-          {/* Footer Navigation Link */}
-          <div className="relative z-10 px-4">
-            <Link
-              href="/menu"
-              className="flex items-center gap-2 rounded-full bg-white/10 px-6 py-2.5 text-sm font-extrabold text-white backdrop-blur-md transition-all hover:bg-primary hover:text-primary-foreground hover:shadow-lg"
-            >
-              <span>{t("viewAll")}</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
+          {/* Final Arc Item: Merged Promotion Card & Category Buttons */}
+          {Math.abs(totalCount - 1 - activeIndex) <= WINDOW_RADIUS && (
+            <ArcPromotionItem total={totalCount} scrollYProgress={scrollYProgress} />
+          )}
         </div>
-      </section>
-    </>
+
+        {/* Footer Navigation Link */}
+        <div className="relative z-10 px-4">
+          <Link
+            href="/menu"
+            className="flex items-center gap-2 rounded-full bg-white/10 px-5 py-2 text-xs font-extrabold text-white backdrop-blur-md transition-all hover:bg-primary sm:px-6 sm:py-2.5 sm:text-sm"
+          >
+            <span>{t("viewAll")}</span>
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+    </section>
   )
 }
