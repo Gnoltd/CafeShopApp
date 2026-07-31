@@ -266,7 +266,7 @@ export function CoffeeCupHero({
         className="pointer-events-none absolute -right-[15vw] -bottom-[16vh] z-[2] aspect-square w-[82vw] sm:w-[62vw] md:w-[50vw] rounded-full bg-primary"
         aria-hidden
       />
-      <div className="pointer-events-none absolute -right-[15vw] bottom-[14vh] z-[5] flex aspect-square w-[82vw] items-center justify-center sm:w-[62vw] sm:right-[0vw] sm:-bottom-[16vh] md:right-[5%] md:w-[50vw]">
+      <div className="pointer-events-none absolute -right-[15vw] -bottom-[3vh] z-[5] flex aspect-square w-[82vw] items-center justify-center sm:w-[62vw] sm:-right-[12vw] sm:-bottom-[16vh] md:-right-[7%] md:w-[50vw]">
         {renderMode === "model" && <canvas ref={canvasRef} className="h-full w-full" aria-hidden />}
       </div>
 
