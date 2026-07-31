@@ -259,13 +259,14 @@ export function CoffeeCupHero({
           photo is currently showing. */}
       <div className="absolute inset-0 z-[1] bg-[#2b2118]/70" aria-hidden />
 
-      {/* Giant brand-red circle anchored to top-right edge on Laptop & Desktop
-          (matching reference) and positioned gracefully on right edge on Mobile. */}
+      {/* Giant brand-red circle arc anchored to bottom-right corner (matching
+          hand-drawn sketch), bleeding past bottom & right edges across PC, Laptop,
+          iPad, and Mobile viewports. */}
       <div
-        className="pointer-events-none absolute -right-[22vw] top-[18%] z-[2] aspect-square w-[80vw] rounded-full bg-primary sm:w-[65vw] md:-right-[14vw] md:-top-[12vh] md:w-auto md:h-[124vh]"
+        className="pointer-events-none absolute -right-[15vw] -bottom-[16vh] z-[2] aspect-square w-[82vw] sm:w-[62vw] md:w-[50vw] rounded-full bg-primary"
         aria-hidden
       />
-      <div className="pointer-events-none absolute -right-[22vw] top-[18%] z-[5] flex aspect-square w-[80vw] items-center justify-center sm:w-[65vw] md:-right-[14vw] md:-top-[12vh] md:w-auto md:h-[124vh]">
+      <div className="pointer-events-none absolute -right-[15vw] -bottom-[16vh] z-[5] flex aspect-square w-[82vw] sm:w-[62vw] md:w-[50vw] items-center justify-center">
         {renderMode === "model" && <canvas ref={canvasRef} className="h-full w-full" aria-hidden />}
       </div>
 
