@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr"
 import createIntlMiddleware from "next-intl/middleware"
 import { routing } from "./i18n/routing"
 import { resolveRedirect, splitLocaleFromPathname } from "./lib/middleware-rules"
+import { getCurrentRole } from "./lib/get-current-role"
 
 const handleI18nRouting = createIntlMiddleware(routing)
 
@@ -85,15 +86,7 @@ async function resolveRole(request: NextRequest): Promise<string | null> {
       },
     })
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) return null
-
-    const { data: profile } = await supabase.from("profiles").select("role, is_active").eq("id", user.id).single()
-    if (!profile) return null
-    return profile.is_active ? profile.role : "customer"
+    return await getCurrentRole(supabase)
   } catch {
     // Supabase unreachable or misconfigured — fall through and treat the request as anonymous
     // rather than taking the whole site down.
