@@ -13,7 +13,7 @@
 - `redirectTo` uses `window.location.origin` (not the unused `NEXT_PUBLIC_SITE_URL` env var) so it's always correct for whatever environment is actually running (localhost, preview, or production).
 - New strings in **both** `messages/en.json` and `messages/vi.json`, in the `Auth` namespace.
 - No new Vitest coverage needed — `getCurrentRole` already has its own tests in `lib/get-current-role.test.ts`, reused as-is.
-- Verify against `https://phadincoffee.vercel.app` with a real Google account, not just `next build`.
+- Verify against `https://phadincafe.vercel.app` with a real Google account, not just `next build`.
 
 ---
 
@@ -498,7 +498,7 @@ Expected: clean, no errors.
 git push
 ```
 
-- [ ] **Step 4: Live-verify on `https://phadincoffee.vercel.app`**
+- [ ] **Step 4: Live-verify on `https://phadincafe.vercel.app`**
 
 1. On `/login`, click "Continue with Google" — confirm it navigates to Google's real consent screen (not an error).
 2. Complete sign-in with a real Google account. Confirm it lands back on the app at `/​<locale>​/auth/callback`, briefly shows the "Signing you in…" message, then redirects to the correct `ROLE_HOME` destination for that account's role (test with the admin test account's Google identity if linkable, or a fresh Google account to confirm it lands on `/menu` as a new customer).

@@ -84,7 +84,7 @@ matching this project's existing query-layer test pattern, e.g.
 this project's current gap (documented in `daily.md`'s Known gaps —
 component tests were never added project-wide, not a new regression
 introduced here). Live-verified manually against
-`https://phadincoffee.vercel.app` after deploy: edit name, reload,
+`https://phadincafe.vercel.app` after deploy: edit name, reload,
 confirm it persisted; same for phone; confirm email shows the real
 logged-in address with no edit affordance; confirm an RLS/network
 failure surfaces the inline error instead of failing silently.

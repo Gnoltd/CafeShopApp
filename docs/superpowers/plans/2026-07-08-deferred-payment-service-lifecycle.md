@@ -668,7 +668,7 @@ async function createStripeCheckoutSession(params: {
           price_data: {
             currency: "vnd",
             unit_amount: params.total,
-            product_data: { name: "PhaDinCoffee Order" },
+            product_data: { name: "PhaDinCafe Order" },
           },
         },
       ],
@@ -1761,7 +1761,7 @@ git push
 
 - [ ] **Step 4: Live verification on Vercel**
 
-Once deployed, verify live at `https://phadincoffee.vercel.app`, for each combination:
+Once deployed, verify live at `https://phadincafe.vercel.app`, for each combination:
 
 - **Pay Now, all 3 methods, both order types**: confirm zero behavior change — order only reaches the kitchen after payment, and (for pickup) a single "Complete" tap finishes it once Ready; (for dine-in) tap "Served" on the table card, confirm it completes immediately (payment was already settled) and the table moves straight to Cleaning.
 - **Pay Later + Cash, dine-in**: place the order, confirm it's immediately visible in KDS's New column and the table shows Occupied; advance to Ready; tap "Served" on the table card; confirm "Awaiting Payment" + "Confirm Cash Received" appear; tap it; confirm the order completes and the table moves to Cleaning.

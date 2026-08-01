@@ -39,8 +39,8 @@ for admin QR regeneration), Vitest.
   `mcp__supabase__execute_sql` before moving on — same process used for
   migrations `0001`-`0011`.
 - `activeTable`'s `localStorage` persistence (key
-  `phadincoffee-active-table`) is **unchanged** by this plan — only the
-  `tables` list's persistence (key `phadincoffee-tables`) is removed.
+  `phadincafe-active-table`) is **unchanged** by this plan — only the
+  `tables` list's persistence (key `phadincafe-tables`) is removed.
   Don't touch the `activeTable` `useEffect`/hydrate logic beyond making
   `setActiveTableByToken` async.
 - Base UI's `Button` has no `asChild` — polymorphic rendering uses
@@ -570,7 +570,7 @@ type TablesContextValue = {
 
 const TablesContext = createContext<TablesContextValue | null>(null)
 
-const ACTIVE_TABLE_STORAGE_KEY = "phadincoffee-active-table"
+const ACTIVE_TABLE_STORAGE_KEY = "phadincafe-active-table"
 
 export function TablesProvider({ children }: { children: ReactNode }) {
   const [supabase] = useState(() => createClient())
@@ -1089,7 +1089,7 @@ all tests pass; build succeeds.
 git push
 ```
 
-Confirm the resulting deployment on `https://phadincoffee.vercel.app`
+Confirm the resulting deployment on `https://phadincafe.vercel.app`
 reaches `Ready` before proceeding.
 
 - [ ] **Step 3: Live verification with Playwright**

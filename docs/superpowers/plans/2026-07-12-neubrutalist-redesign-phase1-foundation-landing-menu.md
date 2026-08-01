@@ -17,7 +17,7 @@
 - No fake/placeholder marketing copy: the mockup's illustrative "promo strip" text on Menu is **not** implemented as real content in this plan — there is no `promotions` table or CMS field backing it (confirmed: `LandingView`'s existing `t("promoTitle")`/`t("promoDescription")`/`t("promoBadge")` are the only real promo copy in the app, already wired to real `next-intl` message keys). Menu keeps its promo-strip-free structure (category pills + grid only); Landing's existing real promo section gets re-skinned, not replaced.
 - Real content only, no lorem ipsum — item names/prices/categories come from the existing `MenuItem`/`MenuCategory` props already flowing into these components; nothing hardcoded.
 - Both `messages/vi.json` and `messages/en.json` get any new translation keys added together (per CLAUDE.md's i18n convention) — this plan adds exactly one new key pair (`Theme.toggleLabel`) for the new theme-toggle button's `aria-label`.
-- Verification source of truth is the live Vercel deployment (https://phadincoffee.vercel.app) — `npm run build` + `tsc` locally are fast-feedback only, per this project's standing convention.
+- Verification source of truth is the live Vercel deployment (https://phadincafe.vercel.app) — `npm run build` + `tsc` locally are fast-feedback only, per this project's standing convention.
 
 ## File Structure
 
@@ -257,7 +257,7 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
-const STORAGE_KEY = "phadincoffee-theme"
+const STORAGE_KEY = "phadincafe-theme"
 
 function readInitialTheme(): Theme {
   if (typeof document === "undefined") return "light"
@@ -360,7 +360,7 @@ Replace the `<html>` opening tag (line 67-70) to include a no-flash inline scrip
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("phadincoffee-theme");var d=t?t==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;if(d)document.documentElement.classList.add("dark");}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem("phadincafe-theme");var d=t?t==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;if(d)document.documentElement.classList.add("dark");}catch(e){}})();`,
           }}
         />
       </head>
@@ -749,7 +749,7 @@ Expected: Vercel auto-deploys (per this project's standing convention — push t
 
 - [ ] **Step 2: Verify Landing (`/`) live**
 
-Open **https://phadincoffee.vercel.app** in both `vi` and `en` locales. Confirm: promo card, best-seller cards, and category chips show thick borders + hard offset shadows (not soft blur); tapping/clicking a best-seller card or category chip shows the shadow-collapse press effect; `SpotlightHero`'s existing animation is unchanged; the QR-scan overlay still opens.
+Open **https://phadincafe.vercel.app** in both `vi` and `en` locales. Confirm: promo card, best-seller cards, and category chips show thick borders + hard offset shadows (not soft blur); tapping/clicking a best-seller card or category chip shows the shadow-collapse press effect; `SpotlightHero`'s existing animation is unchanged; the QR-scan overlay still opens.
 
 - [ ] **Step 3: Verify Menu (`/menu`) live**
 

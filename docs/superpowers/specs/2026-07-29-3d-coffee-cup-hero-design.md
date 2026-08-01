@@ -14,7 +14,7 @@ hero — inspired by CoffeeTech® (2026 Awwwards Site of the Day,
 `coffee-tech.com`), which renders a real `.glb` product model via
 Google's `<model-viewer>` web component with the camera driven by
 scroll, on a near-black background with a single warm accent color.
-PhaDinCoffee's own theme (`app/globals.css`) is already brick-red/
+PhaDinCafe's own theme (`app/globals.css`) is already brick-red/
 caramel/warm-cream on a near-black dark mode, so this is a rendering
 swap, not a rebrand.
 

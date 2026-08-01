@@ -123,6 +123,6 @@ SQL (`mcp__supabase__execute_sql`): open → place/pay orders with
 different methods → report shows correct per-method totals and
 expected cash → close with a counted amount → difference correct;
 double-open rejected. UI live-verified on
-`https://phadincoffee.vercel.app` as the admin test account: Revenue
+`https://phadincafe.vercel.app` as the admin test account: Revenue
 card navigates, open/report/close flow works end-to-end, sidebar entry
 present, staff account cannot reach `/admin/shift`.

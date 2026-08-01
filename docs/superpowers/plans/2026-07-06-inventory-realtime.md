@@ -2091,7 +2091,7 @@ tests pass; build succeeds.
 git push
 ```
 
-Confirm the resulting deployment on `https://phadincoffee.vercel.app`
+Confirm the resulting deployment on `https://phadincafe.vercel.app`
 reaches `Ready` before proceeding (per this project's standing preference
 to verify against the live URL, not localhost).
 

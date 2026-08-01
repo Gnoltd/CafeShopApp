@@ -680,7 +680,7 @@ export function exportDashboardExcel(input: DashboardExportInput): void {
   XLSX.utils.book_append_sheet(workbook, tableStatusSheet, "Table Status")
 
   const todayIso = new Date().toISOString().slice(0, 10)
-  XLSX.writeFile(workbook, `phadincoffee-dashboard-${todayIso}.xlsx`)
+  XLSX.writeFile(workbook, `phadincafe-dashboard-${todayIso}.xlsx`)
 }
 ```
 
@@ -775,7 +775,7 @@ git push
 
 - [ ] **Step 4: Live verification on Vercel**
 
-Once deployed, verify live at `https://phadincoffee.vercel.app`:
+Once deployed, verify live at `https://phadincafe.vercel.app`:
 - Admin Dashboard shows real, non-zero KPI numbers matching actual paid orders (cross-check one number, e.g. Orders Today, against Staff Order History filtered to today).
 - The 7-day chart's rightmost bar is today and is highlighted; bar heights look proportionally correct; weekday labels are correct for the actual current week.
 - Best Sellers reflects real order data from the last 7 days (not the old mock names).

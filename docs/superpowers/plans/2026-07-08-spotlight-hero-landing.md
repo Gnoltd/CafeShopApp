@@ -10,13 +10,13 @@
 
 ## Global Constraints
 
-- Bilingual: every new UI string is a `Landing.*` key added to **both** `messages/vi.json` and `messages/en.json`. "PhaDinCoffee" is a proper noun — never translated.
+- Bilingual: every new UI string is a `Landing.*` key added to **both** `messages/vi.json` and `messages/en.json`. "PhaDinCafe" is a proper noun — never translated.
 - Brand: semantic Tailwind classes only (`bg-primary`, `text-primary-foreground`) — never hardcode brand hex values.
 - Body font stays Be Vietnam Pro; Playfair Display italic is display-accent only (headline line 1 + wordmark).
 - Locale-aware links use `Link` from `@/i18n/navigation`, never `next/link`.
 - `SPOTLIGHT_R = 260`; mask stops exactly: `1 @ 0%`, `1 @ 40%`, `0.75 @ 60%`, `0.4 @ 75%`, `0.12 @ 88%`, `0 @ 100%`.
 - Existing promo / best-sellers / categories sections and `QrScannerOverlay` behavior must not change.
-- Verification source of truth is the live Vercel deployment (https://phadincoffee.vercel.app), not `npm run dev`.
+- Verification source of truth is the live Vercel deployment (https://phadincafe.vercel.app), not `npm run dev`.
 
 ## File Structure
 
@@ -307,7 +307,7 @@ export function LandingNav() {
     <nav className="absolute top-0 left-0 right-0 z-[60] flex items-center justify-between p-4 sm:p-5">
       <span className="flex items-center gap-2">
         <Coffee className="h-[26px] w-[26px] text-white" aria-hidden />
-        <span className="font-playfair text-2xl italic text-white">PhaDinCoffee</span>
+        <span className="font-playfair text-2xl italic text-white">PhaDinCafe</span>
       </span>
       <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-full border border-white/30 bg-white/20 px-2 py-2 backdrop-blur-md md:flex">
         {NAV_LINKS.map(({ key, href, active }) => (
@@ -561,7 +561,7 @@ git push origin main
 
 Vercel auto-deploys; wait for the deployment to go live (check https://vercel.com or just poll the site).
 
-- [ ] **Step 2: Verify on https://phadincoffee.vercel.app (desktop)**
+- [ ] **Step 2: Verify on https://phadincafe.vercel.app (desktop)**
 
 - `/vi` and `/en` both render the full-screen dark hero, correct copy per locale.
 - Moving the mouse: the warm reveal image follows the cursor through a soft-edged circle, trailing smoothly (lerp), no jank.

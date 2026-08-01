@@ -17,7 +17,7 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
-const STORAGE_KEY = "phadincoffee-theme"
+const STORAGE_KEY = "phadincafe-theme"
 
 function readInitialTheme(): Theme {
   if (typeof document === "undefined") return "light"

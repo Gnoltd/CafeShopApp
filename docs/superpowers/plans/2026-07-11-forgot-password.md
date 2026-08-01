@@ -14,7 +14,7 @@
 - New strings in **both** `messages/en.json` and `messages/vi.json`, in the `Auth` namespace — kept separate from `Profile`'s near-identical password-field keys (namespaced per feature area, matching existing convention), even where the English text is similar.
 - `/reset-password` resolves to a bare URL (no `/auth/` prefix) since `(auth)` is a route group — the exact lesson already learned fixing Google OAuth's callback 404 earlier this session.
 - No new Supabase Dashboard config needed — existing wildcard redirect URLs already cover this path.
-- Verify against `https://phadincoffee.vercel.app`, not just `next build`.
+- Verify against `https://phadincafe.vercel.app`, not just `next build`.
 
 ---
 
@@ -499,7 +499,7 @@ Expected: clean, no errors.
 git push
 ```
 
-- [ ] **Step 4: Live-verify on `https://phadincoffee.vercel.app`**
+- [ ] **Step 4: Live-verify on `https://phadincafe.vercel.app`**
 
 1. On `/login`, click "Forgot password?" — confirm the form swaps to the email-entry screen (not a static tooltip anymore).
 2. Enter an email, submit — confirm it swaps to the "check your email" screen regardless of whether the address is registered (Supabase's anti-enumeration behavior).

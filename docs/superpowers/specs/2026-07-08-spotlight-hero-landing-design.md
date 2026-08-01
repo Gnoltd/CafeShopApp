@@ -9,9 +9,9 @@ category chips) stays exactly as it is today.
 
 | Question | Decision |
 |---|---|
-| Where does it live? | Inside PhaDinCoffee (Next.js), not a standalone Vite app |
+| Where does it live? | Inside PhaDinCafe (Next.js), not a standalone Vite app |
 | Hero images | Two free Unsplash coffee photos picked by Claude (swappable constants) |
-| Brand vs. spec identity | PhaDinCoffee brand wins: Be Vietnam Pro body, `bg-primary` CTA; Playfair Display italic only as display accent |
+| Brand vs. spec identity | PhaDinCafe brand wins: Be Vietnam Pro body, `bg-primary` CTA; Playfair Display italic only as display accent |
 | Nav | Adapt spec nav to real routes (Menu / Orders / Loyalty / Profile, Sign Up → `/signup`) |
 | Existing sections | Keep promo / best-sellers / categories below the hero; hero absorbs the Order Now + Scan QR CTAs |
 | Spotlight technique | CSS radial-gradient mask (not the spec's per-frame canvas → `toDataURL`) — visually identical, no per-frame PNG encoding |
@@ -96,8 +96,8 @@ rather than in a separate bottom-left corner block.
 p-4 sm:p-5` inside the hero section:
 
 - **Left**: white lucide `Coffee` icon (~26px) + `<span
-  className="text-white text-2xl font-playfair italic">PhaDinCoffee</span>`.
-  ("PhaDinCoffee" is the untranslated brand name, per `Brand.name`.)
+  className="text-white text-2xl font-playfair italic">PhaDinCafe</span>`.
+  ("PhaDinCafe" is the untranslated brand name, per `Brand.name`.)
 - **Center pill** (`hidden md:flex absolute left-1/2 -translate-x-1/2
   bg-white/20 backdrop-blur-md border border-white/30 rounded-full px-2
   py-2 items-center gap-1`): locale-aware `Link`s — **Menu** (active:
@@ -198,7 +198,7 @@ files once unused.
 ## Verification
 
 `npm run build` + `tsc` locally for fast feedback; then push to `main`
-and verify on **https://phadincoffee.vercel.app** (project convention):
+and verify on **https://phadincafe.vercel.app** (project convention):
 both locales, desktop mouse reveal, mobile touch reveal, load animations,
 reduced-motion behavior, QR scanner opening from the hero, sections below
 intact.

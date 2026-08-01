@@ -1,6 +1,6 @@
 {
   "Brand": {
-    "name": "PhaDinCoffee",
+    "name": "PhaDinCafe",
     "tagline": "Order ahead. Earn rewards. Enjoy."
   },
   "Theme": {
@@ -25,7 +25,7 @@
     "openMenu": "Open menu"
   },
   "Landing": {
-    "title": "Welcome to PhaDinCoffee",
+    "title": "Welcome to PhaDinCafe",
     "orderNow": "Order Now",
     "scanQr": "Scan QR at Table",
     "heroLine1": "Crafted slow.",
@@ -50,7 +50,7 @@
     "notATableCode": "That's not a table code — try again.",
     "promoLabel": "Promotion",
     "promoTitle": "New Member",
-    "promoDescription": "Get 20% off your first order at PhaDinCoffee.",
+    "promoDescription": "Get 20% off your first order at PhaDinCafe.",
     "promoBadge": "20% OFF",
     "bestSellers": "Best Sellers",
     "viewAll": "View All",
@@ -59,7 +59,7 @@
   "Auth": {
     "login": "Log In",
     "signup": "Sign Up",
-    "welcomeBack": "Welcome back to PhaDinCoffee",
+    "welcomeBack": "Welcome back to PhaDinCafe",
     "signupWelcome": "Welcome to our traditional Vietnamese coffee space.",
     "emailLabel": "Email",
     "emailPlaceholder": "Enter your email",
@@ -547,7 +547,7 @@
   },
   "Dashboard": {
     "overview": "Overview",
-    "welcomeMessage": "Welcome back! Here's how PhaDinCoffee is performing today.",
+    "welcomeMessage": "Welcome back! Here's how PhaDinCafe is performing today.",
     "todaysRevenue": "Today's Revenue",
     "ordersToday": "Orders Today",
     "loyaltyIssued": "Loyalty Points Issued",

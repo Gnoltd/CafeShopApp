@@ -34,7 +34,7 @@ export function LandingNav({ userName = null }: { userName?: string | null }) {
       />
       <span className="flex shrink-0 items-center gap-2">
         <Coffee className="h-[26px] w-[26px] text-white" aria-hidden />
-        <span className="font-playfair text-2xl italic text-white">PhaDinCoffee</span>
+        <span className="font-playfair text-2xl italic text-white">PhaDinCafe</span>
       </span>
       {/* Centered within the flex-1 middle track (not absolute left-1/2 true-
           viewport centering) so it never overlaps the logo or the right-side

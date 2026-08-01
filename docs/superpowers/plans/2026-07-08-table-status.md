@@ -871,7 +871,7 @@ git push
 
 - [ ] **Step 4: Live verification on Vercel**
 
-Once deployed, verify live at `https://phadincoffee.vercel.app`: place
+Once deployed, verify live at `https://phadincafe.vercel.app`: place
 a dine-in order at a table (via a QR scan or `/table/[qrToken]`),
 confirm it shows Occupied in Admin Tables/KDS; complete the order via
 KDS, confirm it shows Cleaning (not Available); tap "Cleaning Done" in

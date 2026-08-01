@@ -317,7 +317,7 @@ phased-rollout convention.
 
 - `npm run build` + `tsc` locally per phase.
 - Push to `main`, verify each phase live at
-  **https://phadincoffee.vercel.app** — this project's standing
+  **https://phadincafe.vercel.app** — this project's standing
   convention over `npm run dev`.
 - Per phase: both `vi`/`en` locales, dark/light toggle, existing
   function unchanged (cart math, RLS writes, Realtime, deferred

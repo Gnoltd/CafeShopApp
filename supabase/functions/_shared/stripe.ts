@@ -44,7 +44,7 @@ export async function createStripeCheckoutSession(params: {
             currency: "vnd",
             // VND is zero-decimal in Stripe — pass the integer total as-is.
             unit_amount: params.total,
-            product_data: { name: "PhaDinCoffee Order" },
+            product_data: { name: "PhaDinCafe Order" },
           },
         },
       ],

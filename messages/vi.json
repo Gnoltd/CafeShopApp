@@ -1,6 +1,6 @@
 {
   "Brand": {
-    "name": "PhaDinCoffee",
+    "name": "PhaDinCafe",
     "tagline": "Đặt trước. Tích điểm. Thưởng thức."
   },
   "Theme": {
@@ -25,7 +25,7 @@
     "openMenu": "Mở menu"
   },
   "Landing": {
-    "title": "Chào Mừng Đến PhaDinCoffee",
+    "title": "Chào Mừng Đến PhaDinCafe",
     "orderNow": "Đặt Hàng Ngay",
     "scanQr": "Quét QR Tại Bàn",
     "heroLine1": "Pha chậm rãi.",
@@ -50,7 +50,7 @@
     "notATableCode": "Đây không phải mã bàn — vui lòng thử lại.",
     "promoLabel": "Ưu Đãi",
     "promoTitle": "Thành Viên Mới",
-    "promoDescription": "Nhận ngay ưu đãi 20% cho lần đầu trải nghiệm tại PhaDinCoffee.",
+    "promoDescription": "Nhận ngay ưu đãi 20% cho lần đầu trải nghiệm tại PhaDinCafe.",
     "promoBadge": "Giảm 20%",
     "bestSellers": "Bán Chạy",
     "viewAll": "Xem Tất Cả",
@@ -59,7 +59,7 @@
   "Auth": {
     "login": "Đăng Nhập",
     "signup": "Đăng Ký",
-    "welcomeBack": "Chào mừng bạn trở lại với PhaDinCoffee",
+    "welcomeBack": "Chào mừng bạn trở lại với PhaDinCafe",
     "signupWelcome": "Chào mừng bạn đến với không gian cà phê Việt truyền thống.",
     "emailLabel": "Email",
     "emailPlaceholder": "Nhập email của bạn",

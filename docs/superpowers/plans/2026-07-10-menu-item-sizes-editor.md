@@ -13,7 +13,7 @@
 - Migration file `supabase/migrations/0033_menu_item_sizes_sort_order.sql`, applied live via `mcp__supabase__apply_migration` (name: `menu_item_sizes_sort_order`).
 - New strings in **both** `messages/en.json` and `messages/vi.json`, in the `AdminMenu` namespace.
 - No change to `hasSizeOptions`'s own meaning/behavior — it stays the independent on/off toggle it already is.
-- Verify against `https://phadincoffee.vercel.app`, not just `next build`.
+- Verify against `https://phadincafe.vercel.app`, not just `next build`.
 
 ---
 
@@ -837,7 +837,7 @@ Expected: clean, no errors.
 git push
 ```
 
-- [ ] **Step 4: Live-verify on `https://phadincoffee.vercel.app`**
+- [ ] **Step 4: Live-verify on `https://phadincafe.vercel.app`**
 
 1. As admin, edit an item that currently has no sizes (or add a new item): add two sizes via "Add Size" (e.g. "M" priced 0, "L" priced 8000), save, confirm no error.
 2. Reload Menu Management, re-open the same item's edit form: confirm both sizes appear with the correct name/price, in the order added.

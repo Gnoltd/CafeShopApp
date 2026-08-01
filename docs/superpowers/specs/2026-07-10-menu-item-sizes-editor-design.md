@@ -103,7 +103,7 @@ New `setItemSizes` gets Vitest coverage in
 the existing `setItemModifierGroups` tests in the same file). No new
 Deno/RPC surface (this is a plain-table RLS-authorized operation, no
 `security definer` function needed — `menu_item_sizes_admin_all` already
-covers it). Live-verified on `https://phadincoffee.vercel.app`: add two
+covers it). Live-verified on `https://phadincafe.vercel.app`: add two
 sizes to an item that has none, confirm they appear correctly ordered and
 priced in the customer size picker (both Product Detail and quick-add);
 edit an existing size's name/price and confirm the change reflects on the

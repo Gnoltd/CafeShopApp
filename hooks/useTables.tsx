@@ -42,7 +42,7 @@ type TablesContextValue = {
 
 const TablesContext = createContext<TablesContextValue | null>(null)
 
-const ACTIVE_TABLE_STORAGE_KEY = "phadincoffee-active-table"
+const ACTIVE_TABLE_STORAGE_KEY = "phadincafe-active-table"
 
 export function TablesProvider({ children }: { children: ReactNode }) {
   const [supabase] = useState(() => createClient())

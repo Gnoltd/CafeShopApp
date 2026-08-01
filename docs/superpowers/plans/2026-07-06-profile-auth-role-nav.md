@@ -593,7 +593,7 @@ Expected: all pass. (The 5 pre-existing `react-hooks/set-state-in-effect` ESLint
 
 - [ ] **Step 2: Manual verification on the live Vercel deployment**
 
-Per this project's standing preference, verify against `https://phadincoffee.vercel.app`, not localhost, after this branch is pushed/deployed. Check, for each of these states:
+Per this project's standing preference, verify against `https://phadincafe.vercel.app`, not localhost, after this branch is pushed/deployed. Check, for each of these states:
 
 - Logged out (guest): visiting `/profile`, `/orders`, `/loyalty` redirects to `/login`; opening an existing order's `/orders/[orderId]` link still loads normally.
 - Logged in as `customer` (or any account with that role): all three pages load normally; no header badge; no staff-access card on Profile.

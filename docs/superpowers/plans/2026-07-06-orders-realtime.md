@@ -1936,7 +1936,7 @@ changes add a *new* one); all tests pass; build succeeds.
 git push
 ```
 
-Confirm the resulting deployment on `https://phadincoffee.vercel.app`
+Confirm the resulting deployment on `https://phadincafe.vercel.app`
 reaches `Ready`.
 
 - [ ] **Step 3: Live verification with Playwright**

@@ -104,7 +104,7 @@ change needed — migration `0053` already grants staff read access to
 
 - No new RPC/query-layer code, so no new unit tests beyond what
   `shift-data.ts` already has coverage for.
-- Verified live on `https://phadincoffee.vercel.app` logged in as the
+- Verified live on `https://phadincafe.vercel.app` logged in as the
   throwaway staff test account: `/staff/orders/shift-history` is
   reachable from both the mobile tab row and desktop sidebar, lists
   past shifts, drill-in renders the same reconciliation detail

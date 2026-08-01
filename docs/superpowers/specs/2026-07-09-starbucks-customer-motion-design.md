@@ -89,7 +89,7 @@ Each phase is independently shippable and verifiable:
 
 Per this project's standing convention: `npm run build` + `tsc` locally
 for fast feedback, then push to `main` and verify on
-**https://phadincoffee.vercel.app**. For each rollout phase: click through
+**https://phadincafe.vercel.app**. For each rollout phase: click through
 the flow in both `vi`/`en` locales, confirm existing function is
 unchanged (cart math, RLS-gated writes, Realtime order-status updates,
 deferred-payment flow), and confirm OS-level reduced-motion collapses

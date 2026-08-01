@@ -12,7 +12,7 @@
 
 - No changes to `selectedModifiers` state shape, add-to-cart logic, or price calculation — this is a rendering split of an existing loop, not a data/logic change.
 - New i18n keys (`extrasLabel`, `freeLabel`) go in **both** `messages/en.json` and `messages/vi.json`, in **both** the `ProductDetail` namespace (used by `product-detail.tsx`) and the `Menu` namespace (used by `quick-add-popup.tsx`).
-- Verify against `https://phadincoffee.vercel.app`, not just `next build`.
+- Verify against `https://phadincafe.vercel.app`, not just `next build`.
 - No new npm dependencies; reuse the existing `Check` icon and `formatVND` helper (both already imported in both files).
 
 ---
@@ -546,7 +546,7 @@ Expected: clean, no errors.
 git push
 ```
 
-- [ ] **Step 4: Live-verify on `https://phadincoffee.vercel.app`**
+- [ ] **Step 4: Live-verify on `https://phadincafe.vercel.app`**
 
 1. Open an item with multiple extras (e.g. via Menu Management, confirm which item has 2+ single-option extras — or add a second extra to an existing item like Butter Croissant if only one exists) on its Product Detail page: confirm one "Extras" section shows all extras as a vertical list, each with a price (or "Free"), and that tapping one toggles it (border/bg highlight + Check turns from transparent to visible) without affecting the others — multiple extras selectable at once.
 2. Same item via the Menu page's quick-add "+" popup: confirm identical layout/behavior.

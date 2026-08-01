@@ -18,7 +18,7 @@
 - Every guarded `UPDATE` to `orders` uses `.eq("payment_status", "pending")`, matching the Stripe webhook's idempotency pattern — required so `handle_order_paid` fires exactly once even if VNPay retries the IPN call.
 - Supabase Edge Function secrets (`Deno.env`) are a separate store from Vercel's env vars/`.env.local` — `VNPAY_TMN_CODE`/`VNPAY_HASH_SECRET` must be set directly as Supabase secrets (see Task 6), same gotcha hit twice during the Stripe work.
 - Every new user-facing string is added to **both** `messages/vi.json` and `messages/en.json`.
-- Verify against the deployed Vercel URL (`https://phadincoffee.vercel.app`), not `npm run dev`/localhost, per this project's established convention.
+- Verify against the deployed Vercel URL (`https://phadincafe.vercel.app`), not `npm run dev`/localhost, per this project's established convention.
 
 ---
 
@@ -138,7 +138,7 @@ async function createStripeCheckoutSession(params: {
             currency: "vnd",
             // VND is zero-decimal in Stripe — pass the integer total as-is.
             unit_amount: params.total,
-            product_data: { name: "PhaDinCoffee Order" },
+            product_data: { name: "PhaDinCafe Order" },
           },
         },
       ],
@@ -783,7 +783,7 @@ Push the commits from Tasks 4 and 5 to `main` (Vercel auto-deploys on push).
 
 - [ ] **Step 2: Verify VNPay success path**
 
-On `https://phadincoffee.vercel.app`, add an item to cart, go to Checkout, select VNPay, place the order. Confirm:
+On `https://phadincafe.vercel.app`, add an item to cart, go to Checkout, select VNPay, place the order. Confirm:
 - Browser redirects to VNPay's sandbox gateway (`sandbox.vnpayment.vn`).
 - Pay with a VNPay sandbox test card (from VNPay's sandbox documentation for the registered test merchant).
 - Browser lands on `/orders/{id}` after VNPay redirects through `vnpay-return`.

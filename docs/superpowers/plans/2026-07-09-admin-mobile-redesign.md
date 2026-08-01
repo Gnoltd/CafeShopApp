@@ -39,7 +39,7 @@ one new key). No DB changes, no new routes, no new dependencies.
 - One new translation key, `Nav.openMenu`, added to **both**
   `messages/en.json` and `messages/vi.json` in the same task.
 - Verification is against the deployed Vercel URL
-  (`https://phadincoffee.vercel.app`), not `npm run dev`, per this
+  (`https://phadincafe.vercel.app`), not `npm run dev`, per this
   project's standing convention. This project has no component-level
   (`.tsx`) test harness — only `lib/`/`hooks/` query-layer logic is
   unit-tested — so this plan has no new test files, matching the
@@ -554,7 +554,7 @@ git push
 
 - [ ] **Step 4: Live verification on Vercel**
 
-Once deployed, verify live at `https://phadincoffee.vercel.app/en/admin/dashboard`
+Once deployed, verify live at `https://phadincafe.vercel.app/en/admin/dashboard`
 (log in as `admin@phadincoffee.dev`):
 
 - **Desktop regression check** (browser window ≥768px wide): confirm

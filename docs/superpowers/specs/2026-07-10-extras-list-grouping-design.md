@@ -56,7 +56,7 @@ No new query-layer functions or types are introduced (no unit-testable
 surface beyond existing UI), so this ships without new Vitest coverage —
 consistent with this project's existing component-level testing gap
 (documented in `daily.md`'s Known gaps). Verified live on
-`https://phadincoffee.vercel.app`: an item with multiple extras shows one
+`https://phadincafe.vercel.app`: an item with multiple extras shows one
 "Extras" list with prices, correct toggle/multi-select behavior preserved,
 correct running total; an item with a real multi-choice group (e.g. size
 or Milk Type, if priced) shows prices under each option; an item with

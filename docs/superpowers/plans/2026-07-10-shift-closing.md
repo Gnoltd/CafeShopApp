@@ -16,7 +16,7 @@
 - Query layer is DI'd: `SupabaseClient` as first arg.
 - Realtime = unfiltered subscribe + refetch (project convention).
 - `/admin/shift` is manager+admin (existing `/admin/*` middleware gate; do NOT add to `ADMIN_ONLY_PREFIXES`).
-- Verify against `https://phadincoffee.vercel.app`, not just local.
+- Verify against `https://phadincafe.vercel.app`, not just local.
 
 ---
 
@@ -876,7 +876,7 @@ git commit -m "Add /admin/shift shift-closing page, sidebar entry, clickable Rev
 git push
 ```
 
-- [ ] **Step 2: Live-verify on `https://phadincoffee.vercel.app`** (admin test account; credentials via `.env.local`, never hardcoded)
+- [ ] **Step 2: Live-verify on `https://phadincafe.vercel.app`** (admin test account; credentials via `.env.local`, never hardcoded)
 
 1. Dashboard Revenue card navigates to `/admin/shift`; sidebar shows the new Shift entry.
 2. Open a shift with a starting cash amount → live report appears (starting cash, zero breakdown).

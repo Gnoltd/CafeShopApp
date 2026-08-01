@@ -163,7 +163,7 @@ already have coverage for.
 
 No automated test for the CSS crossfade animation itself (matches
 `hero-zoom`/`hero-anim` having none). Verified live on
-`https://phadincoffee.vercel.app`: landing page shows the new photos
+`https://phadincafe.vercel.app`: landing page shows the new photos
 with a visible slow crossfade on the background and the spotlight
 reveal still works on mouse move (desktop) and touch (mobile); Admin
 Settings' new Landing Page card uploads each of the 4 slots and the

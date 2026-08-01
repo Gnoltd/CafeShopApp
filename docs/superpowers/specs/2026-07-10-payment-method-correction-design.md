@@ -96,7 +96,7 @@ Unit tests for `changeOrderPaymentMethod` in
 `lib/supabase/orders-data.test.ts` (RPC called with right args, boolean
 passthrough). RPC guard verified live via SQL: no-op on a `paid` or
 non-`served` order, works on served+pending. UI live-verified on
-`https://phadincoffee.vercel.app`: place a real Pay Later order, serve
+`https://phadincafe.vercel.app`: place a real Pay Later order, serve
 it, pick Cash → "Change payment method" returns to the picker; pick
 VNPay, abandon, "Choose a different method" → picker; staff "Undo
 Cash" on the KDS card returns the customer's picker.

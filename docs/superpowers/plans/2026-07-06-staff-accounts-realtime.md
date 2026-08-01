@@ -410,7 +410,7 @@ curl -s -X POST "https://qhiypdqnrnzndxdwqxbx.supabase.co/functions/v1/create-st
   -H "Content-Type: application/json" \
   -H "apikey: <publishable key>" \
   -H "Authorization: Bearer <admin access token>" \
-  -d '{"fullName": "Test Staffer", "email": "test.staffer.verify@phadincoffee.dev", "role": "staff"}'
+  -d '{"fullName": "Test Staffer", "email": "test.staffer.verify@phadincafe.dev", "role": "staff"}'
 ```
 
 Expected: `{"userId": "...", "temporaryPassword": "..."}`. Then verify
@@ -419,7 +419,7 @@ via `execute_sql` that a `profiles` row exists for that user with
 `mcp__supabase__execute_sql` on `auth.users` that `email_confirmed_at`
 is set (no confirmation email needed). Clean up this verification
 account afterward (`delete from auth.users where email =
-'test.staffer.verify@phadincoffee.dev'` — cascades to `profiles` via
+'test.staffer.verify@phadincafe.dev'` — cascades to `profiles` via
 `on delete cascade`).
 
 - [ ] **Step 5: Commit**
@@ -460,7 +460,7 @@ describe("getStaffMembers", () => {
       phone: "0901234567",
       role: "admin",
       is_active: true,
-      email: "thuha.nguyen@phadincoffee.vn",
+      email: "thuha.nguyen@phadincafe.vn",
     }
     const rpcSpy = vi.fn(() => Promise.resolve({ data: [row], error: null }))
     const supabase = { rpc: rpcSpy } as unknown as SupabaseClient
@@ -475,7 +475,7 @@ describe("getStaffMembers", () => {
         phone: "0901234567",
         role: "admin",
         isActive: true,
-        email: "thuha.nguyen@phadincoffee.vn",
+        email: "thuha.nguyen@phadincafe.vn",
       },
     ])
   })
@@ -599,12 +599,12 @@ describe("createStaffAccount", () => {
 
     const result = await createStaffAccount(supabase, {
       fullName: "Test Staffer",
-      email: "test@phadincoffee.dev",
+      email: "test@phadincafe.dev",
       role: "staff",
     })
 
     expect(invokeSpy).toHaveBeenCalledWith("create-staff-account", {
-      body: { fullName: "Test Staffer", email: "test@phadincoffee.dev", role: "staff" },
+      body: { fullName: "Test Staffer", email: "test@phadincafe.dev", role: "staff" },
     })
     expect(result).toEqual({ userId: "new-id", temporaryPassword: "Abc123XyZ9" })
   })
@@ -1183,7 +1183,7 @@ documented in the Orders plan — do not let this task's changes add a
 git push
 ```
 
-Confirm the resulting deployment on `https://phadincoffee.vercel.app`
+Confirm the resulting deployment on `https://phadincafe.vercel.app`
 reaches `Ready`.
 
 - [ ] **Step 3: Live verification with Playwright**

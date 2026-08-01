@@ -30,7 +30,7 @@ copy. No DB changes, no new routes, no new dependencies.
   every mobile-only class/element must be paired with a `md:` override
   that restores current behavior.
 - Verification is against the deployed Vercel URL
-  (`https://phadincoffee.vercel.app`), not `npm run dev`, per this
+  (`https://phadincafe.vercel.app`), not `npm run dev`, per this
   project's standing convention — local `build`/`tsc` are for fast
   feedback only. This project has no component-level (`.tsx`) test
   harness — only `lib/`/`hooks/` query-layer logic is unit-tested
@@ -600,7 +600,7 @@ git push
 
 - [ ] **Step 3: Live verification on Vercel**
 
-Once deployed, verify live at `https://phadincoffee.vercel.app/en/staff/pos`
+Once deployed, verify live at `https://phadincafe.vercel.app/en/staff/pos`
 (log in as `admin@phadincoffee.dev` or the staff test account):
 
 - **Desktop regression check** (browser window ≥768px wide): confirm

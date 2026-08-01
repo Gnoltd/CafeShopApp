@@ -13,7 +13,7 @@
 - **User-side prerequisite**: "Manual linking" must be enabled in the Supabase Dashboard (Authentication → configuration) before `linkIdentity()` will work — no MCP tool for this, same category as the Google OAuth provider setup.
 - New strings in **both** `messages/en.json` and `messages/vi.json`.
 - "Unlink" is only ever rendered enabled when `identities.length > 1` — Supabase's own documented rule (never build custom lockout-prevention logic on top of it).
-- Verify against `https://phadincoffee.vercel.app`, not just `next build`.
+- Verify against `https://phadincafe.vercel.app`, not just `next build`.
 
 ---
 
@@ -491,7 +491,7 @@ git push
 
 Before live-verifying the "Connect Google" path, confirm "manual linking" is enabled in the Supabase Dashboard (Authentication → configuration) — this is a one-time manual step outside this plan's control.
 
-- [ ] **Step 5: Live-verify on `https://phadincoffee.vercel.app`**
+- [ ] **Step 5: Live-verify on `https://phadincafe.vercel.app`**
 
 1. As a logged-in customer, open Profile → Settings — confirm it navigates to `/​<locale>​/profile/settings` (not disabled anymore) and the back button (from the shared customer header) returns to Profile.
 2. Change password: enter a new password (6+ chars) + matching confirm, submit, confirm the success message. Log out, log back in with the **new** password (and confirm the **old** one no longer works).

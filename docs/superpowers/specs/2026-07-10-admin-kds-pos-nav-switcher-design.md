@@ -73,7 +73,7 @@ that already have three different established patterns.
 
 No new query-layer functions are added (this is pure routing/UI), so
 no new unit tests. Live-verified manually against
-`https://phadincoffee.vercel.app` post-deploy, using the three test
+`https://phadincafe.vercel.app` post-deploy, using the three test
 accounts in `test-accounts.md`:
 - **Staff account**: confirm POS and KDS both show only POS/KDS links
   (no Admin link, desktop and mobile).

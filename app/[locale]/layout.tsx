@@ -28,12 +28,12 @@ const playfairDisplay = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "PhaDinCoffee",
+  title: "PhaDinCafe",
   description: "Order ahead, track your order, and earn loyalty points.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "PhaDinCoffee",
+    title: "PhaDinCafe",
   },
   other: {
     "apple-mobile-web-app-capable": "yes",
@@ -81,7 +81,7 @@ export default async function RootLayout({
         <script
           nonce={nonce}
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("phadincoffee-theme");var d=t?t==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;if(d)document.documentElement.classList.add("dark");}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem("phadincafe-theme");var d=t?t==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;if(d)document.documentElement.classList.add("dark");}catch(e){}})();`,
           }}
         />
       </head>

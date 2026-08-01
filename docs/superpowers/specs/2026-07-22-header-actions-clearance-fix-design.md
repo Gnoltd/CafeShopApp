@@ -134,7 +134,7 @@ No change to `header-actions-stack.tsx` itself.
 - No dedicated unit test for a `ResizeObserver`-based hook (matches
   the project's existing lack of coverage for `landing-nav.tsx`'s
   identical inline logic).
-- Verified live on `https://phadincoffee.vercel.app`:
+- Verified live on `https://phadincafe.vercel.app`:
   - Landing page desktop: Login + Sign Up both visible, no overlap
     with the language switcher at any viewport width down to `md`.
   - Landing page mobile: hamburger visible immediately (no scroll

@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next"
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "PhaDinCoffee",
-    short_name: "PhaDinCoffee",
+    name: "PhaDinCafe",
+    short_name: "PhaDinCafe",
     description: "Order ahead, track your order, and earn loyalty points.",
     start_url: "/",
     display: "standalone",

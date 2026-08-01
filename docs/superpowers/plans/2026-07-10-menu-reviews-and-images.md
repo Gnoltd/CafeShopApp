@@ -15,7 +15,7 @@
 - Any new UI-facing string needs a key added to **both** `messages/en.json` and `messages/vi.json` in the same task.
 - No new npm dependencies — `crypto.randomUUID()` (native Web Crypto, already usable in this browser-targeted client code) is enough for a storage object path.
 - `lib/mock-data/reviews.ts` must end up fully deleted with zero remaining references once real reviews are wired in.
-- Local `npm run test` / `npm run build` are for fast feedback only — this project's explicit convention is that final verification happens live on `https://phadincoffee.vercel.app` after a push to `main`, not on localhost.
+- Local `npm run test` / `npm run build` are for fast feedback only — this project's explicit convention is that final verification happens live on `https://phadincafe.vercel.app` after a push to `main`, not on localhost.
 
 ---
 
@@ -1522,7 +1522,7 @@ git commit -m "Remove mock reviews data now that Product Detail uses real review
 
 - [ ] **Step 6: Push and live-verify on Vercel**
 
-Push to `main` (auto-deploys). Once deployed, verify on `https://phadincoffee.vercel.app` per this project's explicit convention (verify live, not just localhost):
+Push to `main` (auto-deploys). Once deployed, verify on `https://phadincafe.vercel.app` per this project's explicit convention (verify live, not just localhost):
 
 1. As admin, upload a real photo for a menu item in Menu Management, save, hard-refresh, and confirm the photo persists and now shows at the larger size on `/menu` (112px thumbnail) and in the admin form's own preview (96px).
 2. As a logged-in customer with a real `completed` order, open that order's detail page (`/orders/[orderId]`), tap "Rate & Review" under one of its items, submit a rating + comment, and confirm it appears on that item's Product Detail page with the real aggregate rating/count updated.

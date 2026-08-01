@@ -1,8 +1,8 @@
-# Project: PhaDinCoffee — Management & Customer Portal
+# Project: PhaDinCafe — Management & Customer Portal
 
 ## Goal
 
-Web app for a single-location coffee shop ("PhaDinCoffee"): customer
+Web app for a single-location coffee shop ("PhaDinCafe"): customer
 ordering (pickup + dine-in QR), staff POS + Kitchen Display,
 manager/admin menu/inventory/reporting/settings. Full spec:
 `docs/superpowers/specs/2026-07-04-coffee-shop-app-design.md`. Bilingual

@@ -47,7 +47,7 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | null>(null)
 
-const STORAGE_KEY = "phadincoffee-cart"
+const STORAGE_KEY = "phadincafe-cart"
 
 /** No `promotions` table yet — a single hardcoded valid code, 10% off subtotal. */
 const VALID_PROMO_CODES: Record<string, number> = {

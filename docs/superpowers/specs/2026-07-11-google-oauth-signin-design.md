@@ -108,7 +108,7 @@ No new query-layer function is introduced (`getCurrentRole` already
 exists and is reused as-is, with its own existing coverage in
 `lib/get-current-role.test.ts`), so this change needs no new Vitest
 tests — just confirm the full suite still passes unchanged. This ships
-verified live on `https://phadincoffee.vercel.app`, per this
+verified live on `https://phadincafe.vercel.app`, per this
 project's convention — real OAuth flows can't be meaningfully unit
 tested: click "Continue with Google" on both Login and Signup, complete
 the Google consent screen with a real Google account, confirm redirect

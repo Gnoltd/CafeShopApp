@@ -14,7 +14,7 @@
 - New/changed user-facing strings go in **both** `messages/en.json` and `messages/vi.json`, same key, in the same namespace as neighboring keys.
 - No RPC, no new migration — `profiles_update_own` RLS (migration `0001`) already permits this.
 - Any Supabase write in the UI must have its failure path surfaced to the user (never a silent `.catch()` no-op) — this project's existing convention, called out explicitly in CLAUDE.md.
-- Verify against the deployed Vercel URL (`https://phadincoffee.vercel.app`), not just `npm run dev` — this project's explicit convention.
+- Verify against the deployed Vercel URL (`https://phadincafe.vercel.app`), not just `npm run dev` — this project's explicit convention.
 
 ---
 
@@ -380,7 +380,7 @@ git push
 
 Wait ~60-90s for the `main` branch's auto-deploy to finish (this project's Vercel project auto-deploys on push, no manual `vercel deploy` step).
 
-- [ ] **Step 2: Live-verify on `https://phadincoffee.vercel.app`**
+- [ ] **Step 2: Live-verify on `https://phadincafe.vercel.app`**
 
 Using a real logged-in test account (see `test-accounts.md`, credentials pulled from `.env.local` — never hardcode a password into a script file):
 1. Go to `/profile`. Confirm the name/phone shown match the real `profiles` row (not the old mock "Nguyễn Văn An" / "+84 901 234 567").

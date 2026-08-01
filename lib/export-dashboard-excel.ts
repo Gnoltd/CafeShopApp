@@ -72,5 +72,5 @@ export function exportDashboardExcel(input: DashboardExportInput): void {
   XLSX.utils.book_append_sheet(workbook, tableStatusSheet, "Table Status")
 
   const todayIso = new Date().toISOString().slice(0, 10)
-  XLSX.writeFile(workbook, `phadincoffee-dashboard-${todayIso}.xlsx`)
+  XLSX.writeFile(workbook, `phadincafe-dashboard-${todayIso}.xlsx`)
 }

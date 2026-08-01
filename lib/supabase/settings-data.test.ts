@@ -11,7 +11,7 @@ import {
 
 describe("getShopSettings", () => {
   it("maps the row to camelCase and converts tax_rate to a whole percent", async () => {
-    const row = { shop_name: "PhaDinCoffee", address: "123 Le Loi", phone: "0900000000", opening_hours: "07:00 - 22:00", tax_rate: "0.0800" }
+    const row = { shop_name: "PhaDinCafe", address: "123 Le Loi", phone: "0900000000", opening_hours: "07:00 - 22:00", tax_rate: "0.0800" }
     const singleSpy = vi.fn(() => Promise.resolve({ data: row, error: null }))
     const eqSpy = vi.fn(() => ({ single: singleSpy }))
     const selectSpy = vi.fn(() => ({ eq: eqSpy }))
@@ -22,7 +22,7 @@ describe("getShopSettings", () => {
     expect(selectSpy).toHaveBeenCalledWith("shop_name, address, phone, opening_hours, tax_rate")
     expect(eqSpy).toHaveBeenCalledWith("id", 1)
     expect(result).toEqual({
-      shopName: "PhaDinCoffee",
+      shopName: "PhaDinCafe",
       address: "123 Le Loi",
       phone: "0900000000",
       openingHours: "07:00 - 22:00",
@@ -52,7 +52,7 @@ describe("updateShopSettings", () => {
     const supabase = { from: () => ({ update: updateSpy }) } as unknown as SupabaseClient
 
     await updateShopSettings(supabase, {
-      shopName: "PhaDinCoffee",
+      shopName: "PhaDinCafe",
       address: "123 Le Loi",
       phone: "0900000000",
       openingHours: "07:00 - 22:00",
@@ -60,7 +60,7 @@ describe("updateShopSettings", () => {
     })
 
     expect(updateSpy).toHaveBeenCalledWith({
-      shop_name: "PhaDinCoffee",
+      shop_name: "PhaDinCafe",
       address: "123 Le Loi",
       phone: "0900000000",
       opening_hours: "07:00 - 22:00",

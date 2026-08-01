@@ -1,7 +1,7 @@
-# PhaDinCoffee — Security & Cybersecurity Review
+# PhaDinCafe — Security & Cybersecurity Review
 
 **Date:** 2026-07-29
-**Scope:** Full read/analysis pass of the PhaDinCoffee (CoffeeShop) codebase — Next.js (App Router) + Supabase (Postgres/RLS + Auth + Realtime + Edge Functions), deployed on Vercel. All 55 SQL migrations, all 9 Edge Function files, `middleware.ts` / `lib/middleware-rules.ts`, `next.config.ts`, the `app/` / `components/` / `hooks/` / `lib/` tree, `package.json`, and git history for secrets.
+**Scope:** Full read/analysis pass of the PhaDinCafe (CoffeeShop) codebase — Next.js (App Router) + Supabase (Postgres/RLS + Auth + Realtime + Edge Functions), deployed on Vercel. All 55 SQL migrations, all 9 Edge Function files, `middleware.ts` / `lib/middleware-rules.ts`, `next.config.ts`, the `app/` / `components/` / `hooks/` / `lib/` tree, `package.json`, and git history for secrets.
 **Method:** Static analysis only (Grep/Glob/Read + `npm audit`). No live pentesting, no code modified, no destructive commands. RLS/grant effective-state confirmed by reading migrations at their final state (later `create or replace` / `drop policy` / `revoke` wins); a handful of items are flagged as "verify against the live DB" because grant state can't be queried statically.
 
 ---

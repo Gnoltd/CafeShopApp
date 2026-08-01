@@ -109,7 +109,7 @@ No new query-layer function is introduced (this is direct
 `supabase.auth.*` calls from a client component, same pattern as the
 Login/Signup forms — no `lib/supabase/*.ts` module wraps raw Supabase
 Auth SDK calls elsewhere in this codebase either), so no new Vitest
-coverage. Verified live on `https://phadincoffee.vercel.app`, per this
+coverage. Verified live on `https://phadincafe.vercel.app`, per this
 project's convention: change password and confirm the new password
 actually logs in (and the old one no longer does); connect Google from
 an email/password account and confirm it appears as "Connected" and

@@ -180,7 +180,7 @@ and `messages/vi.json`, matching its current un-nested shape):
 ### 6. Testing
 
 Frontend-only, no schema/RPC changes — verified live per this
-project's convention (`https://phadincoffee.vercel.app`, not
+project's convention (`https://phadincafe.vercel.app`, not
 `npm run dev`): resize to a phone width, confirm the two-pane desktop
 layout is untouched ≥`md` (no regression), add items from the Menu
 view below `md`, confirm the sticky "View Order" bar appears with the

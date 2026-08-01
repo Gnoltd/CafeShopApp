@@ -17,7 +17,7 @@
 - **Supabase Edge Function secrets (`Deno.env`) are a separate store from Vercel env vars.** A variable synced to Vercel (e.g. `STRIPE_SECRET_KEY` in `.env.local`/Vercel) is *not* automatically available inside an Edge Function — it must be set separately via the Supabase Dashboard or `supabase secrets set`.
 - `handle_order_paid` (migration `0007`) only fires on an `UPDATE` that transitions `payment_status` to `'paid'` — never on `INSERT`. Any code path marking an order paid must do a genuine `UPDATE`, not insert already-paid.
 - The Postgres `order_type` enum is `pickup | dine_in` (underscore). Client-side state uses hyphenated `"dine-in"` and must be translated to `dine_in` before it reaches any RPC call — this is currently *not* done correctly in two places (see Task 1).
-- Verify against the deployed Vercel URL (`https://phadincoffee.vercel.app`), not `npm run dev`/localhost, per this project's established convention.
+- Verify against the deployed Vercel URL (`https://phadincafe.vercel.app`), not `npm run dev`/localhost, per this project's established convention.
 
 ---
 
@@ -345,7 +345,7 @@ async function createStripeCheckoutSession(params: {
             currency: "vnd",
             // VND is zero-decimal in Stripe — pass the integer total as-is.
             unit_amount: params.total,
-            product_data: { name: "PhaDinCoffee Order" },
+            product_data: { name: "PhaDinCafe Order" },
           },
         },
       ],
@@ -914,7 +914,7 @@ git commit -m "feat: enable POS Card charge, fix dine-in enum mismatch"
 Via the Supabase Dashboard (Project `qhiypdqnrnzndxdwqxbx` → Edge Functions → Secrets), or the Supabase CLI if installed (`supabase secrets set --project-ref qhiypdqnrnzndxdwqxbx KEY=value`), set:
 
 - `STRIPE_SECRET_KEY` — the same test-mode key already in `.env.local`/Vercel (`sk_test_...`). This is a **separate secret store from Vercel** — syncing it to Vercel earlier did not make it available to this Edge Function.
-- `SITE_URL` — `https://phadincoffee.vercel.app` (the production domain; this is a new secret specific to Edge Functions, distinct from Vercel's `NEXT_PUBLIC_SITE_URL`, which defaults to `localhost:3000` in `.env.local` and is not readable from Deno's environment).
+- `SITE_URL` — `https://phadincafe.vercel.app` (the production domain; this is a new secret specific to Edge Functions, distinct from Vercel's `NEXT_PUBLIC_SITE_URL`, which defaults to `localhost:3000` in `.env.local` and is not readable from Deno's environment).
 
 - [ ] **Step 2: Create the Stripe webhook endpoint**
 
@@ -943,7 +943,7 @@ Push the commits from Tasks 1, 6, 7 to `main` (Vercel auto-deploys on push, per 
 
 - [ ] **Step 2: Verify pickup + Stripe success path**
 
-On `https://phadincoffee.vercel.app`, add an item to cart, go to Checkout, choose Pickup, select Card, place the order. Confirm:
+On `https://phadincafe.vercel.app`, add an item to cart, go to Checkout, choose Pickup, select Card, place the order. Confirm:
 - Browser redirects to a `checkout.stripe.com` URL.
 - Pay with Stripe's test card `4242 4242 4242 4242`, any future expiry, any CVC.
 - Browser redirects back to `/orders/{id}` on success.

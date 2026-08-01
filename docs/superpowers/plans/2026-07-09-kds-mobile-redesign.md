@@ -38,7 +38,7 @@ DB changes, no new routes, no new dependencies.
   plus the stats footer's existing keys) — confirm with a grep before
   using any key, don't invent new ones.
 - Verification is against the deployed Vercel URL
-  (`https://phadincoffee.vercel.app`), not `npm run dev`, per this
+  (`https://phadincafe.vercel.app`), not `npm run dev`, per this
   project's standing convention. This project has no component-level
   (`.tsx`) test harness — only `lib/`/`hooks/` query-layer logic is
   unit-tested — so this plan has no new test files, matching the
@@ -545,7 +545,7 @@ git push
 
 - [ ] **Step 5: Live verification on Vercel**
 
-Once deployed, verify live at `https://phadincoffee.vercel.app/en/staff/orders`
+Once deployed, verify live at `https://phadincafe.vercel.app/en/staff/orders`
 (log in as `admin@phadincoffee.dev` or the staff test account):
 
 - **Desktop regression check** (browser window ≥768px wide): confirm

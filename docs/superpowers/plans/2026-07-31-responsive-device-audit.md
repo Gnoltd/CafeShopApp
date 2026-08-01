@@ -106,7 +106,7 @@ here).
 
 Everything below is NEEDS-LIVE-VERIFICATION from the audit — a judgment call
 that needs real-device eyes, not something to fix speculatively. Check each
-against **https://phadincoffee.vercel.app** (not localhost, per project
+against **https://phadincafe.vercel.app** (not localhost, per project
 convention) on both a real phone and tablet if possible, both light and dark
 mode, both `vi` and `en` locales where text-length matters.
 

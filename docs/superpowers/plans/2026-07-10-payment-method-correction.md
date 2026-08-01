@@ -14,7 +14,7 @@
 - Guest-safe RPC pattern: order id is a required parameter; granted to `anon` + `authenticated`; never a broad RLS policy.
 - New strings in **both** `messages/en.json` and `messages/vi.json`.
 - Every UI write surfaces failure (no silent `.catch(() => {})`).
-- Verify against `https://phadincoffee.vercel.app`.
+- Verify against `https://phadincafe.vercel.app`.
 
 ---
 
@@ -338,7 +338,7 @@ git commit -m "Payment method correction: tracking-page change buttons + KDS Und
 git push
 ```
 
-- [ ] **Step 2: Live-verify on `https://phadincoffee.vercel.app`** (test accounts via `.env.local`; delete any temp script after)
+- [ ] **Step 2: Live-verify on `https://phadincafe.vercel.app`** (test accounts via `.env.local`; delete any temp script after)
 
 1. Place a real **Pay Later** dine-in order (customer side), advance it to `served` via KDS.
 2. Tracking page: pick **Cash** → "awaiting staff" note + "Change payment method" appears → tap it → 3-way picker returns.

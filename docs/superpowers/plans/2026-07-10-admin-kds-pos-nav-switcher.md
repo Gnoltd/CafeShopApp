@@ -13,7 +13,7 @@
 - Role is always re-resolved server-side per request, never cached client-side (CLAUDE.md convention).
 - New/changed user-facing strings go in both `messages/en.json` and `messages/vi.json` — **not needed here**, this plan reuses the existing `Nav.dashboard` key.
 - Follow each surface's existing nav idiom rather than introducing a new shared "switcher" component — `StaffNav`'s pill row, `KitchenSidebar`'s icon list + bordered section (mirroring `AdminSidebar`'s own Fulfillment section), and the mobile pill strip all stay as they are, just gain items.
-- Verify against the deployed Vercel URL (`https://phadincoffee.vercel.app`), not just `npm run dev`.
+- Verify against the deployed Vercel URL (`https://phadincafe.vercel.app`), not just `npm run dev`.
 
 ---
 
@@ -499,7 +499,7 @@ git push
 
 Wait ~60-90s for `main`'s auto-deploy to finish.
 
-- [ ] **Step 2: Live-verify on `https://phadincoffee.vercel.app`**
+- [ ] **Step 2: Live-verify on `https://phadincafe.vercel.app`**
 
 Using the accounts in `test-accounts.md` (credentials via `.env.local` — never hardcode a password into a script file):
 

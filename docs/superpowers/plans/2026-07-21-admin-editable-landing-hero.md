@@ -13,7 +13,7 @@
 - Add new i18n keys to **both** `messages/en.json` and `messages/vi.json` (this project's stated bilingual convention) — never one without the other.
 - Query-layer functions take a `SupabaseClient` as their first argument (DI'd, not a singleton) — matches every existing function in `lib/supabase/*.ts`.
 - Migrations apply via the Supabase MCP server's `apply_migration` directly against the live hosted project (`qhiypdqnrnzndxdwqxbx`) — this project has no local Supabase stack.
-- Verify the final result against the deployed Vercel URL (`https://phadincoffee.vercel.app`), not just local `npm run dev` — this project's explicit, stated convention.
+- Verify the final result against the deployed Vercel URL (`https://phadincafe.vercel.app`), not just local `npm run dev` — this project's explicit, stated convention.
 - Run `npx tsc --noEmit` and `npx vitest run` after every task that touches `.ts`/`.tsx` files.
 
 ---
@@ -107,7 +107,7 @@ This task is exploratory/creative, not deterministic TDD — execute it inline i
 
 - [ ] **Step 1: Create a Stitch project**
 
-Call `mcp__stitch-mcp__create_project` with `title: "PhaDinCoffee Landing Hero"`. Note the returned project ID (e.g. `4044680601076201931`).
+Call `mcp__stitch-mcp__create_project` with `title: "PhaDinCafe Landing Hero"`. Note the returned project ID (e.g. `4044680601076201931`).
 
 - [ ] **Step 2: Generate the base-layer photos (×3)**
 
@@ -901,7 +901,7 @@ git commit -m "Remove interim images.unsplash.com CSP allowance now that hero ph
 git push origin main
 ```
 
-- [ ] **Step 2: Wait for the Vercel deploy, then verify on `https://phadincoffee.vercel.app`**
+- [ ] **Step 2: Wait for the Vercel deploy, then verify on `https://phadincafe.vercel.app`**
 
 - Landing page (`/vi` and `/en`) shows real photography (not broken/blank), with a visible slow crossfade on the background over ~18 seconds and the mouse/touch-follow spotlight still revealing the 4th photo correctly.
 - Browser DevTools console on `/` shows zero CSP violations.

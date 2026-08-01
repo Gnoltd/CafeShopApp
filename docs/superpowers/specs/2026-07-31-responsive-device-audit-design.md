@@ -110,7 +110,7 @@ introduced specifically to replace this exact anti-pattern, and which
 `customer/header.tsx`, `staff/staff-nav.tsx`, `staff/kitchen-top-bar.tsx`,
 and `marketing/landing-nav.tsx` all already adopted. On a 375px phone this
 reserves ~256px of a ~375px header, leaving only ~70-90px for the hamburger
-+ icon + "PhaDinCoffee" brand text, which truncates hard — and being a
++ icon + "PhaDinCafe" brand text, which truncates hard — and being a
 static guess (not measured), it's wrong by construction whenever the real
 stack width differs (locale, role-label length, browser text zoom).
 **HIGH-CONFIDENCE**, same bug class the project's own spec already found and

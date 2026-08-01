@@ -60,7 +60,7 @@
    applied to `SegmentedControl`, `AnimatedTabBar`, `SideDrawer`, and
    `BottomSheet`.
    **The one remaining step**: live-verify the whole redesign on
-   **https://phadincoffee.vercel.app** — colors, dark mode toggle/
+   **https://phadincafe.vercel.app** — colors, dark mode toggle/
    persistence, both locales, real mobile devices (iOS Safari + Android
    Chrome, not just a resized desktop browser) — across all pages in
    one pass now that everything (including this sweep) is shipped, per

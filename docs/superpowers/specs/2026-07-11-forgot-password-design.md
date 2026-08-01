@@ -90,7 +90,7 @@ copy ends up textually similar.
 ## Out of scope
 
 - No new Supabase Auth URL Configuration changes — the existing
-  wildcard redirect URLs (`https://phadincoffee.vercel.app/**`, preview
+  wildcard redirect URLs (`https://phadincafe.vercel.app/**`, preview
   wildcard, `http://localhost:3000/**`) already cover `/reset-password`
   without any Dashboard change needed.
 - No rate-limiting or resend-cooldown UI on the request-reset form
@@ -102,7 +102,7 @@ copy ends up textually similar.
 No new query-layer function (direct `supabase.auth.*` calls from client
 components, same pattern as every other auth form in this codebase) —
 no new Vitest coverage needed. Verified live on
-`https://phadincoffee.vercel.app`: request a reset for the test customer
+`https://phadincafe.vercel.app`: request a reset for the test customer
 account, confirm the "check your email" screen appears regardless of
 delivery outcome; if the email arrives, click it and confirm it lands on
 `/reset-password` with a working new-password form, submit, and confirm

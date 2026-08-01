@@ -756,7 +756,7 @@ was before this plan.
 
 - [ ] **Step 2: Manual verification on the live Vercel deployment**
 
-After pushing, verify against `https://phadincoffee.vercel.app` (per
+After pushing, verify against `https://phadincafe.vercel.app` (per
 this project's standing preference), logged in as admin:
 
 - Edit an existing item, add a new extra (e.g. "Extra Shot", 10000),

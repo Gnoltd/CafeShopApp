@@ -185,7 +185,7 @@ ShopeeFood, Starbucks) so photos of any original shape line up neatly:
 No Deno/component test harness exists for RPCs or storage in this
 project (matches existing convention — Edge Functions and DB functions
 here are verified live, not with automated tests). Verify live on
-`https://phadincoffee.vercel.app`, per this project's explicit
+`https://phadincafe.vercel.app`, per this project's explicit
 "deploy, don't test on localhost" convention:
 
 - Upload a real image via admin Menu Management, confirm it persists

@@ -38,20 +38,20 @@ import { extractTableToken } from "./qr-table-token"
 
 describe("extractTableToken", () => {
   it("extracts the token from a production table URL", () => {
-    expect(extractTableToken("https://phadincoffee.vercel.app/table/abc123")).toBe("abc123")
+    expect(extractTableToken("https://phadincafe.vercel.app/table/abc123")).toBe("abc123")
   })
 
   it("extracts the token ignoring a locale prefix", () => {
-    expect(extractTableToken("https://phadincoffee.vercel.app/vi/table/abc123")).toBe("abc123")
-    expect(extractTableToken("https://phadincoffee.vercel.app/en/table/abc123")).toBe("abc123")
+    expect(extractTableToken("https://phadincafe.vercel.app/vi/table/abc123")).toBe("abc123")
+    expect(extractTableToken("https://phadincafe.vercel.app/en/table/abc123")).toBe("abc123")
   })
 
   it("extracts the token ignoring the hostname (preview deployments)", () => {
-    expect(extractTableToken("https://phadincoffee-preview-xyz.vercel.app/table/abc123")).toBe("abc123")
+    expect(extractTableToken("https://phadincafe-preview-xyz.vercel.app/table/abc123")).toBe("abc123")
   })
 
   it("extracts the token ignoring a trailing query string", () => {
-    expect(extractTableToken("https://phadincoffee.vercel.app/table/abc123?foo=bar")).toBe("abc123")
+    expect(extractTableToken("https://phadincafe.vercel.app/table/abc123?foo=bar")).toBe("abc123")
   })
 
   it("returns null for a URL with no /table/ path", () => {
@@ -440,7 +440,7 @@ Push the commits from Tasks 1–3 to `main` (Vercel auto-deploys on push).
 
 - [ ] **Step 2: Verify the success path**
 
-On a phone, open `https://phadincoffee.vercel.app`, tap "Scan QR at Table". Grant camera permission when prompted. Point the camera at one of Admin Tables' real generated QR codes (`/admin/tables` → any table card's QR image, or the "Download QR" file). Confirm:
+On a phone, open `https://phadincafe.vercel.app`, tap "Scan QR at Table". Grant camera permission when prompted. Point the camera at one of Admin Tables' real generated QR codes (`/admin/tables` → any table card's QR image, or the "Download QR" file). Confirm:
 - The scanner recognizes the code and navigates to that table's `/table/[qrToken]` page.
 - The page shows the same "You're ordering at Table N" success state as physically scanning with the OS camera app.
 - `select scan_count from public.tables where qr_token = '<token>';` (via `mcp__supabase__execute_sql`) shows the count incremented — proves this reused the real `increment_table_scan_count` RPC exactly like the existing manual-scan path, no new code path was needed there.

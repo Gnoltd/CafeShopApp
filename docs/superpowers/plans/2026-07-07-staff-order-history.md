@@ -12,7 +12,7 @@
 
 - Migrations are applied to the live hosted Supabase project (`qhiypdqnrnzndxdwqxbx`) via the Supabase MCP server's `apply_migration` tool — not just committed as a file. The latest applied migration is `0018_cancel_pending_order_fn.sql`; this plan's migration is `0019_staff_order_history_fn.sql`.
 - Every new translation key goes into **both** `messages/vi.json` and `messages/en.json` in the same task — never one without the other.
-- Verification of UI/data-flow behavior targets the live Vercel deployment (`https://phadincoffee.vercel.app`), not localhost, per this project's established convention. `npm run build`/`tsc --noEmit` are fine for fast local feedback but are not the source of truth for "does it work."
+- Verification of UI/data-flow behavior targets the live Vercel deployment (`https://phadincafe.vercel.app`), not localhost, per this project's established convention. `npm run build`/`tsc --noEmit` are fine for fast local feedback but are not the source of truth for "does it work."
 - Base UI's `Button` has no `asChild` — use `render={<Link .../>}` with `nativeButton={false}` for any polymorphic button-as-link.
 - New hand-rolled toggle switches (none needed in this plan) must anchor the thumb with an explicit `left-0.5`, not rely on static positioning — not applicable here, listed only because it's a standing project gotcha.
 - Default statuses for order history are `completed`/`cancelled` only; default date range is the last 7 days when neither bound is given — both enforced **inside** the SQL function, not just client-side.
@@ -1156,7 +1156,7 @@ git commit -m "feat: wire Kitchen Display sidebar's Order History link to the re
 git push origin main
 ```
 
-- [ ] **Step 2: Verify live on `https://phadincoffee.vercel.app`**
+- [ ] **Step 2: Verify live on `https://phadincafe.vercel.app`**
 
 Log in as the test staff account (`TEST_STAFF_EMAIL`/`TEST_STAFF_PASSWORD` from `.env.local`), and confirm:
 - `/staff/orders` (Kitchen Display) → sidebar's "Order History" link is no longer disabled, navigates to `/staff/orders/history`, and highlights correctly (with "Live Orders" no longer highlighted while on this page).

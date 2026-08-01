@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Structural map of PhaDinCoffee. Full rationale/history lives in
+Structural map of PhaDinCafe. Full rationale/history lives in
 `docs/superpowers/specs/` and `docs/superpowers/plans/` — one dated
 design+plan pair per feature (e.g. `2026-07-07-vnpay-payment-integration-{design,}.md`).
 This file is the current-state summary; check the dated docs for "why" a
@@ -25,7 +25,7 @@ lookup to close the loop), a real customer Address Book, a real POS
 size/extras picker, and real Admin Settings (shop info, tax rate, and
 loyalty enable/rates — genuinely persisted and driving POS/checkout,
 not `useState` mock) all work end-to-end. Deployed at
-**https://phadincoffee.vercel.app**, auto-deploys on push to `main`. See
+**https://phadincafe.vercel.app**, auto-deploys on push to `main`. See
 `daily.md` for what's currently open — it's kept short and recap-free by
 design, so check it before this file for "what's left."
 
@@ -54,7 +54,7 @@ always re-resolved server-side per request.
 - Config: `i18n/routing.ts`, `i18n/navigation.ts` (locale-aware
   `Link`/`useRouter`), `i18n/request.ts`.
 - `messages/vi.json`/`messages/en.json`, namespaced per section. Add new
-  keys to **both**. `Brand.name` ("PhaDinCoffee") and third-party names
+  keys to **both**. `Brand.name` ("PhaDinCafe") and third-party names
   like "VNPay" are identical in both files — proper nouns, not translated.
 - Server components: `getTranslations()`. Client: `useTranslations()`.
 - **`middleware.ts` is required for locale resolution, not just auth** —
@@ -201,7 +201,7 @@ Reusable facts that apply anywhere in the codebase, not tied to one feature.
   RLS denial with no error handling looks identical to "button does
   nothing," which is far harder to diagnose than a shown error message.
 - **Verify against the deployed Vercel URL**
-  (`https://phadincoffee.vercel.app`), not `npm run dev` — this
+  (`https://phadincafe.vercel.app`), not `npm run dev` — this
   project's explicit convention. Local `build`/`tsc`/`test` are fine for
   fast feedback but not the source of truth for "does it actually work."
 - **Public, non-personalized data fetches can (and, for anything on a
@@ -487,7 +487,7 @@ test harness exists in this project — Edge Functions are verified live
 
 ## Deployment (Vercel)
 
-Live at **https://phadincoffee.vercel.app** (project `phadincoffee`,
+Live at **https://phadincafe.vercel.app** (project `phadincafe`,
 `gnoltd-s-projects` team, linked to `Gnoltd/CoffeeShop` — push to `main`
 auto-deploys, no manual `vercel deploy` needed).
 
@@ -506,7 +506,7 @@ auto-deploys, no manual `vercel deploy` needed).
   different secret stores.
 - **Supabase Auth's "URL Configuration" (Site URL + Redirect URLs) is
   Dashboard-only**, no MCP tool exposes it. Must include
-  `https://phadincoffee.vercel.app/**`, the Vercel preview-deployment
+  `https://phadincafe.vercel.app/**`, the Vercel preview-deployment
   wildcard, and `http://localhost:3000/**`.
 
 ## Building the rest

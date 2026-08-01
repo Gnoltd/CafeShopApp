@@ -15,7 +15,7 @@
 - No changes to any Supabase/RPC/Edge Function call.
 - Every primitive lives in `components/motion/` and takes props shaped like the native element it replaces (documented per-primitive below).
 - Reduced motion is handled once, in `app/[locale]/(customer)/layout.tsx`, via `<MotionConfig reducedMotion="user">` — no per-primitive `useReducedMotion()` checks needed.
-- Verification source of truth is the live Vercel deployment (https://phadincoffee.vercel.app), per project convention — `npm run build` + `tsc` locally are fast-feedback only.
+- Verification source of truth is the live Vercel deployment (https://phadincafe.vercel.app), per project convention — `npm run build` + `tsc` locally are fast-feedback only.
 - **Deviation from the design doc**: the design doc names a new `app/[locale]/(customer)/template.tsx` for route transitions. On closer inspection, Next.js `template.tsx` fully remounts per navigation, which defeats `AnimatePresence`'s need for a stable parent to animate an exit before removal. Task 3 instead wraps `{children}` directly in the existing (already-stable) `app/[locale]/(customer)/layout.tsx`. Functionally identical outcome, more correct implementation.
 
 ## File Structure
@@ -2472,7 +2472,7 @@ git push origin main
 
 Vercel auto-deploys; wait for the deployment to go live.
 
-- [ ] **Step 2: Verify each page on https://phadincoffee.vercel.app, both locales**
+- [ ] **Step 2: Verify each page on https://phadincafe.vercel.app, both locales**
 
 - **Menu**: category chips slide, item stagger-in on filter/search change, quick-add tap feedback, cart badge updates.
 - **Product Detail**: size/modifier selection feedback, sticky Add-to-Cart bar slide-up, hero image transition from the tapped card (accept a plain cross-fade if the morph isn't smooth).

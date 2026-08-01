@@ -175,7 +175,7 @@ cleaning: number }; locale: string })`, called directly from an
 "Export Excel" button next to the Dashboard's "Overview" header. Builds
 a workbook with 5 sheets using `xlsx`'s `utils.json_to_sheet`/
 `utils.book_append_sheet`, then triggers a download via
-`XLSX.writeFile(workbook, `phadincoffee-dashboard-${todayIsoDate}.xlsx`)`
+`XLSX.writeFile(workbook, `phadincafe-dashboard-${todayIsoDate}.xlsx`)`
 (SheetJS handles the browser download itself, no manual Blob/anchor
 juggling needed):
 

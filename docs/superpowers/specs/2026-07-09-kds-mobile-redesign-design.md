@@ -229,7 +229,7 @@ original `ml-auto` position at/above `md`) — never both, never neither.
 
 Frontend-only, no schema/RPC changes — verified live per this
 project's convention, same approach as the POS redesign (Playwright
-against `https://phadincoffee.vercel.app`, temporary/not committed):
+against `https://phadincafe.vercel.app`, temporary/not committed):
 confirm the desktop 4-column grid and full-width sidebar are pixel-
 unchanged at ≥`md`; at phone width, confirm the segmented control
 switches between New/Preparing/Ready/Tables with the right column

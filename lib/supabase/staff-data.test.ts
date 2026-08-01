@@ -10,7 +10,7 @@ describe("getStaffMembers", () => {
       phone: "0901234567",
       role: "admin",
       is_active: true,
-      email: "thuha.nguyen@phadincoffee.vn",
+      email: "thuha.nguyen@phadincafe.vn",
     }
     const rpcSpy = vi.fn(() => Promise.resolve({ data: [row], error: null }))
     const supabase = { rpc: rpcSpy } as unknown as SupabaseClient
@@ -25,7 +25,7 @@ describe("getStaffMembers", () => {
         phone: "0901234567",
         role: "admin",
         isActive: true,
-        email: "thuha.nguyen@phadincoffee.vn",
+        email: "thuha.nguyen@phadincafe.vn",
       },
     ])
   })
@@ -53,12 +53,12 @@ describe("createStaffAccount", () => {
 
     const result = await createStaffAccount(supabase, {
       fullName: "Test Staffer",
-      email: "test@phadincoffee.dev",
+      email: "test@phadincafe.dev",
       role: "staff",
     })
 
     expect(invokeSpy).toHaveBeenCalledWith("create-staff-account", {
-      body: { fullName: "Test Staffer", email: "test@phadincoffee.dev", role: "staff" },
+      body: { fullName: "Test Staffer", email: "test@phadincafe.dev", role: "staff" },
     })
     expect(result).toEqual({ userId: "new-id", temporaryPassword: "Abc123XyZ9" })
   })
