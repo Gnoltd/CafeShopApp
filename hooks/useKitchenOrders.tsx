@@ -15,7 +15,10 @@ import {
   type RealOrderStatus,
 } from "@/lib/supabase/orders-data"
 
-export type KdsStatus = "paid" | "preparing" | "ready"
+// Derived from the real order_status enum (not hand-typed) so it can never
+// silently drift from it -- was a second, independently-declared status
+// vocabulary until this refactor.
+export type KdsStatus = Extract<RealOrderStatus, "paid" | "preparing" | "ready">
 export type { KdsOrderRow as KdsOrder }
 
 export const NEXT_STATUS: Record<KdsStatus, RealOrderStatus | null> = {
