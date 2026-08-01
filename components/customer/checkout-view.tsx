@@ -8,6 +8,7 @@ import { Link, useRouter } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { formatVND } from "@/lib/format"
+import { computeOrderTotal } from "@/lib/order-total"
 import { createClient } from "@/lib/supabase/client"
 import { cancelPendingOrder } from "@/lib/supabase/orders-data"
 import { isShiftOpen } from "@/lib/supabase/shift-data"
@@ -136,9 +137,7 @@ export function CheckoutView() {
     .filter((r) => selectedRedemptionIds.includes(r.id))
     .reduce((sum, r) => sum + r.discountValueVnd, 0)
   const discount = promoDiscount + loyaltyDiscount + redemptionDiscount
-  const taxableAmount = Math.max(subtotal - discount, 0)
-  const tax = Math.round(taxableAmount * (taxRatePercent / 100))
-  const total = taxableAmount + tax
+  const { tax, total } = computeOrderTotal({ subtotal, discount, taxRatePercent })
 
   function toggleRedemption(id: string) {
     setSelectedRedemptionIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))

@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import { Coffee, CupSoda, Cookie, Milk, Search, Minus, Plus, Trash2, ArrowRight, ArrowLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { formatVND } from "@/lib/format"
+import { computeOrderTotal } from "@/lib/order-total"
 import { createClient } from "@/lib/supabase/client"
 import type { MenuCategory, MenuIcon, MenuItem } from "@/lib/supabase/menu-data"
 import { useTables } from "@/hooks/useTables"
@@ -136,8 +137,7 @@ export function PosTerminal({ categories, items }: { categories: MenuCategory[];
   }
 
   const subtotal = order.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0)
-  const tax = Math.round(subtotal * (taxRatePercent / 100))
-  const total = subtotal + tax
+  const { tax, total } = computeOrderTotal({ subtotal, taxRatePercent })
 
   async function handleCharge() {
     if (order.length === 0) return
