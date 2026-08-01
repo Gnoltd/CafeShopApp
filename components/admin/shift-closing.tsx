@@ -6,14 +6,7 @@ import { Wallet, History, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatVND } from "@/lib/format"
 import { useShift } from "@/hooks/useShift"
-import {
-  openShift,
-  closeShift,
-  getShiftReport,
-  getShiftHistory,
-  type ShiftReport,
-  type ShiftHistoryEntry,
-} from "@/lib/supabase/shift-data"
+import type { ShiftReport, ShiftHistoryEntry } from "@/lib/supabase/shift-data"
 import { ShiftReportDetail, formatDateTime } from "@/components/admin/shift-report-detail"
 
 type Tab = "current" | "history"
@@ -21,7 +14,7 @@ type Tab = "current" | "history"
 export function ShiftClosing() {
   const t = useTranslations("AdminShift")
   const locale = useLocale()
-  const { supabase, report, isLoading, refetch } = useShift()
+  const { report, isLoading, refetch, openShift, closeShift, getHistory, getReportDetail } = useShift()
   const [tab, setTab] = useState<Tab>("current")
   const [startingCashInput, setStartingCashInput] = useState("")
   const [plannedStartInput, setPlannedStartInput] = useState("")
@@ -39,7 +32,7 @@ export function ShiftClosing() {
 
   useEffect(() => {
     if (tab !== "history" || history !== null) return
-    getShiftHistory(supabase)
+    getHistory()
       .then(setHistory)
       .catch(() => setHistoryError(t("historyLoadError")))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -52,7 +45,6 @@ export function ShiftClosing() {
     setIsSubmitting(true)
     try {
       await openShift(
-        supabase,
         Math.round(amount),
         plannedStartInput ? new Date(plannedStartInput).getTime() : null,
         plannedEndInput ? new Date(plannedEndInput).getTime() : null
@@ -75,7 +67,7 @@ export function ShiftClosing() {
     setError(null)
     setIsSubmitting(true)
     try {
-      const summary = await closeShift(supabase, Math.round(amount), notesInput.trim() || undefined)
+      const summary = await closeShift(Math.round(amount), notesInput.trim() || undefined)
       setClosedSummary(summary)
       setCountedCashInput("")
       setNotesInput("")
@@ -92,7 +84,7 @@ export function ShiftClosing() {
     setIsLoadingSelected(true)
     setHistoryError(null)
     try {
-      const detail = await getShiftReport(supabase, id)
+      const detail = await getReportDetail(id)
       setSelectedShift(detail)
     } catch {
       setHistoryError(t("historyLoadError"))

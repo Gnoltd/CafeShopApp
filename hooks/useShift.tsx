@@ -5,15 +5,16 @@ import { createClient } from "@/lib/supabase/client"
 import { useRealtimeChannel } from "@/hooks/useRealtimeChannel"
 import {
   getShiftReport,
+  getShiftHistory,
   openShift as openShiftQuery,
   closeShift as closeShiftQuery,
   joinShift as joinShiftQuery,
   leaveShift as leaveShiftQuery,
   type ShiftReport,
+  type ShiftHistoryEntry,
 } from "@/lib/supabase/shift-data"
 
 type ShiftContextValue = {
-  supabase: ReturnType<typeof createClient>
   report: ShiftReport | null
   isLoading: boolean
   isShiftOpen: boolean
@@ -21,9 +22,11 @@ type ShiftContextValue = {
   isCurrentUserWorking: boolean
   refetch: () => void
   openShift: (startingCash: number, plannedStartAt?: number | null, plannedEndAt?: number | null) => Promise<void>
-  closeShift: (countedCash: number, notes?: string) => Promise<void>
+  closeShift: (countedCash: number, notes?: string) => Promise<ShiftReport>
   joinShift: () => Promise<void>
   leaveShift: () => Promise<void>
+  getHistory: () => Promise<ShiftHistoryEntry[]>
+  getReportDetail: (shiftId?: string) => Promise<ShiftReport | null>
 }
 
 const ShiftContext = createContext<ShiftContextValue | null>(null)
@@ -73,9 +76,10 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
     setReport(result)
   }
 
-  async function closeShift(countedCash: number, notes?: string) {
+  async function closeShift(countedCash: number, notes?: string): Promise<ShiftReport> {
     const result = await closeShiftQuery(supabase, countedCash, notes)
     setReport(result)
+    return result
   }
 
   async function joinShift() {
@@ -88,6 +92,14 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
     setReport(result)
   }
 
+  function getHistory(): Promise<ShiftHistoryEntry[]> {
+    return getShiftHistory(supabase)
+  }
+
+  function getReportDetail(shiftId?: string): Promise<ShiftReport | null> {
+    return getShiftReport(supabase, shiftId)
+  }
+
   const isCurrentUserWorking =
     currentUserId !== null &&
     (report?.workers.some((w) => w.staffId === currentUserId && w.leftAt === null) ?? false)
@@ -95,7 +107,6 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   return (
     <ShiftContext.Provider
       value={{
-        supabase,
         report,
         isLoading,
         isShiftOpen: report !== null,
@@ -106,6 +117,8 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
         closeShift,
         joinShift,
         leaveShift,
+        getHistory,
+        getReportDetail,
       }}
     >
       {children}

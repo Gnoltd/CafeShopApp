@@ -5,13 +5,13 @@ import { useLocale, useTranslations } from "next-intl"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { formatVND } from "@/lib/format"
 import { useShift } from "@/hooks/useShift"
-import { getShiftReport, getShiftHistory, type ShiftReport, type ShiftHistoryEntry } from "@/lib/supabase/shift-data"
+import type { ShiftReport, ShiftHistoryEntry } from "@/lib/supabase/shift-data"
 import { ShiftReportDetail, formatDateTime } from "@/components/admin/shift-report-detail"
 
 export function StaffShiftHistory() {
   const t = useTranslations("AdminShift")
   const locale = useLocale()
-  const { supabase } = useShift()
+  const { getHistory, getReportDetail } = useShift()
 
   const [history, setHistory] = useState<ShiftHistoryEntry[] | null>(null)
   const [historyError, setHistoryError] = useState<string | null>(null)
@@ -19,7 +19,7 @@ export function StaffShiftHistory() {
   const [isLoadingSelected, setIsLoadingSelected] = useState(false)
 
   useEffect(() => {
-    getShiftHistory(supabase)
+    getHistory()
       .then(setHistory)
       .catch(() => setHistoryError(t("historyLoadError")))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -29,7 +29,7 @@ export function StaffShiftHistory() {
     setIsLoadingSelected(true)
     setHistoryError(null)
     try {
-      const detail = await getShiftReport(supabase, id)
+      const detail = await getReportDetail(id)
       setSelectedShift(detail)
     } catch {
       setHistoryError(t("historyLoadError"))
