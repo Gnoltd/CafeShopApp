@@ -9,11 +9,7 @@ import { cn } from "@/lib/utils"
 import { formatVND } from "@/lib/format"
 import { createClient } from "@/lib/supabase/client"
 import {
-  createMenuItem,
   deleteMenuItem,
-  getMenuItemById,
-  setItemModifierGroups,
-  setItemSizes,
   updateMenuItem,
   type MenuCategory,
   type MenuIcon,
@@ -21,7 +17,8 @@ import {
   type MenuItemInput,
   type MenuItemSizeInput,
 } from "@/lib/supabase/menu-data"
-import { setMenuItemIngredients, type RecipeEntry } from "@/lib/supabase/inventory-data"
+import { saveMenuItem } from "@/lib/supabase/save-menu-item"
+import type { RecipeEntry } from "@/lib/supabase/inventory-data"
 import { MenuItemForm } from "@/components/admin/menu-item-form"
 
 const ICONS: Record<MenuIcon, typeof Coffee> = {
@@ -120,13 +117,7 @@ export function MenuManagement({
   ) {
     setError(null)
     try {
-      const saved = editingId
-        ? await updateMenuItem(supabase, editingId, input)
-        : await createMenuItem(supabase, input)
-      await setItemModifierGroups(supabase, saved.id, extraGroupIds)
-      await setMenuItemIngredients(supabase, saved.id, recipeEntries)
-      await setItemSizes(supabase, saved.id, sizes)
-      const refreshed = (await getMenuItemById(supabase, saved.id)) ?? saved
+      const refreshed = await saveMenuItem(supabase, { editingId, item: input, extraGroupIds, recipeEntries, sizes })
       setItems((prev) =>
         editingId ? prev.map((item) => (item.id === editingId ? refreshed : item)) : [refreshed, ...prev]
       )
