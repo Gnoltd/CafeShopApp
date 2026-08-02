@@ -8,6 +8,9 @@ import {
   useState,
   type ReactNode,
 } from "react"
+import { createClient } from "@/lib/supabase/client"
+import { validatePromoCode, type PromoValidation } from "@/lib/supabase/promotions-data"
+import { resolvePromoDiscount, type PromoRule } from "@/lib/order-total"
 
 export type CartModifier = {
   groupId: string
@@ -41,18 +44,13 @@ type CartContextValue = {
   itemCount: number
   promoCode: string | null
   promoDiscount: number
-  applyPromoCode: (code: string) => boolean
+  applyPromoCode: (code: string) => Promise<PromoValidation>
   clearPromoCode: () => void
 }
 
 const CartContext = createContext<CartContextValue | null>(null)
 
 const STORAGE_KEY = "phadincafe-cart"
-
-/** No `promotions` table yet — a single hardcoded valid code, 10% off subtotal. */
-const VALID_PROMO_CODES: Record<string, number> = {
-  WELCOME10: 0.1,
-}
 
 function buildCartItemId(item: AddToCartInput): string {
   const modifierKey = item.modifiers
@@ -66,8 +64,10 @@ function buildCartItemId(item: AddToCartInput): string {
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const [supabase] = useState(() => createClient())
   const [items, setItems] = useState<CartItem[]>([])
   const [promoCode, setPromoCode] = useState<string | null>(null)
+  const [promoRule, setPromoRule] = useState<PromoRule | null>(null)
   const [hydrated, setHydrated] = useState(false)
 
   useEffect(() => {
@@ -114,17 +114,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
   function clear() {
     setItems([])
     setPromoCode(null)
+    setPromoRule(null)
   }
 
-  function applyPromoCode(code: string): boolean {
+  async function applyPromoCode(code: string): Promise<PromoValidation> {
     const normalized = code.trim().toUpperCase()
-    if (!(normalized in VALID_PROMO_CODES)) return false
-    setPromoCode(normalized)
-    return true
+    const result = await validatePromoCode(supabase, normalized, subtotal)
+    if (result.valid) {
+      setPromoCode(normalized)
+      setPromoRule({ discountType: result.discountType, discountValue: result.discountValue })
+    }
+    return result
   }
 
   function clearPromoCode() {
     setPromoCode(null)
+    setPromoRule(null)
   }
 
   const subtotal = useMemo(
@@ -135,10 +140,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     () => items.reduce((sum, item) => sum + item.quantity, 0),
     [items]
   )
-  const promoDiscount = useMemo(
-    () => (promoCode ? Math.round(subtotal * VALID_PROMO_CODES[promoCode]) : 0),
-    [promoCode, subtotal]
-  )
+  const promoDiscount = useMemo(() => resolvePromoDiscount(subtotal, promoRule), [subtotal, promoRule])
 
   return (
     <CartContext.Provider
