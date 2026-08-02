@@ -116,13 +116,31 @@ export function CartView() {
   const { items, updateQuantity, removeItem, subtotal, promoCode, promoDiscount, applyPromoCode, clearPromoCode } =
     useCart()
   const [promoInput, setPromoInput] = useState("")
-  const [promoError, setPromoError] = useState(false)
+  const [promoErrorReason, setPromoErrorReason] = useState<
+    "not_found" | "inactive" | "not_started" | "expired" | "limit_reached" | "below_minimum" | null
+  >(null)
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false)
 
-  function handleApplyPromo() {
-    const success = applyPromoCode(promoInput)
-    setPromoError(!success)
-    if (success) setPromoInput("")
+  async function handleApplyPromo() {
+    setIsApplyingPromo(true)
+    const result = await applyPromoCode(promoInput)
+    setIsApplyingPromo(false)
+    if (result.valid) {
+      setPromoInput("")
+      setPromoErrorReason(null)
+    } else {
+      setPromoErrorReason(result.reason)
+    }
   }
+
+  const PROMO_ERROR_KEY = {
+    not_found: "promoNotFound",
+    inactive: "promoInactive",
+    not_started: "promoNotStarted",
+    expired: "promoExpired",
+    limit_reached: "promoLimitReached",
+    below_minimum: "promoBelowMinimum",
+  } as const
 
   const total = Math.max(subtotal - promoDiscount, 0)
 
@@ -178,16 +196,21 @@ export function CartView() {
                   value={promoInput}
                   onChange={(e) => {
                     setPromoInput(e.target.value)
-                    setPromoError(false)
+                    setPromoErrorReason(null)
                   }}
                   placeholder={t("promoPlaceholder")}
                   className="nb-border-sm h-10 flex-1 rounded-lg"
                 />
-                <Button variant="neubrutal" className="h-10" onClick={handleApplyPromo} disabled={!promoInput.trim()}>
+                <Button
+                  variant="neubrutal"
+                  className="h-10"
+                  onClick={handleApplyPromo}
+                  disabled={!promoInput.trim() || isApplyingPromo}
+                >
                   {t("apply")}
                 </Button>
               </div>
-              {promoError && <p className="text-xs text-destructive">{t("invalidPromo")}</p>}
+              {promoErrorReason && <p className="text-xs text-destructive">{t(PROMO_ERROR_KEY[promoErrorReason])}</p>}
             </div>
           )}
         </div>
