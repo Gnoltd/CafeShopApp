@@ -1,6 +1,42 @@
 # Open / not started
 
-1. **"Neubrutalist Modern" full-app redesign — all 4 phases shipped to
+0. **`https://phadincafe.vercel.app` currently requires Vercel SSO login
+   for every visitor** (Deployment Protection on the Production
+   environment), confirmed 2026-08-03 on both a fresh deploy and a
+   13-hour-old one — pre-existing, not caused by any recent change.
+   Blocks every live-verification item in this file until turned off
+   in the Vercel project's Settings → Deployment Protection. Check this
+   first before attempting any "live-verify on Vercel" task below.
+
+1. **Promotions — real manager-managed discount codes, replacing the
+   hardcoded `WELCOME10`. Code shipped and DB-verified, live UI
+   verification blocked by item 0 above, not yet performed.**
+   Design: `docs/superpowers/specs/2026-08-03-promotions-design.md`;
+   plan: `docs/superpowers/plans/2026-08-03-promotions.md`. New
+   `promotions` table (percent/fixed discount, active toggle,
+   `starts_at`/`ends_at`, `max_redemptions`, `min_subtotal_vnd`,
+   `times_used`) + `orders.promo_code` (migration `0068`, plus `0069`
+   fixing the platform's auto-re-grant of `validate_promo_code` to
+   `PUBLIC` — this project's documented gotcha, caught live). New
+   guest-safe `validate_promo_code` RPC for instant Cart feedback;
+   `place_order` now looks up the real row (`FOR UPDATE`, race-safe)
+   instead of string-matching `WELCOME10`, raising a specific exception
+   per failure reason and incrementing `times_used` on success. New
+   `/admin/promotions` page (manager+admin, list + add/edit modal,
+   modeled on Menu Management) to create/edit/deactivate codes. Cart's
+   promo apply is now a real server round trip with a loading state and
+   a reason-specific error message (not found / inactive / not started
+   / expired / limit reached / below minimum) instead of one generic
+   "invalid code" string. `resolvePromoDiscount` (`lib/order-total.ts`)
+   and the new `lib/supabase/promotions-data.ts` query layer are
+   TDD'd; `validate_promo_code` was verified live via direct SQL
+   (success and not-found cases). **Still needed**: the full live UI
+   pass from the plan's Task 8 (create a code, apply/fail in Cart with
+   each reason, place a real order, confirm `times_used` increments,
+   confirm `max_redemptions` actually blocks a second use) — blocked
+   by item 0.
+
+2. **"Neubrutalist Modern" full-app redesign — all 4 phases shipped to
    `main`, live verification is the one remaining step.**
    Design spec: `docs/superpowers/specs/2026-07-12-elevated-warm-redesign-design.md`
    (title says "Elevated Warm" but the actual locked style is
@@ -67,7 +103,7 @@
    the spec's own verification plan. Deliberately deferred by explicit
    user request; do it as a single pass, not phase-by-phase.
 
-2. **Live-verify the Admin Dashboard by hand** — KPIs are real
+3. **Live-verify the Admin Dashboard by hand** — KPIs are real
    (`get_dashboard_stats()`, migration `0026`), but a full manual
    walkthrough hasn't been confirmed: real KPI numbers (cross-check
    Orders Today against Staff Order History), the 7-day chart's
@@ -78,21 +114,21 @@
    this check (cloud routine, 2026-07-10/11) both stalled without
    landing a result — try a manual pass instead of another automated
    retry.
-3. **Shift closing feature — live verification not confirmed done.**
+4. **Shift closing feature — live verification not confirmed done.**
    Code for Tasks 1-4 is committed and pushed (`shifts` table +
    `orders.paid_at` + RPCs, query layer, i18n, `/admin/shift` page +
    nav entries), but Task 5 (live-verify the open/report/close flow +
    this file's entry) has no recorded evidence of having run. Same two
-   stalled automated attempts as item 1 above. Plan:
+   stalled automated attempts as item 3 above. Plan:
    `docs/superpowers/plans/2026-07-10-shift-closing.md`.
-4. **Set the real tax rate.** Admin Settings now genuinely persists
+5. **Set the real tax rate.** Admin Settings now genuinely persists
    (migration `0042`, 2026-07-11) and POS/checkout both apply
    `shop_settings.tax_rate` for real — but it's deliberately left at
    `0` since no real rate was ever specified (previously a hardcoded,
    never-actually-charged `8%` in POS only). Set the real rate via
    `/admin/settings` whenever convenient — also a good moment to fill
    in shop name/address/phone/hours, which were never persisted either.
-5. **Forgot password — real-email round trip unconfirmed.** Shipped and
+6. **Forgot password — real-email round trip unconfirmed.** Shipped and
    live-verified end-to-end except for the actual emailed link: request
    flow (email entry → "check your email" screen, works regardless of
    whether the address is registered), navigation between views, and
