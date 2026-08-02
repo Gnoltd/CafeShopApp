@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { computeOrderTotal } from "./order-total"
+import { computeOrderTotal, resolvePromoDiscount } from "./order-total"
 
 describe("computeOrderTotal", () => {
   it("returns the subtotal as total when there is no discount and no tax", () => {
@@ -40,5 +40,27 @@ describe("computeOrderTotal", () => {
       tax: 4_500,
       total: 49_500,
     })
+  })
+})
+
+describe("resolvePromoDiscount", () => {
+  it("returns 0 when there is no applied rule", () => {
+    expect(resolvePromoDiscount(100_000, null)).toBe(0)
+  })
+
+  it("computes a percent discount off the subtotal", () => {
+    expect(resolvePromoDiscount(100_000, { discountType: "percent", discountValue: 10 })).toBe(10_000)
+  })
+
+  it("uses a fixed discount value as-is", () => {
+    expect(resolvePromoDiscount(100_000, { discountType: "fixed", discountValue: 15_000 })).toBe(15_000)
+  })
+
+  it("clamps a fixed discount at the subtotal", () => {
+    expect(resolvePromoDiscount(10_000, { discountType: "fixed", discountValue: 15_000 })).toBe(10_000)
+  })
+
+  it("rounds a percent discount to the nearest whole VND", () => {
+    expect(resolvePromoDiscount(33_333, { discountType: "percent", discountValue: 10 })).toBe(3_333)
   })
 })

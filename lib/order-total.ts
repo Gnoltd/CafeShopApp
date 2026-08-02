@@ -15,3 +15,14 @@ export function computeOrderTotal({ subtotal, discount = 0, taxRatePercent }: Or
   const tax = Math.round(taxableAmount * (taxRatePercent / 100))
   return { taxableAmount, tax, total: taxableAmount + tax }
 }
+
+export type PromoRule = {
+  discountType: "percent" | "fixed"
+  discountValue: number
+}
+
+export function resolvePromoDiscount(subtotal: number, rule: PromoRule | null): number {
+  if (!rule) return 0
+  const raw = rule.discountType === "percent" ? Math.round((subtotal * rule.discountValue) / 100) : rule.discountValue
+  return Math.min(raw, Math.max(subtotal, 0))
+}
