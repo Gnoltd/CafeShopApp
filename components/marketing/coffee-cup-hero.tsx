@@ -295,23 +295,23 @@ export function CoffeeCupHero({
             {t("heroLeftText")}
           </p>
           <div
-            className="hero-anim hero-fade flex w-full max-w-xs flex-wrap items-start gap-4 sm:max-w-none sm:flex-row sm:items-center"
+            className="hero-anim hero-fade flex w-full max-w-xs flex-col items-start gap-4"
             style={{ animationDelay: "0.85s" }}
           >
-            <Link
-              href="/menu"
-              className="w-full rounded-full bg-primary px-7 py-3.5 text-center text-sm font-semibold text-primary-foreground transition-all hover:scale-[1.03] hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/30 active:scale-95 sm:w-auto"
-            >
-              {t("orderNow")}
-            </Link>
             <button
               type="button"
               onClick={onScanQr}
-              className="flex w-full items-center justify-center gap-2 rounded-full border border-[#fff8f2]/40 bg-transparent px-7 py-3.5 text-sm font-semibold text-[#fff8f2] transition-all hover:scale-[1.03] hover:bg-white/10 active:scale-95 sm:w-auto"
+              className="flex w-full items-center justify-center gap-2 rounded-full border border-[#fff8f2]/40 bg-transparent px-7 py-3.5 text-sm font-semibold text-[#fff8f2] transition-all hover:scale-[1.03] hover:bg-white/10 active:scale-95"
             >
               <QrCode className="h-4 w-4" aria-hidden />
               {t("scanQr")}
             </button>
+            <Link
+              href="/menu"
+              className="w-full rounded-full bg-primary px-7 py-3.5 text-center text-sm font-semibold text-primary-foreground transition-all hover:scale-[1.03] hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/30 active:scale-95"
+            >
+              {t("orderNow")}
+            </Link>
           </div>
         </div>
       </div>

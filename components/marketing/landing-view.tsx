@@ -4,6 +4,7 @@ import { useState } from "react"
 import { LandingNav } from "@/components/marketing/landing-nav"
 import { CoffeeCupHero } from "@/components/marketing/coffee-cup-hero"
 import { BestSellersGallery } from "@/components/marketing/best-sellers-gallery"
+import { BestSellersMarquee } from "@/components/marketing/best-sellers-marquee"
 import { QrScannerOverlay } from "@/components/customer/qr-scanner-overlay"
 import type { MenuItem } from "@/lib/supabase/menu-data"
 import type { LandingHeroSettings } from "@/lib/supabase/settings-data"
@@ -33,6 +34,9 @@ export function LandingView({
 
       {/* 2. Scroll-Linked Curved Arc Gallery + Integrated Merged Promotion Card */}
       <BestSellersGallery items={bestSellers} />
+
+      {/* 3. Signature Stream — infinite marquee, restored per the imported design */}
+      <BestSellersMarquee items={bestSellers} />
 
       {isScannerOpen && <QrScannerOverlay onClose={() => setIsScannerOpen(false)} />}
     </div>

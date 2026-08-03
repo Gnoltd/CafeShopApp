@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { useLocale } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { Link } from "@/i18n/navigation"
 import { ItemImage } from "@/components/customer/item-image"
 import { formatVND } from "@/lib/format"
@@ -10,6 +10,7 @@ import type { MenuItem } from "@/lib/supabase/menu-data"
 
 export function BestSellersMarquee({ items }: { items: MenuItem[] }) {
   const locale = useLocale()
+  const t = useTranslations("Landing")
   const [isPaused, setIsPaused] = useState(false)
 
   if (!items || items.length === 0) return null
@@ -21,9 +22,9 @@ export function BestSellersMarquee({ items }: { items: MenuItem[] }) {
     <section className="relative overflow-hidden bg-black py-12 md:py-20">
       <div className="mb-6 px-6 text-center md:mb-10">
         <h3 className="text-xl font-bold uppercase tracking-wider text-white/90 md:text-2xl">
-          Signature Stream
+          {t("signatureStream")}
         </h3>
-        <p className="mt-1 text-xs text-white/60 md:text-sm">Hover to explore details</p>
+        <p className="mt-1 text-xs text-white/60 md:text-sm">{t("signatureStreamHint")}</p>
       </div>
 
       <div

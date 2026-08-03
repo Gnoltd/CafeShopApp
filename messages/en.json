@@ -29,9 +29,9 @@
     "title": "Welcome to PhaDinCafe",
     "orderNow": "Order Now",
     "scanQr": "Scan QR at Table",
-    "heroLine1": "Crafted slow.",
-    "heroLine2": "Poured fast.",
-    "heroLeftText": "Single-origin beans, roasted weekly, brewed by hand at every table.",
+    "heroLine1": "Traditional flavor,",
+    "heroLine2": "modern rhythm.",
+    "heroLeftText": "Pure filter coffee, brewed fresh daily — order ahead, pick up, or enjoy right here at the shop.",
     "heroRightText": "Single-origin beans, roasted weekly, brewed by hand at every table.",
     "scrollHintLine1": "Scroll Down to",
     "scrollHintLine2": "Learn More",
@@ -55,7 +55,9 @@
     "promoBadge": "20% OFF",
     "bestSellers": "Best Sellers",
     "viewAll": "View All",
-    "categories": "Categories"
+    "categories": "Categories",
+    "signatureStream": "Signature Stream",
+    "signatureStreamHint": "Hover to explore"
   },
   "Auth": {
     "login": "Log In",

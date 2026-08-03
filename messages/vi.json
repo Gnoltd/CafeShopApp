@@ -29,9 +29,9 @@
     "title": "Chào Mừng Đến PhaDinCafe",
     "orderNow": "Đặt Hàng Ngay",
     "scanQr": "Quét QR Tại Bàn",
-    "heroLine1": "Pha chậm rãi.",
-    "heroLine2": "Rót thật nhanh.",
-    "heroLeftText": "Hạt cà phê nguyên chất, rang mỗi tuần, pha thủ công tại từng bàn.",
+    "heroLine1": "Hương vị truyền thống,",
+    "heroLine2": "nhịp sống hiện đại.",
+    "heroLeftText": "Cà phê phin nguyên chất, pha chế mỗi ngày — đặt trước, ghé lấy, hoặc thưởng thức ngay tại quán.",
     "heroRightText": "Hạt cà phê nguyên chất, rang mỗi tuần, pha thủ công tại từng bàn.",
     "scrollHintLine1": "Cuộn xuống để",
     "scrollHintLine2": "xem thêm",
@@ -55,7 +55,9 @@
     "promoBadge": "Giảm 20%",
     "bestSellers": "Bán Chạy",
     "viewAll": "Xem Tất Cả",
-    "categories": "Danh Mục"
+    "categories": "Danh Mục",
+    "signatureStream": "Signature Stream",
+    "signatureStreamHint": "Di chuột để khám phá"
   },
   "Auth": {
     "login": "Đăng Nhập",
