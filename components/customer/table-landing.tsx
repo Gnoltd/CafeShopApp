@@ -2,12 +2,22 @@
 
 import { useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
-import { MapPin, AlertCircle, Sparkles } from "lucide-react"
+import { AlertCircle, Sparkles } from "lucide-react"
 import { Link } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
 import { useTables, type TableRecord } from "@/hooks/useTables"
+import { TableOrderingSession } from "@/components/customer/table-ordering-session"
+import type { MenuCategory, MenuItem } from "@/lib/supabase/menu-data"
 
-export function TableLanding({ qrToken }: { qrToken: string }) {
+export function TableLanding({
+  qrToken,
+  categories,
+  items,
+}: {
+  qrToken: string
+  categories: MenuCategory[]
+  items: MenuItem[]
+}) {
   const t = useTranslations("TableLanding")
   const { setActiveTableByToken, notifyCleaning } = useTables()
   const [resolvedTable, setResolvedTable] = useState<TableRecord | null | undefined>(undefined)
@@ -63,19 +73,5 @@ export function TableLanding({ qrToken }: { qrToken: string }) {
     )
   }
 
-  return (
-    <div className="mx-auto flex min-h-[70vh] max-w-md flex-col items-center justify-center gap-4 px-6 text-center">
-      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/15">
-        <MapPin className="h-10 w-10 text-primary" />
-      </div>
-      <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        {t("orderingAt")}
-      </p>
-      <h1 className="text-3xl font-bold text-primary">{t("tableName", { number: resolvedTable.number })}</h1>
-      <p className="text-sm text-muted-foreground">{t("servedHere")}</p>
-      <Button className="h-12 w-full rounded-xl text-base font-bold" render={<Link href="/menu" />} nativeButton={false}>
-        {t("viewMenu")}
-      </Button>
-    </div>
-  )
+  return <TableOrderingSession table={resolvedTable} qrToken={qrToken} categories={categories} items={items} />
 }
