@@ -4,7 +4,6 @@ import { useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import { Banknote, CreditCard, QrCode, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { formatVND } from "@/lib/format"
 import { createClient } from "@/lib/supabase/client"
 import { checkoutTableSession } from "@/lib/supabase/table-session-data"
@@ -32,7 +31,6 @@ export function CheckBillSheet({
   const t = useTranslations("TableSession")
   const [supabase] = useState(() => createClient())
   const [method, setMethod] = useState<Method | null>(null)
-  const [promoCode, setPromoCode] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -41,7 +39,7 @@ export function CheckBillSheet({
     setError(null)
     setIsSubmitting(true)
     try {
-      const result = await checkoutTableSession(supabase, qrToken, method, locale, promoCode.trim() || null)
+      const result = await checkoutTableSession(supabase, qrToken, method, locale, null)
       if (result.checkoutUrl) {
         window.location.href = result.checkoutUrl
         return
@@ -79,15 +77,6 @@ export function CheckBillSheet({
         <div className="mb-4 flex items-center justify-between border-t pt-3">
           <span className="text-sm text-muted-foreground">{t("checkBillTotal")}</span>
           <span className="text-xl font-extrabold text-price">{formatVND(unpaidTotal)}</span>
-        </div>
-
-        <div className="mb-4 flex gap-2">
-          <Input
-            value={promoCode}
-            onChange={(e) => setPromoCode(e.target.value)}
-            placeholder={t("checkBillPromoPlaceholder")}
-            className="nb-border-sm h-10 flex-1 rounded-lg"
-          />
         </div>
 
         <div className="mb-4 grid grid-cols-3 gap-2">
