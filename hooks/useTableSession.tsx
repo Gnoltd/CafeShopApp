@@ -85,6 +85,23 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
     { deps: [qrToken] }
   )
 
+  // I-1: a guest round has customer_id null, matching neither
+  // orders_select_own nor orders_select_staff -- so Realtime (itself
+  // RLS-gated) never delivers `orders` change events to a guest device
+  // at all. This low-frequency poll is the safety net for round-status
+  // changes (paid -> preparing -> ready -> served) and payment
+  // confirmations Realtime can't deliver here, matching this project's
+  // own guest order-tracking convention (lib/supabase/order-tracking.ts).
+  // Realtime above still gives fast updates for table_cart_items/
+  // table_sessions, which ARE guest-visible.
+  useEffect(() => {
+    if (!qrToken) return
+    const interval = setInterval(() => {
+      refetch().catch(() => {})
+    }, 10_000)
+    return () => clearInterval(interval)
+  }, [qrToken, refetch])
+
   async function dismissAndAbandon() {
     if (!qrToken) return
     setShowIdlePrompt(false)
