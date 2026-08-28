@@ -25,6 +25,11 @@ export function buildVnpayReturnUrl(orderId: string, locale: string): string {
   return `${Deno.env.get("SUPABASE_URL")}/functions/v1/vnpay-return?orderId=${orderId}&locale=${locale}`
 }
 
+/** Sibling of buildVnpayReturnUrl for the aggregate Check Bill charge -- carries no orderId, since the trusted identity travels in vnp_TxnRef's "session:" prefix, not this URL's query params. */
+export function buildVnpayReturnUrlForTableSession(locale: string): string {
+  return `${Deno.env.get("SUPABASE_URL")}/functions/v1/vnpay-return?locale=${locale}`
+}
+
 async function hmacSha512Hex(signString: string, secret: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw",
@@ -110,6 +115,46 @@ export async function buildVnpayCheckoutUrl(params: {
     vnp_CurrCode: "VND",
     vnp_TxnRef: params.orderId,
     vnp_OrderInfo: `Thanh toan don hang ${params.orderId}`,
+    vnp_OrderType: "other",
+    vnp_Locale: params.locale === "vi" ? "vn" : "en",
+    vnp_ReturnUrl: params.returnUrl,
+    vnp_IpAddr: params.ipAddr,
+    vnp_CreateDate: toVnpayDateString(now),
+    vnp_ExpireDate: toVnpayDateString(expire),
+  }
+  const secureHash = await signVnpayParams(vnpParams, Deno.env.get("VNPAY_HASH_SECRET")!)
+  const query = Object.keys(vnpParams)
+    .sort()
+    .map((k) => `${k}=${vnpayEncode(vnpParams[k])}`)
+    .join("&")
+  return `${VNPAY_GATEWAY_URL}?${query}&vnp_SecureHash=${secureHash}`
+}
+
+// Sibling of buildVnpayCheckoutUrl for the aggregate "Check Bill" charge
+// (docs/superpowers/specs/2026-08-28-shared-table-ordering-session-design.md,
+// Section 6) -- a separate function rather than widening the existing
+// one's params, so place-order/pay-order's call sites need no changes.
+// vnp_TxnRef gets a "session:" prefix so vnpay-ipn/vnpay-return can
+// tell an aggregate charge apart from a plain order id (both are raw
+// UUIDs otherwise) -- see those functions' own comments for the parse
+// side of this convention.
+export async function buildVnpayCheckoutUrlForTableSession(params: {
+  tableSessionId: string
+  total: number
+  ipAddr: string
+  locale: string
+  returnUrl: string
+}): Promise<string> {
+  const now = new Date()
+  const expire = new Date(now.getTime() + 15 * 60 * 1000)
+  const vnpParams: Record<string, string> = {
+    vnp_Version: "2.1.0",
+    vnp_Command: "pay",
+    vnp_TmnCode: Deno.env.get("VNPAY_TMN_CODE")!,
+    vnp_Amount: String(params.total * 100),
+    vnp_CurrCode: "VND",
+    vnp_TxnRef: `session:${params.tableSessionId}`,
+    vnp_OrderInfo: `Thanh toan ban ${params.tableSessionId}`,
     vnp_OrderType: "other",
     vnp_Locale: params.locale === "vi" ? "vn" : "en",
     vnp_ReturnUrl: params.returnUrl,
