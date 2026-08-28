@@ -108,6 +108,14 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
     await abandonTableSessionQuery(supabase, qrToken)
   }
 
+  // I-2: a content-based fingerprint, not the raw `cartItems` array --
+  // refetch() (triggered by ANY unfiltered Realtime event, including
+  // ones from other tables entirely) produces a fresh array reference
+  // every time even when the contents haven't changed. Depending on the
+  // array itself re-armed this timer on unrelated activity elsewhere in
+  // the cafe, so an abandoned draft essentially never idled out.
+  const cartFingerprint = cartItems.map((i) => `${i.id}:${i.quantity}`).join(",")
+
   // Idle-draft timeout: only while the session has no placed rounds
   // yet. Re-arms on any cart/round change -- one shared session, so
   // the clock tracks the session's liveness, not any one device's.
@@ -130,7 +138,7 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
       clearTimeout(promptTimer.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasSession, rounds.length, cartItems])
+  }, [hasSession, rounds.length, cartFingerprint])
 
   async function addItem(input: AddCartItemInput) {
     if (!qrToken) return
