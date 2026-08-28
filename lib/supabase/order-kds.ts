@@ -80,3 +80,9 @@ export async function confirmServedCashPayment(supabase: SupabaseClient, orderId
   const { error } = await supabase.from("orders").update({ payment_status: "paid" }).eq("id", orderId)
   if (error) throw error
 }
+
+export async function confirmTableCashPayment(supabase: SupabaseClient, tableId: string): Promise<number> {
+  const { data, error } = await supabase.rpc("confirm_table_cash_payment", { p_table_id: tableId })
+  if (error) throw error
+  return data as number
+}
