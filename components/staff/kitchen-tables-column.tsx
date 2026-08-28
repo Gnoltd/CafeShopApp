@@ -11,7 +11,15 @@ export function KitchenTablesColumn({ active }: { active: boolean }) {
   const locale = useLocale()
   const t = useTranslations("KitchenDisplay")
   const { tables, setStatus } = useTables()
-  const { orders, serveTable, confirmCashPayment, confirmTableCashPayment, markCashPayment, undoCashPayment } = useKitchenOrders()
+  const {
+    orders,
+    serveTable,
+    confirmCashPayment,
+    confirmTableCashPayment,
+    markTableCashPayment,
+    markCashPayment,
+    undoCashPayment,
+  } = useKitchenOrders()
   const [error, setError] = useState<string | null>(null)
 
   return (
@@ -42,7 +50,12 @@ export function KitchenTablesColumn({ active }: { active: boolean }) {
           // payment" isn't scoped to status === "served" here (design
           // doc Goal 4 / Q15: Check Bill can be tapped before every
           // round is served).
-          const awaitingPaymentOrders = tableOrders.filter((o) => o.paymentStatus === "pending" && o.paymentMethod !== null)
+          // I-3: also include rounds with no payment_method chosen yet
+          // (paymentMethod === null) -- a table round starts with no
+          // method and only gets one once Check Bill is tapped. If a
+          // guest never taps it, this badge is the only signal staff
+          // have that money is owed on this table at all.
+          const awaitingPaymentOrders = tableOrders.filter((o) => o.paymentStatus === "pending")
           const awaitingPaymentTotal = awaitingPaymentOrders.reduce((sum, o) => sum + o.total, 0)
           const awaitingPaymentMethod = awaitingPaymentOrders[0]?.paymentMethod ?? null
 
@@ -114,6 +127,18 @@ export function KitchenTablesColumn({ active }: { active: boolean }) {
                   >
                     <Utensils className="h-3 w-3" />
                     {t("markServed")}
+                  </button>
+                )}
+                {awaitingPaymentOrders.length > 0 && awaitingPaymentMethod === null && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError(null)
+                      markTableCashPayment(table.id).catch(() => setError(t("updateError")))
+                    }}
+                    className="nb-border-sm nb-shadow-sm nb-press-sm rounded-lg bg-secondary px-3 py-2 text-xs font-extrabold text-secondary-foreground"
+                  >
+                    {t("markCash")}
                   </button>
                 )}
                 {awaitingPaymentMethod === "cash" && (

@@ -33,6 +33,7 @@ export {
   confirmCashPayment,
   confirmServedCashPayment,
   confirmTableCashPayment,
+  markTableCashPayment,
 } from "./order-kds"
 
 export type { OrderHistoryFilters, OrderHistoryRow, OrderHistoryPage, OrderHistoryDetail } from "./order-history"

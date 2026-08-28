@@ -88,3 +88,21 @@ export async function confirmTableCashPayment(supabase: SupabaseClient, tableId:
   if (error) throw error
   return data as number
 }
+
+// I-3: a table round placed via the shared-table-ordering flow starts
+// with payment_method null and only gets one once someone taps Check
+// Bill. If guests never tap it, staff had no way to settle the table
+// from KDS at all. Plain multi-row update, not an RPC -- verified live
+// that orders_update_staff RLS already allows staff/manager/admin to
+// UPDATE orders directly, matching the existing single-order
+// setOrderPaymentMethodCash (order-tracking.ts) which does exactly
+// this pattern for one order.
+export async function markTableCashPayment(supabase: SupabaseClient, tableId: string): Promise<void> {
+  const { error } = await supabase
+    .from("orders")
+    .update({ payment_method: "cash" })
+    .eq("table_id", tableId)
+    .eq("payment_status", "pending")
+    .is("payment_method", null)
+  if (error) throw error
+}
