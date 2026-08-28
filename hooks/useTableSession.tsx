@@ -47,6 +47,7 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
   const [paymentPending, setPaymentPending] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [showIdlePrompt, setShowIdlePrompt] = useState(false)
+  const [stillHereNonce, setStillHereNonce] = useState(0)
   const idleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const promptTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -138,7 +139,7 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
       clearTimeout(promptTimer.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasSession, rounds.length, cartFingerprint])
+  }, [hasSession, rounds.length, cartFingerprint, stillHereNonce])
 
   async function addItem(input: AddCartItemInput) {
     if (!qrToken) return
@@ -163,7 +164,15 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
   function confirmStillHere() {
     clearTimeout(promptTimer.current)
     setShowIdlePrompt(false)
-    // The next cart/round-change effect run re-arms the 5-minute timer.
+    // Bumping stillHereNonce re-runs the idle-timer effect below even
+    // when hasSession/rounds.length/cartFingerprint haven't changed --
+    // otherwise a guest who confirms "still here" and then genuinely
+    // leaves would never have the idle timer re-armed (found in review:
+    // the fingerprint fix for the "unrelated Realtime activity resets
+    // every table's timer" bug also stopped this legitimate re-arm case
+    // from firing, since dismissing the prompt alone doesn't change any
+    // of the other deps).
+    setStillHereNonce((n) => n + 1)
   }
 
   return {
