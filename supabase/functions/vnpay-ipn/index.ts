@@ -33,16 +33,59 @@ Deno.serve(async (req) => {
     return ipnResponse("97", "Invalid signature")
   }
 
-  const orderId = params.get("vnp_TxnRef")
+  const txnRef = params.get("vnp_TxnRef")
   const vnpAmount = Number(params.get("vnp_Amount") ?? "0")
   const responseCode = params.get("vnp_ResponseCode")
 
-  if (!orderId) {
+  if (!txnRef) {
     return ipnResponse("01", "Order not found")
   }
 
   const serviceClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!)
 
+  // Aggregate Check Bill charge (docs/superpowers/specs/
+  // 2026-08-28-shared-table-ordering-session-design.md, Section 6) --
+  // vnp_TxnRef carries a "session:" prefix instead of a raw order id.
+  if (txnRef.startsWith("session:")) {
+    const tableSessionId = txnRef.slice("session:".length)
+    const { data: session } = await serviceClient
+      .from("table_sessions")
+      .select("id, checkout_discount_amount")
+      .eq("id", tableSessionId)
+      .maybeSingle()
+    if (!session) {
+      return ipnResponse("01", "Order not found")
+    }
+
+    const { data: pendingOrders } = await serviceClient
+      .from("orders")
+      .select("id, total")
+      .eq("table_session_id", tableSessionId)
+      .eq("payment_status", "pending")
+
+    const aggregateTotal = (pendingOrders ?? []).reduce((sum, o) => sum + o.total, 0)
+    const expectedCharge = aggregateTotal - session.checkout_discount_amount
+
+    if (!pendingOrders || pendingOrders.length === 0) {
+      return ipnResponse("02", "Order already confirmed")
+    }
+    if (vnpAmount / 100 !== expectedCharge) {
+      return ipnResponse("04", "Invalid amount")
+    }
+
+    if (responseCode === "00") {
+      await serviceClient
+        .from("orders")
+        .update({ payment_status: "paid" })
+        .eq("table_session_id", tableSessionId)
+        .eq("payment_status", "pending")
+    }
+    await serviceClient.from("table_sessions").update({ payment_pending: false }).eq("id", tableSessionId)
+
+    return ipnResponse("00", "Confirm Success")
+  }
+
+  const orderId = txnRef
   const { data: order } = await serviceClient
     .from("orders")
     .select("id, total, status, payment_status")
