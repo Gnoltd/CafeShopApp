@@ -32,7 +32,7 @@ export type CartItem = {
   quantity: number
 }
 
-type AddToCartInput = Omit<CartItem, "cartItemId" | "quantity">
+export type AddToCartInput = Omit<CartItem, "cartItemId" | "quantity">
 
 type CartContextValue = {
   items: CartItem[]

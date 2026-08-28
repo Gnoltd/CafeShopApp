@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { formatVND } from "@/lib/format"
-import { useCart } from "@/hooks/useCart"
+import { useCart, type AddToCartInput } from "@/hooks/useCart"
 import { ItemImage } from "@/components/customer/item-image"
 import { QuickAddPopup } from "@/components/customer/quick-add-popup"
 import { SegmentedControl } from "@/components/motion/segmented-control"
@@ -19,11 +19,28 @@ import type { MenuCategory, MenuItem } from "@/lib/supabase/menu-data"
 
 const ALL_CATEGORY = "all"
 
-export function MenuBrowser({ categories, items }: { categories: MenuCategory[]; items: MenuItem[] }) {
+export function MenuBrowser({
+  categories,
+  items,
+  onAddItem,
+  cartItemCount,
+  cartSubtotal,
+  cartHref = "/cart",
+}: {
+  categories: MenuCategory[]
+  items: MenuItem[]
+  onAddItem?: (item: AddToCartInput, quantity?: number) => void
+  cartItemCount?: number
+  cartSubtotal?: number
+  cartHref?: string
+}) {
   const locale = useLocale()
   const t = useTranslations("Menu")
   const router = useRouter()
   const { addItem, itemCount, subtotal } = useCart()
+  const addToCart = onAddItem ?? addItem
+  const displayItemCount = cartItemCount ?? itemCount
+  const displaySubtotal = cartSubtotal ?? subtotal
 
   const [selectedCategory, setSelectedCategory] = useState<string>(ALL_CATEGORY)
   const [searchQuery, setSearchQuery] = useState("")
@@ -57,7 +74,7 @@ export function MenuBrowser({ categories, items }: { categories: MenuCategory[];
       setQuickAddItem(item)
       return
     }
-    addItem({
+    addToCart({
       menuItemId: item.id,
       nameVi: item.nameVi,
       nameEn: item.nameEn,
@@ -148,21 +165,21 @@ export function MenuBrowser({ categories, items }: { categories: MenuCategory[];
         ))}
       </StaggerList>
 
-      {itemCount > 0 && (
+      {displayItemCount > 0 && (
         <Link
-          href="/cart"
+          href={cartHref}
           className="nb-border nb-shadow nb-press fixed inset-x-4 bottom-20 z-40 mx-auto flex max-w-md items-center justify-between rounded-2xl bg-secondary px-5 py-4 text-secondary-foreground transition-colors hover:opacity-95 md:bottom-6 md:max-w-lg md:px-6"
         >
           <span className="font-semibold">
-            {t("viewCart")} · {t("itemCount", { count: itemCount })}
+            {t("viewCart")} · {t("itemCount", { count: displayItemCount })}
           </span>
-          <span className="text-lg font-bold">{formatVND(subtotal)}</span>
+          <span className="text-lg font-bold">{formatVND(displaySubtotal)}</span>
         </Link>
       )}
 
       <AnimatePresence>
         {quickAddItem && (
-          <QuickAddPopup key="quick-add-popup" item={quickAddItem} onClose={() => setQuickAddItem(null)} />
+          <QuickAddPopup key="quick-add-popup" item={quickAddItem} onClose={() => setQuickAddItem(null)} onAdd={onAddItem} />
         )}
       </AnimatePresence>
     </div>
