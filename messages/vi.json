@@ -376,7 +376,8 @@
     "checkBillError": "Không thể xử lý thanh toán — vui lòng thử lại.",
     "checkBillClose": "Đóng",
     "checkBillNothingToPay": "Hiện chưa có gì cần thanh toán.",
-    "addItemError": "Không thể thêm món này — vui lòng thử lại."
+    "addItemError": "Không thể thêm món này — vui lòng thử lại.",
+    "placeOrderFailed": "Không thể đặt món — vui lòng thử lại."
   },
   "Loyalty": {
     "currentBalance": "Số Dư Hiện Tại",

@@ -50,7 +50,7 @@ export function TableOrderingSession({
       await session.placeRound()
       setTab("order")
     } catch {
-      setPlaceOrderError(t("checkBillError"))
+      setPlaceOrderError(t("placeOrderFailed"))
     } finally {
       setIsPlacingRound(false)
     }

@@ -78,9 +78,9 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
     supabase,
     `table-session-${qrToken ?? "none"}`,
     [
-      { table: "table_cart_items", event: "*", onChange: () => refetch() },
-      { table: "orders", event: "*", onChange: () => refetch() },
-      { table: "table_sessions", event: "*", onChange: () => refetch() },
+      { table: "table_cart_items", event: "*", onChange: () => refetch().catch(() => {}) },
+      { table: "orders", event: "*", onChange: () => refetch().catch(() => {}) },
+      { table: "table_sessions", event: "*", onChange: () => refetch().catch(() => {}) },
     ],
     { deps: [qrToken] }
   )

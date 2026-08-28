@@ -376,7 +376,8 @@
     "checkBillError": "Couldn't process payment — please try again.",
     "checkBillClose": "Close",
     "checkBillNothingToPay": "Nothing to pay right now.",
-    "addItemError": "Couldn't add that item — please try again."
+    "addItemError": "Couldn't add that item — please try again.",
+    "placeOrderFailed": "Couldn't place your order — please try again."
   },
   "Loyalty": {
     "currentBalance": "Current Balance",
