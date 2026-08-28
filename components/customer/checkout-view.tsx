@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
-import { CreditCard, Banknote, QrCode, TableIcon, Sparkles, Gift, Check, AlertTriangle } from "lucide-react"
+import { CreditCard, Banknote, QrCode, Sparkles, Gift, Check, AlertTriangle } from "lucide-react"
 import { Link, useRouter } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -15,8 +15,6 @@ import { isShiftOpen } from "@/lib/supabase/shift-data"
 import { getMyRedemptions, type MyRedemption } from "@/lib/supabase/rewards-data"
 import { getShopSettings, getLoyaltySettings } from "@/lib/supabase/settings-data"
 import { useCart } from "@/hooks/useCart"
-import { useTables } from "@/hooks/useTables"
-import { QrScannerOverlay } from "@/components/customer/qr-scanner-overlay"
 import { SegmentedControl } from "@/components/motion/segmented-control"
 import { PressFeedback } from "@/components/motion/press-feedback"
 
@@ -35,9 +33,12 @@ export function CheckoutView() {
   const router = useRouter()
   const [supabase] = useState(() => createClient())
   const { items, subtotal, promoCode, promoDiscount, clear } = useCart()
-  const { activeTable } = useTables()
 
-  const [orderType, setOrderType] = useState<OrderType>(activeTable ? "dine-in" : "pickup")
+  // Dine-in now only ever happens through the table ordering screen
+  // (/table/[qrToken], see
+  // docs/superpowers/specs/2026-08-28-shared-table-ordering-session-design.md)
+  // -- checkout stays pickup-only.
+  const orderType: OrderType = "pickup"
   const [pickupTime, setPickupTime] = useState("asap")
   const [redeemLoyalty, setRedeemLoyalty] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null)
@@ -53,7 +54,6 @@ export function CheckoutView() {
   const [error, setError] = useState<string | null>(null)
   const searchParams = useSearchParams()
   const [canceledNotice, setCanceledNotice] = useState(false)
-  const [isScannerOpen, setIsScannerOpen] = useState(false)
   // Optimistic true so the form doesn't flash "closed" while the first
   // check is in flight — place_order's own no_open_shift rejection is
   // still the real, server-authoritative gate.
@@ -130,7 +130,6 @@ export function CheckoutView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const tableNumber = activeTable?.number
   const canRedeem = pointsBalance >= REDEEM_CHUNK_POINTS
   const loyaltyDiscount = redeemLoyalty && canRedeem ? REDEEM_CHUNK_POINTS * redeemValuePerPoint : 0
   const redemptionDiscount = usableRedemptions
@@ -144,22 +143,16 @@ export function CheckoutView() {
   }
 
   async function handlePlaceOrder() {
-    if (
-      items.length === 0 ||
-      !shiftOpen ||
-      (payAt === "now" && !paymentMethod) ||
-      (orderType === "dine-in" && !activeTable)
-    )
-      return
+    if (items.length === 0 || !shiftOpen || (payAt === "now" && !paymentMethod)) return
     setError(null)
     setIsPlacing(true)
     try {
       const { data, error: invokeError } = await supabase.functions.invoke("place-order", {
         body: {
-          orderType: orderType === "dine-in" ? "dine_in" : "pickup",
-          tableId: orderType === "dine-in" ? (activeTable?.id ?? null) : null,
-          tableNumber: orderType === "dine-in" ? tableNumber : null,
-          pickupTime: orderType === "pickup" ? pickupTime : null,
+          orderType: "pickup",
+          tableId: null,
+          tableNumber: null,
+          pickupTime,
           paymentMethod: payAt === "now" ? paymentMethod : null,
           payAt,
           promoCode,
@@ -183,11 +176,7 @@ export function CheckoutView() {
       }
       clear()
       setSelectedRedemptionIds([])
-      if (orderType === "dine-in" && tableNumber) {
-        router.push(`/orders/${data.orderId}?table=${encodeURIComponent(tableNumber)}`)
-      } else {
-        router.push(`/orders/${data.orderId}`)
-      }
+      router.push(`/orders/${data.orderId}`)
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e)
       if (message.includes("invalid_redemption_code") || message.includes("redemption_already_used") || message.includes("redemption_expired")) {
@@ -228,39 +217,6 @@ export function CheckoutView() {
       <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">
         {/* Left Column: Order configurations */}
         <div className="flex-1 min-w-0 md:flex-[3]">
-          <section className="mb-6 space-y-2">
-            <h2 className="font-bold text-card-foreground">{t("orderType")}</h2>
-            <SegmentedControl
-              layoutId="checkout-order-type-pill"
-              value={orderType}
-              onChange={(next) => (next === "dine-in" ? activeTable && setOrderType(next) : setOrderType(next))}
-              options={[
-                { value: "pickup" as const, label: t("pickup") },
-                {
-                  value: "dine-in" as const,
-                  label: t("dineIn"),
-                  disabled: !activeTable,
-                  title: !activeTable ? t("dineInRequiresScan") : undefined,
-                },
-              ]}
-            />
-            {orderType === "dine-in" && activeTable && (
-              <div className="nb-border-sm inline-flex items-center gap-2 rounded-full bg-chip px-3 py-1.5 text-sm font-bold text-foreground">
-                <TableIcon className="h-4 w-4" />
-                {t("table")}: <strong>{tableNumber}</strong>
-              </div>
-            )}
-            {!activeTable && (
-              <div className="nb-border-sm flex items-center justify-between gap-2 rounded-lg bg-card p-3">
-                <p className="text-xs text-muted-foreground">{t("dineInRequiresScan")}</p>
-                <Button size="sm" variant="neubrutal" className="h-9 shrink-0 gap-1.5" onClick={() => setIsScannerOpen(true)}>
-                  <QrCode className="h-3.5 w-3.5" />
-                  {t("scanTableQr")}
-                </Button>
-              </div>
-            )}
-          </section>
-
           {orderType === "pickup" && (
             <section className="mb-6 space-y-2">
               <label htmlFor="pickup-time" className="block font-bold text-card-foreground">
@@ -477,7 +433,6 @@ export function CheckoutView() {
               disabled={
                 !shiftOpen ||
                 (payAt === "now" && !paymentMethod) ||
-                (orderType === "dine-in" && !activeTable) ||
                 isPlacing
               }
               className="h-12 w-full text-base"
@@ -502,14 +457,12 @@ export function CheckoutView() {
         <Button
           variant="neubrutal"
           onClick={handlePlaceOrder}
-          disabled={(payAt === "now" && !paymentMethod) || (orderType === "dine-in" && !activeTable) || isPlacing}
+          disabled={(payAt === "now" && !paymentMethod) || isPlacing}
           className="h-12 px-8 text-base"
         >
           {t("placeOrder")}
         </Button>
       </div>
-
-      {isScannerOpen && <QrScannerOverlay onClose={() => setIsScannerOpen(false)} />}
     </div>
   )
 }
