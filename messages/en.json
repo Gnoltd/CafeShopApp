@@ -456,6 +456,7 @@
     "guestNotified": "Guest notified staff",
     "markServed": "Served",
     "tableAwaitingPayment": "Awaiting Payment",
+    "tableAwaitingPaymentCount": "Awaiting Payment ({count})",
     "markCash": "Mark Cash",
     "undoCash": "Undo",
     "markOccupied": "Mark Occupied",

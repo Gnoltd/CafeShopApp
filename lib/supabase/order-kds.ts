@@ -19,6 +19,7 @@ export type KdsOrderRow = {
   paymentMethod: RealPaymentMethod | null
   createdAt: number
   items: KdsOrderItemRow[]
+  total: number
 }
 
 function mapKdsRow(row: OrderRow): KdsOrderRow {
@@ -37,6 +38,7 @@ function mapKdsRow(row: OrderRow): KdsOrderRow {
       quantity: oi.quantity,
       note: oi.note,
     })),
+    total: row.total,
   }
 }
 

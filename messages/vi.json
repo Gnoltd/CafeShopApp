@@ -456,6 +456,7 @@
     "guestNotified": "Khách đã báo nhân viên",
     "markServed": "Đã Phục Vụ",
     "tableAwaitingPayment": "Chờ Thanh Toán",
+    "tableAwaitingPaymentCount": "Chờ Thanh Toán ({count})",
     "markCash": "Đánh Dấu Tiền Mặt",
     "undoCash": "Hoàn tác",
     "markOccupied": "Đánh Dấu Đang Dùng",

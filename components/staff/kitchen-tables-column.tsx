@@ -11,7 +11,7 @@ export function KitchenTablesColumn({ active }: { active: boolean }) {
   const locale = useLocale()
   const t = useTranslations("KitchenDisplay")
   const { tables, setStatus } = useTables()
-  const { orders, serveTable, confirmCashPayment, markCashPayment, undoCashPayment } = useKitchenOrders()
+  const { orders, serveTable, confirmCashPayment, confirmTableCashPayment, markCashPayment, undoCashPayment } = useKitchenOrders()
   const [error, setError] = useState<string | null>(null)
 
   return (
@@ -36,7 +36,15 @@ export function KitchenTablesColumn({ active }: { active: boolean }) {
           const location = locale === "vi" ? table.locationVi : table.locationEn
           const tableOrders = orders.filter((o) => o.tableId === table.id)
           const readyOrderIds = tableOrders.filter((o) => o.status === "ready").map((o) => o.id)
-          const awaitingPaymentOrder = tableOrders.find((o) => o.status === "served" && o.paymentStatus === "pending")
+          // A running tab can have several unpaid rounds sharing one
+          // payment method once Check Bill has been tapped -- unlike the
+          // single-order deferred-payment flow this widens, "awaiting
+          // payment" isn't scoped to status === "served" here (design
+          // doc Goal 4 / Q15: Check Bill can be tapped before every
+          // round is served).
+          const awaitingPaymentOrders = tableOrders.filter((o) => o.paymentStatus === "pending" && o.paymentMethod !== null)
+          const awaitingPaymentTotal = awaitingPaymentOrders.reduce((sum, o) => sum + o.total, 0)
+          const awaitingPaymentMethod = awaitingPaymentOrders[0]?.paymentMethod ?? null
 
           return (
             <div
@@ -89,10 +97,10 @@ export function KitchenTablesColumn({ active }: { active: boolean }) {
                     {t("guestNotified")}
                   </span>
                 )}
-                {awaitingPaymentOrder && (
+                {awaitingPaymentOrders.length > 0 && (
                   <span className="flex items-center gap-1 text-[10px] font-bold text-amber-700">
                     <Wallet className="h-3 w-3" />
-                    {t("tableAwaitingPayment")}
+                    {t("tableAwaitingPaymentCount", { count: awaitingPaymentOrders.length })}
                   </span>
                 )}
                 {readyOrderIds.length > 0 && (
@@ -108,40 +116,16 @@ export function KitchenTablesColumn({ active }: { active: boolean }) {
                     {t("markServed")}
                   </button>
                 )}
-                {awaitingPaymentOrder?.paymentMethod === "cash" && (
-                  <div className="flex gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setError(null)
-                        confirmCashPayment(awaitingPaymentOrder.id).catch(() => setError(t("updateError")))
-                      }}
-                      className="nb-border-sm nb-shadow-sm nb-press-sm rounded-lg bg-secondary px-3 py-2 text-xs font-extrabold text-secondary-foreground"
-                    >
-                      {t("confirmCashReceived")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setError(null)
-                        undoCashPayment(awaitingPaymentOrder.id).catch(() => setError(t("updateError")))
-                      }}
-                      className="nb-border-sm nb-press-sm rounded-lg bg-card px-3 py-2 text-xs font-extrabold text-muted-foreground"
-                    >
-                      {t("undoCash")}
-                    </button>
-                  </div>
-                )}
-                {awaitingPaymentOrder && awaitingPaymentOrder.paymentMethod === null && (
+                {awaitingPaymentMethod === "cash" && (
                   <button
                     type="button"
                     onClick={() => {
                       setError(null)
-                      markCashPayment(awaitingPaymentOrder.id).catch(() => setError(t("updateError")))
+                      confirmTableCashPayment(table.id).catch(() => setError(t("updateError")))
                     }}
-                    className="rounded-lg bg-secondary px-3 py-2 text-xs font-bold text-secondary-foreground hover:brightness-110"
+                    className="nb-border-sm nb-shadow-sm nb-press-sm rounded-lg bg-secondary px-3 py-2 text-xs font-extrabold text-secondary-foreground"
                   >
-                    {t("markCash")}
+                    {t("confirmCashReceived")}
                   </button>
                 )}
               </div>
