@@ -7,6 +7,7 @@ import {
   advanceOrderStatus,
   confirmCashPayment as confirmCashPaymentQuery,
   confirmServedCashPayment as confirmServedCashPaymentQuery,
+  confirmTableCashPayment as confirmTableCashPaymentQuery,
   getKitchenOrders,
   getPendingPaymentOrders,
   setOrderPaymentMethodCash,
@@ -42,6 +43,7 @@ type KitchenOrdersContextValue = {
   advance: (orderId: string) => Promise<void>
   serveTable: (orderIds: string[]) => Promise<void>
   confirmCashPayment: (orderId: string) => Promise<void>
+  confirmTableCashPayment: (tableId: string) => Promise<void>
   markCashPayment: (orderId: string) => Promise<void>
   undoCashPayment: (orderId: string) => Promise<void>
   completedCount: number
@@ -119,6 +121,10 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function confirmTableCashPayment(tableId: string) {
+    await confirmTableCashPaymentQuery(supabase, tableId)
+  }
+
   async function markCashPayment(orderId: string) {
     await setOrderPaymentMethodCash(supabase, orderId)
   }
@@ -142,6 +148,7 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
         advance,
         serveTable,
         confirmCashPayment,
+        confirmTableCashPayment,
         markCashPayment,
         undoCashPayment,
         completedCount,
