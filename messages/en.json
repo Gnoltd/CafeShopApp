@@ -340,6 +340,19 @@
     "notifyStaff": "Notify Staff",
     "staffNotified": "Staff Notified"
   },
+  "TableSession": {
+    "checkBillTitle": "Check Bill",
+    "checkBillTotal": "Total to pay",
+    "checkBillPromoPlaceholder": "Promo code",
+    "checkBillPayCash": "Cash",
+    "checkBillPayCard": "Card",
+    "checkBillPayVNPay": "VNPay",
+    "checkBillConfirm": "Confirm",
+    "checkBillLoading": "Processing…",
+    "checkBillError": "Couldn't process payment — please try again.",
+    "checkBillClose": "Close",
+    "checkBillNothingToPay": "Nothing to pay right now."
+  },
   "Loyalty": {
     "currentBalance": "Current Balance",
     "pts": "PTS",

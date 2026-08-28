@@ -340,6 +340,19 @@
     "notifyStaff": "Báo Nhân Viên",
     "staffNotified": "Đã Báo Nhân Viên"
   },
+  "TableSession": {
+    "checkBillTitle": "Xem Hoá Đơn",
+    "checkBillTotal": "Số tiền cần thanh toán",
+    "checkBillPromoPlaceholder": "Mã khuyến mãi",
+    "checkBillPayCash": "Tiền mặt",
+    "checkBillPayCard": "Thẻ",
+    "checkBillPayVNPay": "VNPay",
+    "checkBillConfirm": "Xác Nhận",
+    "checkBillLoading": "Đang xử lý…",
+    "checkBillError": "Không thể xử lý thanh toán — vui lòng thử lại.",
+    "checkBillClose": "Đóng",
+    "checkBillNothingToPay": "Hiện chưa có gì cần thanh toán."
+  },
   "Loyalty": {
     "currentBalance": "Số Dư Hiện Tại",
     "pts": "ĐIỂM",
