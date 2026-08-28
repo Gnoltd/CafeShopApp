@@ -228,6 +228,19 @@ Reusable facts that apply anywhere in the codebase, not tied to one feature.
   exclude SELECT; fixing it cleanly needs splitting into 3 separate
   INSERT/UPDATE/DELETE policies, lower value than the index fix, noted
   here rather than done).
+- **A `SECURITY DEFINER` function that `returns` a whole table row**
+  (e.g. `returns tables`) **bypasses column-level `REVOKE`s entirely** —
+  a column grant only restricts a direct `SELECT`/`UPDATE` on the table
+  itself, not what a function's composite return value carries. Any
+  function returning a full row must be checked for which columns it's
+  actually safe to expose, not just have its own grants audited. Real
+  example: `increment_table_scan_count`/`notify_table_cleaning` both
+  `return tables` (the whole row, `qr_code_token` included) and are
+  anon-executable — despite `qr_code_token` having zero direct SELECT
+  grant (migrations `0046`/`0047`), any anon caller could `select id
+  from tables` (public `tables_select_all`) then call either function
+  to read back the token, recovering a table's QR code without ever
+  scanning it. Fixed migration `0079`.
 
 ## Feature areas
 
@@ -390,9 +403,44 @@ areas that span multiple directories.
 - Plan: `docs/superpowers/plans/2026-07-10-shift-closing.md`; design:
   `docs/superpowers/specs/2026-07-10-shift-closing-design.md`.
 
+### Shared table ordering session (real, shipped 2026-08-28)
+- A live, multi-device shared cart per dine-in table — every phone that
+  scans a table's QR sees and edits the same draft cart in real time,
+  can place it as a round (`payAt: 'later'`, kitchen sees it
+  immediately), and keeps a running tab across multiple rounds until
+  someone pays.
+- `table_sessions`/`table_cart_items` (migration `0070`) get a public
+  SELECT RLS policy and **zero write policy** — every write goes
+  through guest-safe `security definer` RPCs (`get_table_session`,
+  `add_cart_item`, `update_cart_item_quantity`, `remove_cart_item`,
+  `place_table_round`, `abandon_table_session`, migrations `0071`–`0072`,
+  `0077`), all keyed on the table's `qr_token` rather than its raw
+  `table_id` — `qr_code_token` has zero SELECT grant to anon/
+  authenticated (unlike the openly-enumerable `tables.id`), so a
+  qr_token-keyed RPC can't be walked table-to-table the way a
+  table_id-keyed one could.
+- **Check Bill** (`checkout_table_session`/`confirm_table_cash_payment`,
+  migration `0074`) is the aggregate payment step: sets a chosen
+  payment method on every currently-unpaid order under the table's
+  session, applies at most one promo code against the aggregate total,
+  and — for Stripe/VNPay — sets `payment_pending` so a new round can't
+  be placed mid-checkout.
+- `hooks/useTableSession.tsx` drives the customer-facing session state:
+  Realtime on `table_cart_items`/`orders`/`table_sessions` for fast
+  updates, plus a 10s polling fallback (migration `0080`'s
+  `table_sessions` touch on cash-confirm gives a faster guest signal
+  for that one case) covering `orders` status changes Realtime can't
+  deliver to a guest at all (`customer_id` is null on a guest round,
+  matching neither `orders_select_own` nor `orders_select_staff` — see
+  the guest-safe RPC pattern above). KDS's `KitchenTablesColumn` gained
+  a "Mark Cash" action (`markTableCashPayment`) so staff can still
+  settle a table whose guest never tapped Check Bill.
+- Design: `docs/superpowers/specs/2026-08-28-shared-table-ordering-session-design.md`;
+  plan: `docs/superpowers/plans/2026-08-28-shared-table-ordering-session.md`.
+
 ## Database (`supabase/migrations/`)
 
-67 migrations applied to the live hosted project (`qhiypdqnrnzndxdwqxbx`)
+80 migrations applied to the live hosted project (`qhiypdqnrnzndxdwqxbx`)
 via the Supabase MCP server's `apply_migration`. Every table in `public`
 has RLS enabled (confirmed via `list_tables`/`get_advisors`).
 
@@ -461,6 +509,19 @@ file independently and haven't been merged against each other yet.
 | `0065` | `get_redemption_expiry()` gains an ownership check, closing an existence-oracle side effect too |
 | `0066` | Added `set search_path = public` to the two functions missing it (`adjust_ingredient_stock`, `set_order_paid_at`) |
 | `0067` | Row-locks (`FOR UPDATE`) the loyalty-balance read in `redeem_reward`/`place_order` to prevent a concurrent-redemption race driving the balance negative |
+| `0068` | `promotions` table + `validate_promo_code()` — real coupon system replacing the hardcoded `WELCOME10` previously duplicated in `hooks/useCart.tsx` and `place_order` |
+| `0069` | Revoked the same platform auto-re-grant on `validate_promo_code` (grant-hygiene, not independently exploitable — see the gotcha below) |
+| `0070` | `table_sessions`/`table_cart_items` schema (shared table ordering session) — public SELECT, no write RLS (guest-safe RPCs only; see feature entry below) |
+| `0071` | Guest-safe cart RPCs (`get_table_session`, `add_cart_item`, `update_cart_item_quantity`, `remove_cart_item`) — always server-priced |
+| `0072` | `place_order` gains `tableSessionId`; new `place_table_round` RPC places a table's draft cart as a `payAt: 'later'` round and clears it |
+| `0073` | `sync_table_occupancy` also closes the table's active `table_sessions` row when its last order completes |
+| `0074` | `checkout_table_session`/`confirm_table_cash_payment` — aggregate Check Bill payment across every unpaid order under a table's session, at most one promo code applied to the aggregate total |
+| `0075` | Follow-up to `0074` — anon auto-re-grant revoke + missing `is null or` role-check guard on `confirm_table_cash_payment` (see the two gotchas below) |
+| `0076` | `place_table_round` gains `for update` on its session lookup, closing a concurrent-double-placement race (two devices tapping "Place Order" at once could both place duplicate rounds) |
+| `0077` | Every guest-callable table-session RPC switched from raw `table_id` to `qr_token`; fixed an invalid `FOR UPDATE` over an aggregate in `checkout_table_session` (0074) |
+| `0078` | Missing FK indexes on `table_cart_items` (performance) |
+| `0079` | **CRITICAL** — `increment_table_scan_count`/`notify_table_cleaning` (`return`ed the whole `tables` row, `qr_code_token` included) let any anon caller recover a table's QR token via `tables.id` despite the column having zero direct SELECT grant (see the "`SECURITY DEFINER` returning a full row" gotcha below) |
+| `0080` | `confirm_table_cash_payment` also touches `table_sessions` so a guest's existing Realtime subscription picks up staff cash confirmation (full fix is `hooks/useTableSession.tsx`'s polling fallback, see feature entry below) |
 
 **Live-grant auto-re-grant gotcha, worth remembering:** a migration's own
 `revoke all ... from public; grant execute ... to X;` does NOT reliably

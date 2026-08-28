@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -72,6 +72,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      edge_rate_limits: {
+        Row: {
+          key: string
+          request_count: number
+          window_start: string
+        }
+        Insert: {
+          key: string
+          request_count?: number
+          window_start: string
+        }
+        Update: {
+          key?: string
+          request_count?: number
+          window_start?: string
+        }
+        Relationships: []
       }
       ingredients: {
         Row: {
@@ -650,9 +668,11 @@ export type Database = {
           payment_method: Database["public"]["Enums"]["payment_method"] | null
           payment_status: Database["public"]["Enums"]["payment_status"]
           pickup_time: string | null
+          promo_code: string | null
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
           table_id: string | null
+          table_session_id: string | null
           tax_amount: number
           total: number
           updated_at: string
@@ -669,9 +689,11 @@ export type Database = {
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           pickup_time?: string | null
+          promo_code?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           subtotal: number
           table_id?: string | null
+          table_session_id?: string | null
           tax_amount?: number
           total: number
           updated_at?: string
@@ -688,9 +710,11 @@ export type Database = {
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           pickup_time?: string | null
+          promo_code?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           table_id?: string | null
+          table_session_id?: string | null
           tax_amount?: number
           total?: number
           updated_at?: string
@@ -708,6 +732,13 @@ export type Database = {
             columns: ["table_id"]
             isOneToOne: false
             referencedRelation: "tables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_table_session_id_fkey"
+            columns: ["table_session_id"]
+            isOneToOne: false
+            referencedRelation: "table_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -783,6 +814,48 @@ export type Database = {
           loyalty_points_balance?: number
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+        }
+        Relationships: []
+      }
+      promotions: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          discount_type: string
+          discount_value: number
+          ends_at: string | null
+          id: string
+          max_redemptions: number | null
+          min_subtotal_vnd: number | null
+          starts_at: string | null
+          times_used: number
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          discount_type: string
+          discount_value: number
+          ends_at?: string | null
+          id?: string
+          max_redemptions?: number | null
+          min_subtotal_vnd?: number | null
+          starts_at?: string | null
+          times_used?: number
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          discount_type?: string
+          discount_value?: number
+          ends_at?: string | null
+          id?: string
+          max_redemptions?: number | null
+          min_subtotal_vnd?: number | null
+          starts_at?: string | null
+          times_used?: number
         }
         Relationships: []
       }
@@ -1003,6 +1076,105 @@ export type Database = {
         }
         Relationships: []
       }
+      table_cart_items: {
+        Row: {
+          id: string
+          menu_item_id: string
+          modifier_ids: string[]
+          note: string | null
+          quantity: number
+          size_id: string | null
+          table_session_id: string
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          menu_item_id: string
+          modifier_ids?: string[]
+          note?: string | null
+          quantity: number
+          size_id?: string | null
+          table_session_id: string
+          unit_price: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          menu_item_id?: string
+          modifier_ids?: string[]
+          note?: string | null
+          quantity?: number
+          size_id?: string | null
+          table_session_id?: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "table_cart_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "table_cart_items_size_id_fkey"
+            columns: ["size_id"]
+            isOneToOne: false
+            referencedRelation: "menu_item_sizes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "table_cart_items_table_session_id_fkey"
+            columns: ["table_session_id"]
+            isOneToOne: false
+            referencedRelation: "table_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      table_sessions: {
+        Row: {
+          checkout_discount_amount: number
+          checkout_promo_code: string | null
+          ended_at: string | null
+          id: string
+          payment_pending: boolean
+          started_at: string
+          status: string
+          table_id: string
+        }
+        Insert: {
+          checkout_discount_amount?: number
+          checkout_promo_code?: string | null
+          ended_at?: string | null
+          id?: string
+          payment_pending?: boolean
+          started_at?: string
+          status?: string
+          table_id: string
+        }
+        Update: {
+          checkout_discount_amount?: number
+          checkout_promo_code?: string | null
+          ended_at?: string | null
+          id?: string
+          payment_pending?: boolean
+          started_at?: string
+          status?: string
+          table_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "table_sessions_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tables: {
         Row: {
           cleaning_notified_at: string | null
@@ -1041,6 +1213,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      abandon_table_session: { Args: { p_qr_token: string }; Returns: boolean }
+      add_cart_item: {
+        Args: {
+          p_menu_item_id: string
+          p_modifier_ids: string[]
+          p_note: string
+          p_qr_token: string
+          p_quantity: number
+          p_size_id: string
+        }
+        Returns: string
+      }
       adjust_ingredient_stock: {
         Args: {
           p_change: number
@@ -1073,9 +1257,30 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_rate_limit: {
+        Args: {
+          p_key: string
+          p_max_requests: number
+          p_window_seconds: number
+        }
+        Returns: boolean
+      }
+      checkout_table_session: {
+        Args: {
+          p_method: Database["public"]["Enums"]["payment_method"]
+          p_promo_code?: string
+          p_qr_token: string
+        }
+        Returns: Json
+      }
       close_shift: {
         Args: { p_counted_cash: number; p_notes?: string }
         Returns: Json
+      }
+      confirm_order_payment: { Args: { p_order_id: string }; Returns: boolean }
+      confirm_table_cash_payment: {
+        Args: { p_table_id: string }
+        Returns: number
       }
       current_user_role: {
         Args: never
@@ -1174,6 +1379,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_table_session: { Args: { p_qr_token: string }; Returns: Json }
       get_tables_admin: {
         Args: never
         Returns: {
@@ -1196,21 +1402,14 @@ export type Database = {
       increment_table_scan_count: {
         Args: { p_table_id: string }
         Returns: {
-          cleaning_notified_at: string | null
+          cleaning_notified_at: string
           id: string
           location_en: string
           location_vi: string
-          qr_code_token: string
           scan_count: number
           status: Database["public"]["Enums"]["table_occupancy_status"]
           table_number: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "tables"
-          isOneToOne: true
-          isSetofReturn: false
-        }
+        }[]
       }
       is_shift_open: { Args: never; Returns: boolean }
       join_shift: { Args: never; Returns: Json }
@@ -1218,21 +1417,14 @@ export type Database = {
       notify_table_cleaning: {
         Args: { p_table_id: string }
         Returns: {
-          cleaning_notified_at: string | null
+          cleaning_notified_at: string
           id: string
           location_en: string
           location_vi: string
-          qr_code_token: string
           scan_count: number
           status: Database["public"]["Enums"]["table_occupancy_status"]
           table_number: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "tables"
-          isOneToOne: true
-          isSetofReturn: false
-        }
+        }[]
       }
       open_shift: {
         Args: {
@@ -1243,6 +1435,7 @@ export type Database = {
         Returns: Json
       }
       place_order: { Args: { p_payload: Json }; Returns: Json }
+      place_table_round: { Args: { p_qr_token: string }; Returns: Json }
       redeem_reward: { Args: { p_reward_id: string }; Returns: string }
       regenerate_table_qr_token: {
         Args: { p_table_id: string }
@@ -1263,6 +1456,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      remove_cart_item: {
+        Args: { p_cart_item_id: string; p_qr_token: string }
+        Returns: undefined
+      }
       reply_to_review: {
         Args: { p_reply: string; p_review_id: string }
         Returns: undefined
@@ -1281,6 +1478,14 @@ export type Database = {
       submit_menu_item_review: {
         Args: { p_comment: string; p_item_id: string; p_rating: number }
         Returns: undefined
+      }
+      update_cart_item_quantity: {
+        Args: { p_cart_item_id: string; p_qr_token: string; p_quantity: number }
+        Returns: undefined
+      }
+      validate_promo_code: {
+        Args: { p_code: string; p_subtotal: number }
+        Returns: Json
       }
     }
     Enums: {

@@ -7,7 +7,7 @@ documented in the root file since they aren't `supabase/`-only).
 
 ## Database (`supabase/migrations/`)
 
-67 migrations applied to the live hosted project (`qhiypdqnrnzndxdwqxbx`)
+80 migrations applied to the live hosted project (`qhiypdqnrnzndxdwqxbx`)
 via the Supabase MCP server's `apply_migration`. Every table in `public`
 has RLS enabled (confirmed via `list_tables`/`get_advisors`).
 
@@ -76,6 +76,19 @@ file independently and haven't been merged against each other yet.
 | `0065` | `get_redemption_expiry()` gains an ownership check, closing an existence-oracle side effect too |
 | `0066` | Added `set search_path = public` to the two functions missing it (`adjust_ingredient_stock`, `set_order_paid_at`) |
 | `0067` | Row-locks (`FOR UPDATE`) the loyalty-balance read in `redeem_reward`/`place_order` to prevent a concurrent-redemption race driving the balance negative |
+| `0068` | `promotions` table + `validate_promo_code()` — real coupon system replacing the hardcoded `WELCOME10` previously duplicated in `hooks/useCart.tsx` and `place_order` |
+| `0069` | Revoked the same platform auto-re-grant on `validate_promo_code` (grant-hygiene, not independently exploitable — see the auto-re-grant gotcha below) |
+| `0070` | `table_sessions`/`table_cart_items` schema (shared table ordering session) — public SELECT, no write RLS (guest-safe RPCs only; see root `CLAUDE.md`'s feature entry) |
+| `0071` | Guest-safe cart RPCs (`get_table_session`, `add_cart_item`, `update_cart_item_quantity`, `remove_cart_item`) — always server-priced |
+| `0072` | `place_order` gains `tableSessionId`; new `place_table_round` RPC places a table's draft cart as a `payAt: 'later'` round and clears it |
+| `0073` | `sync_table_occupancy` also closes the table's active `table_sessions` row when its last order completes |
+| `0074` | `checkout_table_session`/`confirm_table_cash_payment` — aggregate Check Bill payment across every unpaid order under a table's session, at most one promo code applied to the aggregate total |
+| `0075` | Follow-up to `0074` — anon auto-re-grant revoke + missing `is null or` role-check guard on `confirm_table_cash_payment` |
+| `0076` | `place_table_round` gains `for update` on its session lookup, closing a concurrent-double-placement race |
+| `0077` | Every guest-callable table-session RPC switched from raw `table_id` to `qr_token`; fixed an invalid `FOR UPDATE` over an aggregate in `checkout_table_session` (0074) |
+| `0078` | Missing FK indexes on `table_cart_items` (performance) |
+| `0079` | **CRITICAL** — `increment_table_scan_count`/`notify_table_cleaning` (`return`ed the whole `tables` row, `qr_code_token` included) let any anon caller recover a table's QR token via `tables.id` despite the column having zero direct SELECT grant (see root `CLAUDE.md`'s "`SECURITY DEFINER` returning a full row" gotcha) |
+| `0080` | `confirm_table_cash_payment` also touches `table_sessions` so a guest's existing Realtime subscription picks up staff cash confirmation |
 
 **Live-grant auto-re-grant gotcha, worth remembering:** a migration's own
 `revoke all ... from public; grant execute ... to X;` does NOT reliably
