@@ -82,9 +82,57 @@ Deno.serve(async (req) => {
 
   const event = JSON.parse(rawBody)
   const orderId = event.data?.object?.metadata?.order_id
+  const tableSessionId = event.data?.object?.metadata?.table_session_id
   const amountTotal = event.data?.object?.amount_total
 
   const serviceClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!)
+
+  if ((event.type === "checkout.session.completed" || event.type === "checkout.session.expired") && tableSessionId) {
+    // Aggregate Check Bill charge (docs/superpowers/specs/
+    // 2026-08-28-shared-table-ordering-session-design.md, Section 6).
+    // Every order this covers was inserted via payAt: 'later', so
+    // status is already kitchen-visible ('paid'/'preparing'/'ready'/
+    // 'served') -- never 'pending_payment' -- so unlike the single-order
+    // branch below, only payment_status ever needs to change here; no
+    // buildPaidUpdate/status-flip and no cancellation-on-expiry (a
+    // failed aggregate charge just leaves every covered round unpaid
+    // for a retry, matching the single-order served-order behavior).
+    const { data: pendingOrders } = await serviceClient
+      .from("orders")
+      .select("id, total")
+      .eq("table_session_id", tableSessionId)
+      .eq("payment_status", "pending")
+    const { data: session } = await serviceClient
+      .from("table_sessions")
+      .select("checkout_discount_amount")
+      .eq("id", tableSessionId)
+      .maybeSingle()
+
+    const aggregateTotal = (pendingOrders ?? []).reduce((sum, o) => sum + o.total, 0)
+    const expectedCharge = aggregateTotal - (session?.checkout_discount_amount ?? 0)
+
+    if (event.type === "checkout.session.completed" && amountTotal !== expectedCharge) {
+      return new Response(JSON.stringify({ received: true, error: "amount_mismatch" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    }
+
+    if (event.type === "checkout.session.completed") {
+      await serviceClient
+        .from("orders")
+        .update({ payment_status: "paid" })
+        .eq("table_session_id", tableSessionId)
+        .eq("payment_status", "pending")
+    }
+
+    await serviceClient.from("table_sessions").update({ payment_pending: false }).eq("id", tableSessionId)
+
+    return new Response(JSON.stringify({ received: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    })
+  }
 
   if ((event.type === "checkout.session.completed" || event.type === "checkout.session.expired") && orderId) {
     const { data: order } = await serviceClient.from("orders").select("status, total").eq("id", orderId).maybeSingle()
