@@ -68,3 +68,54 @@ export async function createStripeCheckoutSession(params: {
   }
   return { url: json.url as string }
 }
+
+// Sibling of createStripeCheckoutSession for the aggregate "Check Bill"
+// charge (docs/superpowers/specs/2026-08-28-shared-table-ordering-session-design.md,
+// Section 6) -- a separate function rather than widening the existing
+// one's params, so place-order/pay-order's call sites need no changes
+// at all. metadata carries table_session_id instead of order_id;
+// stripe-webhook branches on which key is present.
+export async function createStripeCheckoutSessionForTableSession(params: {
+  tableSessionId: string
+  total: number
+  successUrl: string
+  cancelUrl: string
+}): Promise<{ url: string } | { error: string }> {
+  const body: string[] = []
+  flattenForStripe(
+    {
+      mode: "payment",
+      success_url: params.successUrl,
+      cancel_url: params.cancelUrl,
+      expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
+      metadata: { table_session_id: params.tableSessionId },
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: "vnd",
+            unit_amount: params.total,
+            product_data: { name: "PhaDinCafe Table Bill" },
+          },
+        },
+      ],
+    },
+    "",
+    body
+  )
+
+  const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${Deno.env.get("STRIPE_SECRET_KEY")!}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: body.join("&"),
+  })
+
+  const json = await response.json()
+  if (!response.ok) {
+    return { error: json?.error?.message ?? "Stripe rejected the checkout session" }
+  }
+  return { url: json.url as string }
+}
