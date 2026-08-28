@@ -8,7 +8,48 @@
    in the Vercel project's Settings → Deployment Protection. Check this
    first before attempting any "live-verify on Vercel" task below.
 
-1. **Promotions — real manager-managed discount codes, replacing the
+1. **Shared table ordering session — code complete, security-hardened,
+   double-reviewed (per-task + final whole-branch), live-verification
+   blocked by item 0.** Design: `docs/superpowers/specs/2026-08-28-shared-table-ordering-session-design.md`;
+   plan: `docs/superpowers/plans/2026-08-28-shared-table-ordering-session.md`;
+   full history/rulings: `.superpowers/sdd/2026-08-28-shared-table-ordering-session/progress.md`.
+   Live shared cart per dine-in table (scan QR → menu + live cart synced
+   across every device at that table), a persistent running tab across
+   however many rounds a table orders, and one aggregate "Check Bill"
+   payment (Cash/Stripe/VNPay) settling every unpaid round at once. `/cart`/
+   `/checkout` are now pickup-only — dine-in only happens through
+   `/table/[qrToken]`. New `table_sessions`/`table_cart_items` schema, ~9
+   new/changed RPCs (all guest-facing ones keyed on the table's `qr_token`,
+   not the enumerable raw `table_id`), 3 modified live
+   payment Edge Functions plus 1 new one, `useTableSession` hook with
+   Realtime + a 10s poll fallback + an idle-timeout auto-abandon, and a
+   staff-side aggregate "Confirm Cash"/"Mark Cash" KDS action.
+   **Found and fixed mid-build** (a prior session hit its usage limit
+   partway through and had identified but not yet applied these): an
+   invalid `FOR UPDATE`-over-an-aggregate in `checkout_table_session`
+   that would have errored on every real checkout, and the qr_token
+   security retrofit across all 7 guest RPCs. **Found and fixed via the
+   final whole-branch review**: a CRITICAL pre-existing leak (migrations
+   0012/0021, made load-bearing by this feature) where
+   `increment_table_scan_count`/`notify_table_cleaning` returned a
+   table's whole row — `qr_code_token` included — to any anon caller
+   keyed on the enumerable `table_id`, completely defeating the qr_token
+   fix; closed via migration `0079`. Six further Important findings (live
+   guest updates, the idle-timer regression it turned out to have,
+   staff cash-settlement for a never-picked payment method, a dead Check
+   Bill promo input, two small error-handling gaps, stale generated
+   types/docs) were fixed in one consolidated pass and independently
+   re-reviewed — including one regression the idle-timer fix itself
+   introduced (now also fixed). **Still needed**: Task 23's Steps 1-8
+   (two-device live sync, idle-clear, running tab, Check Bill against
+   real Cash/Stripe/VNPay, promo-at-checkout regression, pickup
+   regression) — every one needs the live Vercel URL, blocked by item 0.
+   Everything below the browser layer (every migration/RPC/Edge Function)
+   was individually exercised live via direct SQL execution and
+   Edge-Function deploy-then-fetch-back verification, not just code
+   review.
+
+2. **Promotions — real manager-managed discount codes, replacing the
    hardcoded `WELCOME10`. Code shipped and DB-verified, live UI
    verification blocked by item 0 above, not yet performed.**
    Design: `docs/superpowers/specs/2026-08-03-promotions-design.md`;
@@ -36,7 +77,7 @@
    confirm `max_redemptions` actually blocks a second use) — blocked
    by item 0.
 
-2. **"Neubrutalist Modern" full-app redesign — all 4 phases shipped to
+3. **"Neubrutalist Modern" full-app redesign — all 4 phases shipped to
    `main`, live verification is the one remaining step.**
    Design spec: `docs/superpowers/specs/2026-07-12-elevated-warm-redesign-design.md`
    (title says "Elevated Warm" but the actual locked style is
@@ -103,7 +144,7 @@
    the spec's own verification plan. Deliberately deferred by explicit
    user request; do it as a single pass, not phase-by-phase.
 
-3. **Live-verify the Admin Dashboard by hand** — KPIs are real
+4. **Live-verify the Admin Dashboard by hand** — KPIs are real
    (`get_dashboard_stats()`, migration `0026`), but a full manual
    walkthrough hasn't been confirmed: real KPI numbers (cross-check
    Orders Today against Staff Order History), the 7-day chart's
@@ -114,21 +155,21 @@
    this check (cloud routine, 2026-07-10/11) both stalled without
    landing a result — try a manual pass instead of another automated
    retry.
-4. **Shift closing feature — live verification not confirmed done.**
+5. **Shift closing feature — live verification not confirmed done.**
    Code for Tasks 1-4 is committed and pushed (`shifts` table +
    `orders.paid_at` + RPCs, query layer, i18n, `/admin/shift` page +
    nav entries), but Task 5 (live-verify the open/report/close flow +
    this file's entry) has no recorded evidence of having run. Same two
    stalled automated attempts as item 3 above. Plan:
    `docs/superpowers/plans/2026-07-10-shift-closing.md`.
-5. **Set the real tax rate.** Admin Settings now genuinely persists
+6. **Set the real tax rate.** Admin Settings now genuinely persists
    (migration `0042`, 2026-07-11) and POS/checkout both apply
    `shop_settings.tax_rate` for real — but it's deliberately left at
    `0` since no real rate was ever specified (previously a hardcoded,
    never-actually-charged `8%` in POS only). Set the real rate via
    `/admin/settings` whenever convenient — also a good moment to fill
    in shop name/address/phone/hours, which were never persisted either.
-6. **Forgot password — real-email round trip unconfirmed.** Shipped and
+7. **Forgot password — real-email round trip unconfirmed.** Shipped and
    live-verified end-to-end except for the actual emailed link: request
    flow (email entry → "check your email" screen, works regardless of
    whether the address is registered), navigation between views, and
@@ -157,6 +198,30 @@
   staff-side "Mark Cash"/"Undo" surface (unlike dine-in's table card in
   KDS) — only the customer's own tracking page can choose/change a
   method for it. Pickup has no table to attach that control to.
+- **Shared table ordering session, parked from the final review** (see
+  `.superpowers/sdd/2026-08-28-shared-table-ordering-session/progress.md`
+  for full detail): (1) `markTableCashPayment` is table-scoped while
+  `confirm_table_cash_payment` is session-scoped — a legacy order with
+  `table_session_id is null` could silently no-op Confirm Cash with zero
+  feedback; not reachable from any current code path (checkout is
+  pickup-only, POS always pays in person), data-migration risk only.
+  (2) The KDS table card's `awaitingPaymentOrders[0]?.paymentMethod`
+  heuristic could theoretically hide both the Mark Cash and Confirm Cash
+  buttons under a mixed-payment-method scenario across one table's
+  rounds — same unreachable-today legacy-data precondition as (1).
+  (3) `useTableSession`'s Realtime-triggered refetch failures are
+  silently swallowed with no error-state signal to the guest (the 10s
+  poll self-heals transient failures, so this is a display gap, not a
+  functional one). (4) `kitchen-tables-column.tsx` has a few pre-existing
+  unused destructured bindings from the KDS table-card rework
+  (`confirmCashPayment`/`markCashPayment`/`undoCashPayment`/
+  `awaitingPaymentTotal`) — harmless (warn-only lint), not build-blocking.
+  (5) The regenerated `types/database.types.ts` correctly reflects
+  `increment_table_scan_count`/`notify_table_cleaning`'s new
+  set-returning shape, but nothing in `lib/supabase/` actually
+  parameterizes `createClient` with `Database` anywhere in this project
+  — the generated types are documentation-only today, a pre-existing gap
+  this just made newly visible.
 
 Two throwaway test accounts (staff/customer roles, credentials in
 `.env.local` and the gitignored `test-accounts.md`) are kept
