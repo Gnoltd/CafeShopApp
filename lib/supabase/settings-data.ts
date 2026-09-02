@@ -16,6 +16,24 @@ export type ShopSettingsInput = {
   taxRatePercent: number
 }
 
+export type SettingsValidationField =
+  | "taxRatePercent"
+  | "earnRateVndPerPoint"
+  | "redeemValueVndPerPoint"
+
+export class SettingsValidationError extends Error {
+  constructor(public readonly field: SettingsValidationField) {
+    super(`Invalid settings value: ${field}`)
+    this.name = "SettingsValidationError"
+  }
+}
+
+export function validateShopSettingsInput(input: ShopSettingsInput): SettingsValidationField | null {
+  return Number.isFinite(input.taxRatePercent) && input.taxRatePercent >= 0 && input.taxRatePercent <= 100
+    ? null
+    : "taxRatePercent"
+}
+
 type ShopSettingsRow = {
   shop_name: string
   address: string | null
@@ -42,6 +60,9 @@ export async function getShopSettings(supabase: SupabaseClient): Promise<ShopSet
 }
 
 export async function updateShopSettings(supabase: SupabaseClient, input: ShopSettingsInput): Promise<void> {
+  const invalidField = validateShopSettingsInput(input)
+  if (invalidField) throw new SettingsValidationError(invalidField)
+
   const { error } = await supabase
     .from("shop_settings")
     .update({
@@ -67,6 +88,16 @@ export type LoyaltySettingsInput = {
   redeemValueVndPerPoint: number
 }
 
+export function validateLoyaltySettingsInput(input: LoyaltySettingsInput): SettingsValidationField | null {
+  if (!Number.isInteger(input.earnRateVndPerPoint) || input.earnRateVndPerPoint <= 0) {
+    return "earnRateVndPerPoint"
+  }
+  if (!Number.isInteger(input.redeemValueVndPerPoint) || input.redeemValueVndPerPoint < 0) {
+    return "redeemValueVndPerPoint"
+  }
+  return null
+}
+
 type LoyaltySettingsRow = {
   enabled: boolean
   earn_rate_vnd_per_point: number
@@ -89,6 +120,9 @@ export async function getLoyaltySettings(supabase: SupabaseClient): Promise<Loya
 }
 
 export async function updateLoyaltySettings(supabase: SupabaseClient, input: LoyaltySettingsInput): Promise<void> {
+  const invalidField = validateLoyaltySettingsInput(input)
+  if (invalidField) throw new SettingsValidationError(invalidField)
+
   const { error } = await supabase
     .from("loyalty_settings")
     .update({

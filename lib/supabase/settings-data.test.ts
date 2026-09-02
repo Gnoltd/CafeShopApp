@@ -68,6 +68,75 @@ describe("updateShopSettings", () => {
     })
     expect(eqSpy).toHaveBeenCalledWith("id", 1)
   })
+
+  it.each([
+    [0, 0],
+    [100, 1],
+  ])("accepts the inclusive tax boundary %s%%", async (taxRatePercent, storedTaxRate) => {
+    const eqSpy = vi.fn(() => Promise.resolve({ error: null }))
+    const updateSpy = vi.fn(() => ({ eq: eqSpy }))
+    const supabase = { from: () => ({ update: updateSpy }) } as unknown as SupabaseClient
+
+    await updateShopSettings(supabase, {
+      shopName: "PhaDinCafe",
+      address: "",
+      phone: "",
+      openingHours: "",
+      taxRatePercent,
+    })
+
+    expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ tax_rate: storedTaxRate }))
+  })
+
+  it.each([-0.01, 100.01, Number.NaN, Number.POSITIVE_INFINITY])(
+    "rejects an invalid tax percentage (%s) before writing",
+    async (taxRatePercent) => {
+      const updateSpy = vi.fn()
+      const supabase = { from: () => ({ update: updateSpy }) } as unknown as SupabaseClient
+
+      await expect(updateShopSettings(supabase, {
+        shopName: "PhaDinCafe",
+        address: "123 Le Loi",
+        phone: "0900000000",
+        openingHours: "07:00 - 22:00",
+        taxRatePercent,
+      })).rejects.toMatchObject({ field: "taxRatePercent" })
+
+      expect(updateSpy).not.toHaveBeenCalled()
+    }
+  )
+
+  it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+    "rejects an invalid earning rate (%s) before writing any settings",
+    async (earnRateVndPerPoint) => {
+      const updateSpy = vi.fn()
+      const supabase = { from: () => ({ update: updateSpy }) } as unknown as SupabaseClient
+
+      await expect(updateLoyaltySettings(supabase, {
+        enabled: true,
+        earnRateVndPerPoint,
+        redeemValueVndPerPoint: 100,
+      })).rejects.toMatchObject({ field: "earnRateVndPerPoint" })
+
+      expect(updateSpy).not.toHaveBeenCalled()
+    }
+  )
+
+  it.each([-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+    "rejects an invalid redemption value (%s) before writing any settings",
+    async (redeemValueVndPerPoint) => {
+      const updateSpy = vi.fn()
+      const supabase = { from: () => ({ update: updateSpy }) } as unknown as SupabaseClient
+
+      await expect(updateLoyaltySettings(supabase, {
+        enabled: true,
+        earnRateVndPerPoint: 10000,
+        redeemValueVndPerPoint,
+      })).rejects.toMatchObject({ field: "redeemValueVndPerPoint" })
+
+      expect(updateSpy).not.toHaveBeenCalled()
+    }
+  )
 })
 
 describe("getLoyaltySettings", () => {
@@ -99,6 +168,24 @@ describe("updateLoyaltySettings", () => {
       redeem_value_vnd_per_point: 200,
     })
     expect(eqSpy).toHaveBeenCalledWith("id", 1)
+  })
+
+  it("accepts the minimum earning rate and zero redemption value", async () => {
+    const eqSpy = vi.fn(() => Promise.resolve({ error: null }))
+    const updateSpy = vi.fn(() => ({ eq: eqSpy }))
+    const supabase = { from: () => ({ update: updateSpy }) } as unknown as SupabaseClient
+
+    await updateLoyaltySettings(supabase, {
+      enabled: true,
+      earnRateVndPerPoint: 1,
+      redeemValueVndPerPoint: 0,
+    })
+
+    expect(updateSpy).toHaveBeenCalledWith({
+      enabled: true,
+      earn_rate_vnd_per_point: 1,
+      redeem_value_vnd_per_point: 0,
+    })
   })
 
   it("throws when the update errors", async () => {

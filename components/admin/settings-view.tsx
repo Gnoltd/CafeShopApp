@@ -15,8 +15,11 @@ import {
   updateShopSettings,
   getLoyaltySettings,
   updateLoyaltySettings,
+  validateShopSettingsInput,
+  validateLoyaltySettingsInput,
   type ShopSettings,
   type LoyaltySettings,
+  type SettingsValidationField,
 } from "@/lib/supabase/settings-data"
 
 type ShopDraft = { shopName: string; address: string; phone: string; openingHours: string; taxRate: string }
@@ -51,6 +54,7 @@ export function SettingsView() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<SettingsValidationField, string>>>({})
   const [justSaved, setJustSaved] = useState(false)
 
   useEffect(() => {
@@ -68,29 +72,56 @@ export function SettingsView() {
 
   function updateShop<K extends keyof ShopDraft>(key: K, value: ShopDraft[K]) {
     setShopDraft((prev) => ({ ...prev, [key]: value }))
+    if (key === "taxRate") {
+      setFieldErrors((prev) => ({ ...prev, taxRatePercent: undefined }))
+    }
   }
 
   function updateLoyalty<K extends keyof LoyaltyDraft>(key: K, value: LoyaltyDraft[K]) {
     setLoyaltyDraft((prev) => ({ ...prev, [key]: value }))
+    if (key === "earnRate") {
+      setFieldErrors((prev) => ({ ...prev, earnRateVndPerPoint: undefined }))
+    }
+    if (key === "redeemRate") {
+      setFieldErrors((prev) => ({ ...prev, redeemValueVndPerPoint: undefined }))
+    }
   }
 
   async function handleSave() {
     setError(null)
+    const shopInput = {
+      shopName: shopDraft.shopName,
+      address: shopDraft.address,
+      phone: shopDraft.phone,
+      openingHours: shopDraft.openingHours,
+      taxRatePercent: shopDraft.taxRate.trim() === "" ? Number.NaN : Number(shopDraft.taxRate),
+    }
+    const loyaltyInput = {
+      enabled: loyaltyDraft.enabled,
+      earnRateVndPerPoint: loyaltyDraft.earnRate.trim() === "" ? Number.NaN : Number(loyaltyDraft.earnRate),
+      redeemValueVndPerPoint: loyaltyDraft.redeemRate.trim() === "" ? Number.NaN : Number(loyaltyDraft.redeemRate),
+    }
+    const shopInvalidField = validateShopSettingsInput(shopInput)
+    const loyaltyInvalidField = validateLoyaltySettingsInput(loyaltyInput)
+    if (shopInvalidField || loyaltyInvalidField) {
+      setFieldErrors({
+        ...(shopInvalidField ? { [shopInvalidField]: t("taxRateError") } : {}),
+        ...(loyaltyInvalidField === "earnRateVndPerPoint"
+          ? { earnRateVndPerPoint: t("earnRateError") }
+          : {}),
+        ...(loyaltyInvalidField === "redeemValueVndPerPoint"
+          ? { redeemValueVndPerPoint: t("redeemRateError") }
+          : {}),
+      })
+      return
+    }
+
+    setFieldErrors({})
     setIsSaving(true)
     try {
       await Promise.all([
-        updateShopSettings(supabase, {
-          shopName: shopDraft.shopName,
-          address: shopDraft.address,
-          phone: shopDraft.phone,
-          openingHours: shopDraft.openingHours,
-          taxRatePercent: Number(shopDraft.taxRate) || 0,
-        }),
-        updateLoyaltySettings(supabase, {
-          enabled: loyaltyDraft.enabled,
-          earnRateVndPerPoint: Number(loyaltyDraft.earnRate) || 0,
-          redeemValueVndPerPoint: Number(loyaltyDraft.redeemRate) || 0,
-        }),
+        updateShopSettings(supabase, shopInput),
+        updateLoyaltySettings(supabase, loyaltyInput),
       ])
       setSavedShop(shopDraft)
       setSavedLoyalty(loyaltyDraft)
@@ -107,6 +138,7 @@ export function SettingsView() {
     setShopDraft(savedShop)
     setLoyaltyDraft(savedLoyalty)
     setError(null)
+    setFieldErrors({})
   }
 
   if (isLoading) {
@@ -171,11 +203,17 @@ export function SettingsView() {
               id="tax-rate"
               type="number"
               min="0"
+              max="100"
               step="0.01"
               value={shopDraft.taxRate}
               onChange={(e) => updateShop("taxRate", e.target.value)}
+              aria-invalid={Boolean(fieldErrors.taxRatePercent)}
+              aria-describedby={fieldErrors.taxRatePercent ? "tax-rate-error" : undefined}
               className="h-10 max-w-[140px]"
             />
+            {fieldErrors.taxRatePercent && (
+              <p id="tax-rate-error" className="text-sm text-destructive">{fieldErrors.taxRatePercent}</p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -213,12 +251,18 @@ export function SettingsView() {
             <Input
               id="earn-rate"
               type="number"
-              min="0"
+              min="1"
+              step="1"
               disabled={!loyaltyDraft.enabled}
               value={loyaltyDraft.earnRate}
               onChange={(e) => updateLoyalty("earnRate", e.target.value)}
+              aria-invalid={Boolean(fieldErrors.earnRateVndPerPoint)}
+              aria-describedby={fieldErrors.earnRateVndPerPoint ? "earn-rate-error" : undefined}
               className="h-10"
             />
+            {fieldErrors.earnRateVndPerPoint && (
+              <p id="earn-rate-error" className="text-sm text-destructive">{fieldErrors.earnRateVndPerPoint}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="redeem-rate">{t("redeemRate")}</Label>
@@ -226,11 +270,17 @@ export function SettingsView() {
               id="redeem-rate"
               type="number"
               min="0"
+              step="1"
               disabled={!loyaltyDraft.enabled}
               value={loyaltyDraft.redeemRate}
               onChange={(e) => updateLoyalty("redeemRate", e.target.value)}
+              aria-invalid={Boolean(fieldErrors.redeemValueVndPerPoint)}
+              aria-describedby={fieldErrors.redeemValueVndPerPoint ? "redeem-rate-error" : undefined}
               className="h-10"
             />
+            {fieldErrors.redeemValueVndPerPoint && (
+              <p id="redeem-rate-error" className="text-sm text-destructive">{fieldErrors.redeemValueVndPerPoint}</p>
+            )}
           </div>
         </CardContent>
       </Card>

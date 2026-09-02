@@ -49,6 +49,22 @@ function mapError(message: string): string {
   return KNOWN_ERROR_CODES.has(message) ? message : "Unable to check the bill"
 }
 
+async function releaseCheckoutAttempt(
+  serviceClient: ReturnType<typeof createClient>,
+  qrToken: string,
+  attemptId: string
+): Promise<void> {
+  try {
+    await serviceClient.rpc("release_table_checkout", {
+      p_qr_token: qrToken,
+      p_attempt_id: attemptId,
+    })
+  } catch {
+    // Preserve the gateway/configuration error that caused recovery.
+    // The attempt remains locked if the recovery RPC itself is unavailable.
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
@@ -92,7 +108,12 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: mapError(error.message) }), { status: 400, headers: corsHeaders })
     }
 
-    const result = data as { tableSessionId: string; orderIds: string[]; chargeTotal: number }
+    const result = data as {
+      tableSessionId: string
+      orderIds: string[]
+      chargeTotal: number
+      checkoutAttemptId: string | null
+    }
 
     if (method === "cash") {
       return new Response(JSON.stringify({ ok: true }), {
@@ -101,36 +122,64 @@ Deno.serve(async (req) => {
       })
     }
 
-    const siteUrl = Deno.env.get("SITE_URL")!
-    const tableUrl = `${siteUrl}/${locale}/table/${qrToken}`
-
     if (method === "stripe") {
-      const session = await createStripeCheckoutSessionForTableSession({
+      const attemptId = result.checkoutAttemptId
+      const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY")
+      const siteUrl = Deno.env.get("SITE_URL")
+      if (!attemptId) {
+        return new Response(JSON.stringify({ error: "Unexpected error checking the bill" }), { status: 500, headers: corsHeaders })
+      }
+      if (!stripeSecret || !siteUrl) {
+        await releaseCheckoutAttempt(serviceClient, qrToken, attemptId)
+        return new Response(JSON.stringify({ error: "Unexpected error checking the bill" }), { status: 500, headers: corsHeaders })
+      }
+
+      const tableUrl = `${siteUrl}/${locale}/table/${qrToken}`
+      try {
+        const session = await createStripeCheckoutSessionForTableSession({
+          tableSessionId: result.tableSessionId,
+          total: result.chargeTotal,
+          successUrl: tableUrl,
+          cancelUrl: `${tableUrl}?stripeCanceled=1`,
+        })
+        if ("error" in session) {
+          await releaseCheckoutAttempt(serviceClient, qrToken, attemptId)
+          return new Response(JSON.stringify({ error: session.error }), { status: 400, headers: corsHeaders })
+        }
+        return new Response(JSON.stringify({ checkoutUrl: session.url }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        })
+      } catch {
+        await releaseCheckoutAttempt(serviceClient, qrToken, attemptId)
+        return new Response(JSON.stringify({ error: "Unexpected error checking the bill" }), { status: 500, headers: corsHeaders })
+      }
+    }
+
+    const attemptId = result.checkoutAttemptId
+    if (!attemptId) {
+      return new Response(JSON.stringify({ error: "Unexpected error checking the bill" }), { status: 500, headers: corsHeaders })
+    }
+    if (!Deno.env.get("VNPAY_TMN_CODE") || !Deno.env.get("VNPAY_HASH_SECRET")) {
+      await releaseCheckoutAttempt(serviceClient, qrToken, attemptId)
+      return new Response(JSON.stringify({ error: "Unexpected error checking the bill" }), { status: 500, headers: corsHeaders })
+    }
+    try {
+      const checkoutUrl = await buildVnpayCheckoutUrlForTableSession({
         tableSessionId: result.tableSessionId,
         total: result.chargeTotal,
-        successUrl: tableUrl,
-        cancelUrl: `${tableUrl}?stripeCanceled=1`,
+        ipAddr: clientIp,
+        locale,
+        returnUrl: buildVnpayReturnUrlForTableSession(locale),
       })
-      if ("error" in session) {
-        return new Response(JSON.stringify({ error: session.error }), { status: 400, headers: corsHeaders })
-      }
-      return new Response(JSON.stringify({ checkoutUrl: session.url }), {
+      return new Response(JSON.stringify({ checkoutUrl }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
+    } catch {
+      await releaseCheckoutAttempt(serviceClient, qrToken, attemptId)
+      return new Response(JSON.stringify({ error: "Unexpected error checking the bill" }), { status: 500, headers: corsHeaders })
     }
-
-    const checkoutUrl = await buildVnpayCheckoutUrlForTableSession({
-      tableSessionId: result.tableSessionId,
-      total: result.chargeTotal,
-      ipAddr: clientIp,
-      locale,
-      returnUrl: buildVnpayReturnUrlForTableSession(locale),
-    })
-    return new Response(JSON.stringify({ checkoutUrl }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    })
   } catch {
     return new Response(JSON.stringify({ error: "Unexpected error checking the bill" }), {
       status: 500,

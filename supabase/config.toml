@@ -13,6 +13,9 @@ verify_jwt = false
 [functions.pay-order]
 verify_jwt = false
 
+[functions.checkout-table-session]
+verify_jwt = false
+
 [functions.create-staff-account]
 verify_jwt = true
 
