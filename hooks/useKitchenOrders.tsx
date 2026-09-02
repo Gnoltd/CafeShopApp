@@ -4,7 +4,8 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { createClient } from "@/lib/supabase/client"
 import { useRealtimeChannel } from "@/hooks/useRealtimeChannel"
 import {
-  advanceOrderStatus,
+  advanceOrderItemStatus,
+  markOrderItemsServed,
   confirmCashPayment as confirmCashPaymentQuery,
   confirmServedCashPayment as confirmServedCashPaymentQuery,
   confirmTableCashPayment as confirmTableCashPaymentQuery,
@@ -14,6 +15,7 @@ import {
   setOrderPaymentMethodCash,
   changeOrderPaymentMethod,
   type KdsOrderRow,
+  type OrderItemStatus,
   type RealOrderStatus,
 } from "@/lib/supabase/orders-data"
 
@@ -23,10 +25,20 @@ import {
 export type KdsStatus = Extract<RealOrderStatus, "paid" | "preparing" | "ready">
 export type { KdsOrderRow as KdsOrder }
 
-export const NEXT_STATUS: Record<KdsStatus, RealOrderStatus | null> = {
-  paid: "preparing",
+const NEXT_ITEM_STATUS: Record<OrderItemStatus, OrderItemStatus | null> = {
   preparing: "ready",
   ready: "served",
+  served: null,
+}
+
+// Pure so it's directly testable: given the order this item belongs to,
+// would advancing this one item to "served" leave every item in the
+// order served? Order completion (and the completedCount/avgTimeLabel
+// stats below) is a derived side effect of the *last* item being
+// ticked -- it can happen from either a single advanceItem call or a
+// table-wide serveTable bulk call, so both consult this.
+export function willCompleteOrderOnAdvance(order: KdsOrderRow, itemId: string): boolean {
+  return order.items.every((item) => item.id === itemId || item.status === "served")
 }
 
 function formatDuration(ms: number): string {
@@ -41,7 +53,7 @@ type KitchenOrdersContextValue = {
   pendingPaymentOrders: KdsOrderRow[]
   isLoading: boolean
   isRealtimeConnected: boolean
-  advance: (orderId: string) => Promise<void>
+  advanceItem: (orderId: string, itemId: string) => Promise<void>
   serveTable: (orderIds: string[]) => Promise<void>
   confirmCashPayment: (orderId: string) => Promise<void>
   confirmTableCashPayment: (tableId: string) => Promise<void>
@@ -84,34 +96,44 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
 
   // Staff sees every order (orders_select_staff has no per-row filtering
   // concerns), so a plain refetch on any change is both correct and
-  // simple — the board is small enough this is cheap.
+  // simple -- the board is small enough this is cheap. order_items is
+  // also watched now: an item tick that doesn't flip the parent order's
+  // own status (e.g. one of four drinks going ready) only ever shows up
+  // as an order_items change, never an orders change.
   useRealtimeChannel(
     supabase,
     "kitchen-orders-changes",
-    [{ table: "orders", event: "*", onChange: () => refetch() }],
+    [
+      { table: "orders", event: "*", onChange: () => refetch() },
+      { table: "order_items", event: "*", onChange: () => refetch() },
+    ],
     { onStatusChange: (status) => setIsRealtimeConnected(status === "SUBSCRIBED") }
   )
 
-  async function advance(orderId: string) {
+  async function advanceItem(orderId: string, itemId: string) {
     const order = orders.find((o) => o.id === orderId)
     if (!order) return
-    const next = NEXT_STATUS[order.status as KdsStatus]
+    const item = order.items.find((i) => i.id === itemId)
+    if (!item) return
+    const next = NEXT_ITEM_STATUS[item.status]
     if (!next) return
-    if (order.status === "ready") {
+    if (next === "served" && willCompleteOrderOnAdvance(order, itemId)) {
       setCompletedCount((count) => count + 1)
       setCompletedDurations((durations) => [...durations, Date.now() - order.createdAt])
     }
-    await advanceOrderStatus(supabase, orderId, next)
+    await advanceOrderItemStatus(supabase, itemId, next)
   }
 
   async function serveTable(orderIds: string[]) {
-    for (const orderId of orderIds) {
-      const order = orders.find((o) => o.id === orderId)
-      if (!order || order.status !== "ready") continue
+    const ordersToServe = orders.filter((o) => orderIds.includes(o.id) && o.status === "ready")
+    for (const order of ordersToServe) {
       setCompletedCount((count) => count + 1)
       setCompletedDurations((durations) => [...durations, Date.now() - order.createdAt])
-      await advanceOrderStatus(supabase, orderId, "served")
     }
+    await markOrderItemsServed(
+      supabase,
+      ordersToServe.map((o) => o.id)
+    )
   }
 
   async function confirmCashPayment(orderId: string) {
@@ -151,7 +173,7 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
         pendingPaymentOrders,
         isLoading,
         isRealtimeConnected,
-        advance,
+        advanceItem,
         serveTable,
         confirmCashPayment,
         confirmTableCashPayment,
