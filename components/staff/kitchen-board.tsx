@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
-import { Play, CheckCircle2, PackageCheck, Utensils, ShoppingBag, ListTodo, RefreshCw, CheckCheck } from "lucide-react"
+import { CheckCircle2, PackageCheck, Utensils, ShoppingBag, ListTodo, RefreshCw, CheckCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { formatOrderId } from "@/lib/format"
 import { SegmentedControl } from "@/components/motion/segmented-control"
@@ -33,11 +33,11 @@ export function formatElapsed(createdAt: number, now: number): string {
 export function KitchenBoard({
   orders,
   now,
-  onAdvance,
+  onAdvanceItem,
 }: {
   orders: KdsOrder[]
   now: number
-  onAdvance: (orderId: string) => void
+  onAdvanceItem: (orderId: string, itemId: string) => void
 }) {
   const locale = useLocale()
   const t = useTranslations("KitchenDisplay")
@@ -131,55 +131,49 @@ export function KitchenBoard({
                       </div>
                     </div>
                     <div className="space-y-2 p-3">
-                      {order.items.map((item, index) => (
-                        <div key={index} className="flex items-start gap-3">
-                          <div className="nb-border-sm flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-chip text-sm font-bold text-card-foreground">
-                            {item.quantity}x
+                      {order.items.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between gap-3">
+                          <div className="flex items-start gap-3">
+                            <div className="nb-border-sm flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-chip text-sm font-bold text-card-foreground">
+                              {item.quantity}x
+                            </div>
+                            <div>
+                              <p
+                                className={cn(
+                                  "font-bold text-card-foreground",
+                                  item.status === "served" && "text-muted-foreground line-through decoration-muted-foreground"
+                                )}
+                              >
+                                {locale === "vi" ? item.nameVi : item.nameEn}
+                              </p>
+                              {item.note && (
+                                <p className="text-sm font-medium italic text-secondary">{item.note}</p>
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            <p
+                          {item.status === "served" ? (
+                            <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" />
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => onAdvanceItem(order.id, item.id)}
                               className={cn(
-                                "font-bold text-card-foreground",
-                                isReady && "text-muted-foreground line-through decoration-muted-foreground"
+                                "nb-press-sm nb-border-sm nb-shadow-sm flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-white",
+                                item.status === "preparing" && "bg-amber-600",
+                                item.status === "ready" && "bg-green-600"
                               )}
                             >
-                              {locale === "vi" ? item.nameVi : item.nameEn}
-                            </p>
-                            {item.note && (
-                              <p className="text-sm font-medium italic text-secondary">{item.note}</p>
-                            )}
-                          </div>
+                              {item.status === "preparing" ? (
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                              ) : (
+                                <PackageCheck className="h-3.5 w-3.5" />
+                              )}
+                              {item.status === "preparing" ? t("markReady") : t("markServed")}
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
-                    {!(column.status === "ready" && order.orderType === "dine-in" && order.tableId) && (
-                      <button
-                        type="button"
-                        onClick={() => onAdvance(order.id)}
-                        className={cn(
-                          "nb-press flex w-full items-center justify-center gap-2 rounded-b-xl border-t-2 border-ink py-3 text-base font-extrabold text-white",
-                          column.status === "paid" && "bg-primary",
-                          column.status === "preparing" && "bg-amber-600",
-                          column.status === "ready" && "bg-green-600"
-                        )}
-                      >
-                        {column.status === "paid" && (
-                          <>
-                            <Play className="h-4 w-4" /> {t("startPreparing")}
-                          </>
-                        )}
-                        {column.status === "preparing" && (
-                          <>
-                            <CheckCircle2 className="h-4 w-4" /> {t("markReady")}
-                          </>
-                        )}
-                        {column.status === "ready" && (
-                          <>
-                            <PackageCheck className="h-4 w-4" /> {t("complete")}
-                          </>
-                        )}
-                      </button>
-                    )}
                   </div>
                 )
               })}

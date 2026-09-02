@@ -8,7 +8,7 @@ import { KitchenPendingPayment } from "@/components/staff/kitchen-pending-paymen
 import { useKitchenOrders } from "@/hooks/useKitchenOrders"
 
 export function KitchenDisplay() {
-  const { orders, pendingPaymentOrders, advance, confirmCashPayment } = useKitchenOrders()
+  const { orders, pendingPaymentOrders, advanceItem, confirmCashPayment } = useKitchenOrders()
   const t = useTranslations("KitchenDisplay")
   const [now, setNow] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -19,9 +19,9 @@ export function KitchenDisplay() {
     return () => clearInterval(interval)
   }, [])
 
-  function handleAdvance(orderId: string) {
+  function handleAdvanceItem(orderId: string, itemId: string) {
     setError(null)
-    advance(orderId).catch(() => setError(t("updateError")))
+    advanceItem(orderId, itemId).catch(() => setError(t("updateError")))
   }
 
   function handleConfirmCashPayment(orderId: string) {
@@ -38,7 +38,7 @@ export function KitchenDisplay() {
         <KitchenPendingPayment orders={pendingPaymentOrders} onConfirm={handleConfirmCashPayment} />
       )}
       <div className="flex-1 overflow-hidden">
-        <KitchenBoard orders={orders} now={now} onAdvance={handleAdvance} />
+        <KitchenBoard orders={orders} now={now} onAdvanceItem={handleAdvanceItem} />
       </div>
       <KitchenStatsFooter orders={orders} now={now} />
     </div>
