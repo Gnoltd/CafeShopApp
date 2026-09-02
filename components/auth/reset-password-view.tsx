@@ -100,6 +100,7 @@ export function ResetPasswordView() {
           <label className="block px-1 text-xs font-medium text-muted-foreground">{t("newPasswordLabel")}</label>
           <input
             type="password"
+            autoComplete="new-password"
             minLength={6}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
@@ -112,6 +113,7 @@ export function ResetPasswordView() {
           </label>
           <input
             type="password"
+            autoComplete="new-password"
             minLength={6}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
