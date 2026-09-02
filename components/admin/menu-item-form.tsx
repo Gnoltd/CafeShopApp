@@ -34,7 +34,7 @@ export function MenuItemForm({
   categories: MenuCategory[]
   initialItem?: MenuItem
   onCancel: () => void
-  onSave: (input: MenuItemInput, extraGroupIds: string[], recipeEntries: RecipeEntry[], sizes: MenuItemSizeInput[]) => void
+  onSave: (input: MenuItemInput, extraGroupIds: string[], recipeEntries: RecipeEntry[], sizes: MenuItemSizeInput[]) => void | Promise<void>
 }) {
   const t = useTranslations("AdminMenu")
   const locale = useLocale()
@@ -61,6 +61,7 @@ export function MenuItemForm({
   const [isDraggingOver, setIsDraggingOver] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   const [sizes, setSizes] = useState<{ name: string; price: string }[]>(
     initialItem?.sizes.map((s) => ({ name: s.name, price: String(s.priceDelta) })) ?? []
@@ -291,7 +292,12 @@ export function MenuItemForm({
     }
 
     setError(null)
-    onSave(
+    setIsSaving(true)
+    // onSave (the parent's saveItem) already catches its own errors and
+    // sets a page-level error banner rather than rejecting — so this only
+    // needs to track "is the write still outstanding" for FormDialog's
+    // Escape/backdrop guard, not branch on success/failure itself.
+    Promise.resolve(onSave(
       {
         categoryId,
         nameVi: nameVi.trim(),
@@ -308,7 +314,7 @@ export function MenuItemForm({
       selectedExtraIds,
       recipeEntries,
       parsedSizes
-    )
+    )).finally(() => setIsSaving(false))
   }
 
   return (
@@ -316,13 +322,13 @@ export function MenuItemForm({
       onClose={onCancel}
       size="xl"
       title={isEditing ? t("editItemTitle") : t("addItem")}
-      isBusy={isUploading}
+      isBusy={isUploading || isSaving}
       footer={
         <>
           <Button variant="neubrutal" className="bg-card text-foreground" onClick={onCancel}>
             {t("cancel")}
           </Button>
-          <Button variant="neubrutal" onClick={handleSave} disabled={isUploading}>
+          <Button variant="neubrutal" onClick={handleSave} disabled={isUploading || isSaving}>
             {isUploading ? t("uploadingButton") : t("save")}
           </Button>
         </>
