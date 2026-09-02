@@ -1,12 +1,19 @@
 # Open / not started
 
-0. **`https://phadincafe.vercel.app` currently requires Vercel SSO login
-   for every visitor** (Deployment Protection on the Production
+0. **Appears resolved as of 2026-09-02** — re-checked while pushing
+   today's KDS redesign: an unauthenticated `curl` against
+   `https://phadincafe.vercel.app` (no Vercel session cookie at all)
+   returned a clean `200`/normal app-level `/login` redirect, not a
+   Vercel SSO challenge, and the user independently confirmed the live
+   KDS board working from an ordinary browser. Not a formal
+   Settings → Deployment Protection check, but strong enough evidence
+   that this should no longer be treated as blocking the
+   live-verification items below — worth a final look in the Vercel
+   dashboard to confirm and close this out for good.
+   Originally: `https://phadincafe.vercel.app` required Vercel SSO
+   login for every visitor (Deployment Protection on the Production
    environment), confirmed 2026-08-03 on both a fresh deploy and a
    13-hour-old one — pre-existing, not caused by any recent change.
-   Blocks every live-verification item in this file until turned off
-   in the Vercel project's Settings → Deployment Protection. Check this
-   first before attempting any "live-verify on Vercel" task below.
 
 1. **Shared table ordering session — code complete, security-hardened,
    double-reviewed (per-task + final whole-branch), live-verification
@@ -204,13 +211,56 @@
    transaction (partial-progress → `preparing`, full-served → `served`,
    both confirmed). Full test suite (226/226) and `npx tsc --noEmit`
    both verified clean after Node.js was installed mid-session (nvm,
-   v24.20.0) — the plan's Tasks 1-4 are all checked off. **Still
-   needed**: Task 5's live browser pass (partial item progress visible
-   cross-device, column auto-advance, table bulk "Mark Served", pickup
-   parity) — no working browser automation this session (Playwright MCP
-   failed to connect). Also note item 0 above: the whole Vercel
-   deployment may still be behind SSO, which would block this entirely
-   until that's resolved.
+   v24.20.0) — the plan's Tasks 1-4 are all checked off.
+   **Task 5 live-verified 2026-09-02**: the user confirmed the
+   per-item tick controls working on the live board (items ticking via
+   "Mark Ready" independently within one order). All 5 tasks are now
+   done — worth migrating this feature's entry from here into
+   `CLAUDE.md`'s "Feature areas" next time that file gets touched.
+   **Same session, adjacent follow-up work** (not part of the original
+   plan, prompted by a live layout complaint from the user): the KDS
+   board got an adaptive 3-tier responsive redesign (mobile
+   tab-switcher / 768-1279px 2x2 grid / >=1280px 1x4 kanban,
+   `kitchen-board.tsx`), a wait-time-driven urgency color on order
+   timers, an adaptive table-card grid, and 44px touch targets
+   (`kitchen-tables-column.tsx`) -- pushed across 4 commits
+   (`0e7b374`..`87db224`). Two real overflow bugs were found live (via
+   user screenshots, not a working browser tool) and fixed: order-item
+   rows and table-card action rows could push their button past the
+   card edge on a narrow card; fixed by letting the row wrap
+   (`flex-wrap` + `ml-auto`) instead of forcing everything onto one
+   line. Playwright MCP still isn't connected this session (`npx` was
+   missing from the harness's spawn `$PATH`; symlinked `node`/`npm`/
+   `npx` into `~/.local/bin` mid-session, but MCP servers only connect
+   at startup -- needs a fresh session to actually take effect and let
+   a real browser check replace screenshot-driven debugging).
+
+9. **Two heavy libraries ship in the initial JS bundle when they're
+   only needed after a user action — not started, found 2026-09-02
+   while investigating a report of "3D lagging."** Neither
+   `components/marketing/coffee-cup-hero.tsx` (imports `three` +
+   `GLTFLoader`, easily 500-600KB min) nor
+   `lib/export-dashboard-excel.ts` (imports `xlsx`,
+   `node_modules/xlsx/dist/xlsx.full.min.js` alone is ~880KB) is
+   loaded via `next/dynamic` — `landing-view.tsx` statically imports
+   the hero (mounted on first paint of the public landing page) and
+   `dashboard-view.tsx` statically imports the Excel exporter (only
+   actually used when the admin clicks "Export to Excel"). No
+   `next/dynamic` usage exists anywhere in the repo today (`grep`
+   confirmed). Switching both to `next/dynamic(() => import(...), {
+   ssr: false })` would code-split them into separate chunks loaded
+   only when needed, cutting initial JS for the highest-traffic page
+   (landing) and the admin dashboard, with no behavior change (the 3D
+   hero is already WebGL/client-only via its own `isWebGLAvailable()`
+   check, and the exporter only ever runs from an onClick handler).
+   Separately, `public/models/coffee-cup.glb` is 1.9MB uncompressed —
+   worth a Draco/meshopt pass (e.g. `gltf-transform`) if the 3D hero's
+   load time on mobile networks is still a concern after the
+   code-split. The render loop itself already does the right things
+   (capped `devicePixelRatio`, `IntersectionObserver` pause when
+   scrolled out of view, `prefers-reduced-motion` respected, proper
+   geometry/material disposal on unmount) — this is a load-time
+   finding, not a runtime frame-rate one.
 
 ## Known gaps (documented, not hidden — pick up whenever that area is next touched)
 
