@@ -109,12 +109,12 @@ export function KitchenBoard({
                   <div key={order.id} className="nb-border-sm nb-shadow-sm rounded-xl bg-card">
                     <div
                       className={cn(
-                        "flex items-start justify-between border-b p-3 md:p-4",
+                        "flex items-start justify-between gap-2 border-b p-3",
                         isReady && "bg-green-50 dark:bg-green-950/20"
                       )}
                     >
-                      <div>
-                        <h3 className="text-xl font-black text-card-foreground md:text-2xl">#{formatOrderId(order.id)}</h3>
+                      <div className="min-w-0">
+                        <h3 className="truncate text-xl font-black text-card-foreground">#{formatOrderId(order.id)}</h3>
                         <span
                           className={cn(
                             "mt-1 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold",
@@ -131,14 +131,14 @@ export function KitchenBoard({
                           {order.orderType === "pickup" ? t("pickup") : t("table", { table: order.table ?? "" })}
                         </span>
                       </div>
-                      <div className="text-right">
+                      <div className="shrink-0 text-right">
                         {isReady ? (
-                          <div className="text-xl font-bold text-green-600 md:text-2xl">{t("doneLabel")}</div>
+                          <div className="text-xl font-bold text-green-600">{t("doneLabel")}</div>
                         ) : (
                           <>
                             <div
                               className={cn(
-                                "text-xl font-bold md:text-2xl",
+                                "text-xl font-bold",
                                 urgency === "normal" && (column.status === "paid" ? "text-primary" : "text-amber-600"),
                                 URGENCY_TIMER_CLASS[urgency]
                               )}
@@ -152,24 +152,24 @@ export function KitchenBoard({
                         )}
                       </div>
                     </div>
-                    <div className="space-y-2 p-3 md:p-4">
+                    <div className="space-y-2 p-3">
                       {order.items.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between gap-3">
-                          <div className="flex items-start gap-3">
-                            <div className="nb-border-sm flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-chip text-sm font-bold text-card-foreground">
+                        <div key={item.id} className="flex items-center justify-between gap-2">
+                          <div className="flex min-w-0 flex-1 items-start gap-3">
+                            <div className="nb-border-sm flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-chip text-sm font-bold text-card-foreground">
                               {item.quantity}x
                             </div>
-                            <div>
+                            <div className="min-w-0">
                               <p
                                 className={cn(
-                                  "font-bold text-card-foreground",
+                                  "break-words font-bold text-card-foreground",
                                   item.status === "served" && "text-muted-foreground line-through decoration-muted-foreground"
                                 )}
                               >
                                 {locale === "vi" ? item.nameVi : item.nameEn}
                               </p>
                               {item.note && (
-                                <p className="text-sm font-medium italic text-secondary">{item.note}</p>
+                                <p className="break-words text-sm font-medium italic text-secondary">{item.note}</p>
                               )}
                             </div>
                           </div>
