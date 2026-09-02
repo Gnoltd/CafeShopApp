@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { confirmTableCashPayment, markTableCashPayment } from "./order-kds"
+import { confirmTableCashPayment, markTableCashPayment, advanceOrderItemStatus, markOrderItemsServed } from "./order-kds"
 
 describe("confirmTableCashPayment", () => {
   it("calls confirm_table_cash_payment with the table id and returns the row count", async () => {
@@ -46,5 +46,65 @@ describe("markTableCashPayment", () => {
     const supabase = { from } as unknown as SupabaseClient
 
     await expect(markTableCashPayment(supabase, "table-1")).rejects.toThrow("not_authorized")
+  })
+})
+
+describe("advanceOrderItemStatus", () => {
+  it("updates the item's status by id", async () => {
+    const eq = vi.fn(() => Promise.resolve({ error: null }))
+    const update = vi.fn(() => ({ eq }))
+    const from = vi.fn(() => ({ update }))
+    const supabase = { from } as unknown as SupabaseClient
+
+    await advanceOrderItemStatus(supabase, "item-1", "ready")
+
+    expect(from).toHaveBeenCalledWith("order_items")
+    expect(update).toHaveBeenCalledWith({ status: "ready" })
+    expect(eq).toHaveBeenCalledWith("id", "item-1")
+  })
+
+  it("throws on error", async () => {
+    const eq = vi.fn(() => Promise.resolve({ error: new Error("not_authorized") }))
+    const update = vi.fn(() => ({ eq }))
+    const from = vi.fn(() => ({ update }))
+    const supabase = { from } as unknown as SupabaseClient
+
+    await expect(advanceOrderItemStatus(supabase, "item-1", "ready")).rejects.toThrow("not_authorized")
+  })
+})
+
+describe("markOrderItemsServed", () => {
+  it("bulk-updates every non-served item across the given orders", async () => {
+    const neq = vi.fn(() => Promise.resolve({ error: null }))
+    const inFn = vi.fn(() => ({ neq }))
+    const update = vi.fn(() => ({ in: inFn }))
+    const from = vi.fn(() => ({ update }))
+    const supabase = { from } as unknown as SupabaseClient
+
+    await markOrderItemsServed(supabase, ["order-1", "order-2"])
+
+    expect(from).toHaveBeenCalledWith("order_items")
+    expect(update).toHaveBeenCalledWith({ status: "served" })
+    expect(inFn).toHaveBeenCalledWith("order_id", ["order-1", "order-2"])
+    expect(neq).toHaveBeenCalledWith("status", "served")
+  })
+
+  it("does nothing when given no order ids", async () => {
+    const from = vi.fn()
+    const supabase = { from } as unknown as SupabaseClient
+
+    await markOrderItemsServed(supabase, [])
+
+    expect(from).not.toHaveBeenCalled()
+  })
+
+  it("throws on error", async () => {
+    const neq = vi.fn(() => Promise.resolve({ error: new Error("not_authorized") }))
+    const inFn = vi.fn(() => ({ neq }))
+    const update = vi.fn(() => ({ in: inFn }))
+    const from = vi.fn(() => ({ update }))
+    const supabase = { from } as unknown as SupabaseClient
+
+    await expect(markOrderItemsServed(supabase, ["order-1"])).rejects.toThrow("not_authorized")
   })
 })

@@ -5,7 +5,6 @@ import {
   placeOrder,
   getMyOrders,
   getKitchenOrders,
-  advanceOrderStatus,
   confirmCashPayment,
   confirmServedCashPayment,
   payExistingOrder,
@@ -164,18 +163,6 @@ describe("getKitchenOrders", () => {
 
     await getKitchenOrders(supabase)
     expect(inSpy).toHaveBeenCalledWith("status", ["paid", "preparing", "ready", "served"])
-  })
-})
-
-describe("advanceOrderStatus", () => {
-  it("updates only the status column", async () => {
-    const eqSpy = vi.fn(() => Promise.resolve({ error: null }))
-    const updateSpy = vi.fn(() => ({ eq: eqSpy }))
-    const supabase = { from: () => ({ update: updateSpy }) } as unknown as SupabaseClient
-
-    await advanceOrderStatus(supabase, "ord-1", "ready")
-    expect(updateSpy).toHaveBeenCalledWith({ status: "ready" })
-    expect(eqSpy).toHaveBeenCalledWith("id", "ord-1")
   })
 })
 

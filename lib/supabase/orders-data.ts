@@ -25,11 +25,12 @@ export {
   setOrderPaymentMethodCash,
 } from "./order-tracking"
 
-export type { KdsOrderItemRow, KdsOrderRow } from "./order-kds"
+export type { KdsOrderItemRow, KdsOrderRow, OrderItemStatus } from "./order-kds"
 export {
   getKitchenOrders,
   getPendingPaymentOrders,
-  advanceOrderStatus,
+  advanceOrderItemStatus,
+  markOrderItemsServed,
   confirmCashPayment,
   confirmServedCashPayment,
   confirmTableCashPayment,

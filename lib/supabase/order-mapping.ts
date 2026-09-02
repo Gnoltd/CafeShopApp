@@ -2,6 +2,7 @@ export type RealOrderStatus = "pending_payment" | "paid" | "preparing" | "ready"
 export type RealOrderType = "pickup" | "dine_in"
 export type OrderType = "pickup" | "dine-in"
 export type RealPaymentMethod = "stripe" | "cash" | "vnpay"
+export type RealOrderItemStatus = "preparing" | "ready" | "served"
 
 export type OrderForTrackingItem = { menuItemId: string; nameVi: string; nameEn: string; quantity: number; unitPrice: number; note?: string }
 
@@ -41,14 +42,22 @@ export type OrderRow = {
   payment_status: string
   payment_method: RealPaymentMethod | null
   tables: { table_number: string } | null
-  order_items: { menu_item_id: string; menu_items: { name_vi: string; name_en: string }; quantity: number; unit_price: number; note: string | null }[]
+  order_items: {
+    id: string
+    menu_item_id: string
+    menu_items: { name_vi: string; name_en: string }
+    quantity: number
+    unit_price: number
+    note: string | null
+    status: RealOrderItemStatus
+  }[]
 }
 
 export const ORDER_SELECT = `
   id, created_at, order_type, status, subtotal, discount_amount, tax_amount, total,
   table_id, payment_status, payment_method,
   tables ( table_number ),
-  order_items ( menu_item_id, quantity, unit_price, note, menu_items ( name_vi, name_en ) )
+  order_items ( id, menu_item_id, quantity, unit_price, note, status, menu_items ( name_vi, name_en ) )
 `
 
 export function mapOrderRow(row: OrderRow): OrderForTracking {

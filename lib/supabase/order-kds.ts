@@ -2,13 +2,15 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import {
   type OrderType,
   type RealOrderStatus,
+  type RealOrderItemStatus,
   type RealPaymentMethod,
   type OrderRow,
   ORDER_SELECT,
   fromRealOrderType,
 } from "./order-mapping"
 
-export type KdsOrderItemRow = { nameVi: string; nameEn: string; quantity: number; note: string | null }
+export type OrderItemStatus = RealOrderItemStatus
+export type KdsOrderItemRow = { id: string; nameVi: string; nameEn: string; quantity: number; note: string | null; status: OrderItemStatus }
 export type KdsOrderRow = {
   id: string
   orderType: OrderType
@@ -33,10 +35,12 @@ function mapKdsRow(row: OrderRow): KdsOrderRow {
     paymentMethod: row.payment_method,
     createdAt: new Date(row.created_at).getTime(),
     items: row.order_items.map((oi) => ({
+      id: oi.id,
       nameVi: oi.menu_items.name_vi,
       nameEn: oi.menu_items.name_en,
       quantity: oi.quantity,
       note: oi.note,
+      status: oi.status,
     })),
     total: row.total,
   }
@@ -64,12 +68,26 @@ export async function getPendingPaymentOrders(supabase: SupabaseClient): Promise
   return ((data ?? []) as unknown as OrderRow[]).map(mapKdsRow)
 }
 
-export async function advanceOrderStatus(
+// Advances a single item -- the KDS card's per-item tick control.
+export async function advanceOrderItemStatus(
   supabase: SupabaseClient,
-  orderId: string,
-  newStatus: RealOrderStatus
+  itemId: string,
+  newStatus: OrderItemStatus
 ): Promise<void> {
-  const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", orderId)
+  const { error } = await supabase.from("order_items").update({ status: newStatus }).eq("id", itemId)
+  if (error) throw error
+}
+
+// Bulk-marks every not-yet-served item across the given orders as
+// served in one call -- backs the table's "Mark Served" bulk action.
+// The 0082 roll-up trigger then flips each order to 'served' itself.
+export async function markOrderItemsServed(supabase: SupabaseClient, orderIds: string[]): Promise<void> {
+  if (orderIds.length === 0) return
+  const { error } = await supabase
+    .from("order_items")
+    .update({ status: "served" })
+    .in("order_id", orderIds)
+    .neq("status", "served")
   if (error) throw error
 }
 
