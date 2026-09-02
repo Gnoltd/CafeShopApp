@@ -1,312 +1,218 @@
-# Open / not started
+# Reliability, UX, and Performance Remediation Plan
 
-0. **Appears resolved as of 2026-09-02** — re-checked while pushing
-   today's KDS redesign: an unauthenticated `curl` against
-   `https://phadincafe.vercel.app` (no Vercel session cookie at all)
-   returned a clean `200`/normal app-level `/login` redirect, not a
-   Vercel SSO challenge, and the user independently confirmed the live
-   KDS board working from an ordinary browser. Not a formal
-   Settings → Deployment Protection check, but strong enough evidence
-   that this should no longer be treated as blocking the
-   live-verification items below — worth a final look in the Vercel
-   dashboard to confirm and close this out for good.
-   Originally: `https://phadincafe.vercel.app` required Vercel SSO
-   login for every visitor (Deployment Protection on the Production
-   environment), confirmed 2026-08-03 on both a fresh deploy and a
-   13-hour-old one — pre-existing, not caused by any recent change.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-1. **Shared table ordering session — code complete, security-hardened,
-   double-reviewed (per-task + final whole-branch), live-verification
-   blocked by item 0.** Design: `docs/superpowers/specs/2026-08-28-shared-table-ordering-session-design.md`;
-   plan: `docs/superpowers/plans/2026-08-28-shared-table-ordering-session.md`;
-   full history/rulings: `.superpowers/sdd/2026-08-28-shared-table-ordering-session/progress.md`.
-   Live shared cart per dine-in table (scan QR → menu + live cart synced
-   across every device at that table), a persistent running tab across
-   however many rounds a table orders, and one aggregate "Check Bill"
-   payment (Cash/Stripe/VNPay) settling every unpaid round at once. `/cart`/
-   `/checkout` are now pickup-only — dine-in only happens through
-   `/table/[qrToken]`. New `table_sessions`/`table_cart_items` schema, ~9
-   new/changed RPCs (all guest-facing ones keyed on the table's `qr_token`,
-   not the enumerable raw `table_id`), 3 modified live
-   payment Edge Functions plus 1 new one, `useTableSession` hook with
-   Realtime + a 10s poll fallback + an idle-timeout auto-abandon, and a
-   staff-side aggregate "Confirm Cash"/"Mark Cash" KDS action.
-   **Found and fixed mid-build** (a prior session hit its usage limit
-   partway through and had identified but not yet applied these): an
-   invalid `FOR UPDATE`-over-an-aggregate in `checkout_table_session`
-   that would have errored on every real checkout, and the qr_token
-   security retrofit across all 7 guest RPCs. **Found and fixed via the
-   final whole-branch review**: a CRITICAL pre-existing leak (migrations
-   0012/0021, made load-bearing by this feature) where
-   `increment_table_scan_count`/`notify_table_cleaning` returned a
-   table's whole row — `qr_code_token` included — to any anon caller
-   keyed on the enumerable `table_id`, completely defeating the qr_token
-   fix; closed via migration `0079`. Six further Important findings (live
-   guest updates, the idle-timer regression it turned out to have,
-   staff cash-settlement for a never-picked payment method, a dead Check
-   Bill promo input, two small error-handling gaps, stale generated
-   types/docs) were fixed in one consolidated pass and independently
-   re-reviewed — including one regression the idle-timer fix itself
-   introduced (now also fixed). **Still needed**: Task 23's Steps 1-8
-   (two-device live sync, idle-clear, running tab, Check Bill against
-   real Cash/Stripe/VNPay, promo-at-checkout regression, pickup
-   regression) — every one needs the live Vercel URL, blocked by item 0.
-   Everything below the browser layer (every migration/RPC/Edge Function)
-   was individually exercised live via direct SQL execution and
-   Edge-Function deploy-then-fetch-back verification, not just code
-   review.
+**Goal:** Remove the failure modes, latency, stale-state behavior, and accessibility gaps most likely to lose orders, delay staff, or make customers distrust the app.
 
-2. **Promotions — real manager-managed discount codes, replacing the
-   hardcoded `WELCOME10`. Code shipped and DB-verified, live UI
-   verification blocked by item 0 above, not yet performed.**
-   Design: `docs/superpowers/specs/2026-08-03-promotions-design.md`;
-   plan: `docs/superpowers/plans/2026-08-03-promotions.md`. New
-   `promotions` table (percent/fixed discount, active toggle,
-   `starts_at`/`ends_at`, `max_redemptions`, `min_subtotal_vnd`,
-   `times_used`) + `orders.promo_code` (migration `0068`, plus `0069`
-   fixing the platform's auto-re-grant of `validate_promo_code` to
-   `PUBLIC` — this project's documented gotcha, caught live). New
-   guest-safe `validate_promo_code` RPC for instant Cart feedback;
-   `place_order` now looks up the real row (`FOR UPDATE`, race-safe)
-   instead of string-matching `WELCOME10`, raising a specific exception
-   per failure reason and incrementing `times_used` on success. New
-   `/admin/promotions` page (manager+admin, list + add/edit modal,
-   modeled on Menu Management) to create/edit/deactivate codes. Cart's
-   promo apply is now a real server round trip with a loading state and
-   a reason-specific error message (not found / inactive / not started
-   / expired / limit reached / below minimum) instead of one generic
-   "invalid code" string. `resolvePromoDiscount` (`lib/order-total.ts`)
-   and the new `lib/supabase/promotions-data.ts` query layer are
-   TDD'd; `validate_promo_code` was verified live via direct SQL
-   (success and not-found cases). **Still needed**: the full live UI
-   pass from the plan's Task 8 (create a code, apply/fail in Cart with
-   each reason, place a real order, confirm `times_used` increments,
-   confirm `max_redemptions` actually blocks a second use) — blocked
-   by item 0.
+**Architecture:** Fix transactional/payment correctness first, then establish one reusable async-state and latest-request pattern for client data. Scope providers and subscriptions to the routes that consume them, keep RLS as the authorization boundary, and finish with an accessibility/i18n pass plus real deployed-device verification.
 
-3. **"Neubrutalist Modern" full-app redesign — all 4 phases shipped to
-   `main`, live verification is the one remaining step.**
-   Design spec: `docs/superpowers/specs/2026-07-12-elevated-warm-redesign-design.md`
-   (title says "Elevated Warm" but the actual locked style is
-   Neubrutalist Modern — thick ink-colored borders, flat hard-offset
-   shadows that collapse on press, first-ever dark mode; see the spec's
-   revision note). Validated via 8 full interactive HTML mockups
-   (Artifacts, ephemeral to that conversation, not in the repo) with
-   live pixel-level iteration, not static wireframes, before any real
-   code was touched.
-   - **Phase 1** (plan: `...phase1-foundation-landing-menu.md`, pushed `934e72c`):
-     design tokens, working dark mode (`hooks/useTheme.tsx`,
-     `ThemeToggle`, no-flash init script), additive `neubrutal` variant
-     on shared `Button`/`Badge`, Landing + Menu.
-   - **Phase 2** (plan: `...phase2-cart-orders-profile-loyalty.md`, pushed `099133b`):
-     Cart, Checkout, Order Tracking, Order History, Profile, Loyalty.
-     Fixed `components/motion/step-progress.tsx` so a completed step
-     shows a green checkmark instead of its own icon re-colored.
-   - **Phase 3** (plan: `...phase3-pos-kds.md`, pushed `b9af9aa`):
-     `StaffNav`, POS, all five KDS components, at the denser
-     `nb-border-sm`/`nb-shadow-sm` Staff/Admin scale.
-   - **Phase 4** (plan: `...phase4-admin.md`, pushed `7090e90`): Admin
-     sidebar/mobile drawer + all 8 views (Dashboard, Menu Mgmt,
-     Inventory, Tables, Food Cost, Shift, Staff, Settings).
-   `tsc --noEmit` and the full test suite (140 tests) passed after every
-   task across all four phases — no regressions to the underlying
-   business logic anywhere.
-   **Three assumptions from the design spec turned out wrong once
-   grounded against the real code** (worth remembering as a pattern —
-   mockup-review findings don't always carry over to the real
-   codebase): the Cart+Checkout/Tracking+History/Profile+Loyalty
-   tab-switcher pairing was a mockup-review convenience only, not a
-   real navigation change (all six stayed separate routes); the
-   "POS/KDS/Admin app-switcher" was already shipped as
-   `components/staff/staff-nav.tsx`, not new UI; and Shift's Cash/Card/
-   VNPay breakdown already existed in `shift-report-detail.tsx`, not
-   outstanding work. All three were corrected in the relevant phase's
-   plan doc rather than built again from scratch.
-   **Post-phase-4 consistency sweep** (pushed `2753459`, 2026-07-12):
-   the 4 phases covered every *page*, but a follow-up audit
-   ("Browse Menu" in Cart, "Go to Admin Dashboard" in Profile still
-   plain-styled) found ~30 more files the phase plans hadn't listed —
-   mostly modals/forms/panels reached from an already-migrated page
-   (address book, profile settings, my redemptions, rewards catalog
-   modal, review form, reset password, every admin add/edit modal,
-   staff order history, reward lookup) plus shared chrome (role badge,
-   language switcher, theme toggle). All re-skinned to match. Also
-   found and fixed a real latent bug while doing this: the shared
-   `Input` primitive (`components/ui/input.tsx`) still shipped
-   Tailwind's own `border border-input` utility classes, which — same
-   as the ROLE_STYLES bug from Phase 4 — always beat the custom
-   `.nb-border-sm` component-layer class per Tailwind's layer cascade
-   (utilities > components). Any `<Input>` a phase had given an
-   `nb-border*` className (e.g. Cart's promo code field) was silently
-   still rendering with a thin default border, never the intended thick
-   ink one. Fixed at the primitive so every current and future `<Input>`
-   is correct with no per-callsite override needed; the same fix was
-   applied to `SegmentedControl`, `AnimatedTabBar`, `SideDrawer`, and
-   `BottomSheet`.
-   **The one remaining step**: live-verify the whole redesign on
-   **https://phadincafe.vercel.app** — colors, dark mode toggle/
-   persistence, both locales, real mobile devices (iOS Safari + Android
-   Chrome, not just a resized desktop browser) — across all pages in
-   one pass now that everything (including this sweep) is shipped, per
-   the spec's own verification plan. Deliberately deferred by explicit
-   user request; do it as a single pass, not phase-by-phase.
+**Tech Stack:** Next.js 16 App Router, React 19, next-intl, Tailwind v4, Base UI, Supabase Postgres/Auth/Realtime/Edge Functions, Vitest.
 
-4. **Live-verify the Admin Dashboard by hand** — KPIs are real
-   (`get_dashboard_stats()`, migration `0026`), but a full manual
-   walkthrough hasn't been confirmed: real KPI numbers (cross-check
-   Orders Today against Staff Order History), the 7-day chart's
-   bars/weekday labels, Best Sellers reflecting real orders, a
-   Realtime update after placing a new paid order, and the Excel
-   export (all 5 sheets, correct Vietnamese text, real numeric cells
-   for revenue/quantity columns — not text). Two automated attempts at
-   this check (cloud routine, 2026-07-10/11) both stalled without
-   landing a result — try a manual pass instead of another automated
-   retry.
-5. **Shift closing feature — live verification not confirmed done.**
-   Code for Tasks 1-4 is committed and pushed (`shifts` table +
-   `orders.paid_at` + RPCs, query layer, i18n, `/admin/shift` page +
-   nav entries), but Task 5 (live-verify the open/report/close flow +
-   this file's entry) has no recorded evidence of having run. Same two
-   stalled automated attempts as item 3 above. Plan:
-   `docs/superpowers/plans/2026-07-10-shift-closing.md`.
-6. **Set the real tax rate.** Admin Settings now genuinely persists
-   (migration `0042`, 2026-07-11) and POS/checkout both apply
-   `shop_settings.tax_rate` for real — but it's deliberately left at
-   `0` since no real rate was ever specified (previously a hardcoded,
-   never-actually-charged `8%` in POS only). Set the real rate via
-   `/admin/settings` whenever convenient — also a good moment to fill
-   in shop name/address/phone/hours, which were never persisted either.
-7. **Forgot password — real-email round trip unconfirmed.** Shipped and
-   live-verified end-to-end except for the actual emailed link: request
-   flow (email entry → "check your email" screen, works regardless of
-   whether the address is registered), navigation between views, and
-   `/reset-password`'s expired-link handling with no valid session all
-   confirmed live. Clicking a real reset email, setting a new password,
-   and confirming login with it afterward hasn't been confirmed — same
-   documented shared-email-sender rate-limit risk as signup confirmation
-   and Google-linking. Plan: `docs/superpowers/plans/2026-07-11-forgot-password.md`.
-8. **Per-item KDS ticking — code complete and test-verified, only live
-   browser verification (Task 5) remains.** Prompted by a user
-   question: today `order_items` has no `status` column at all, so one
-   order (e.g. a table round with several drinks) can only ever advance
-   as a whole block on the KDS board — there's no way to tick one drink
-   done while others in the same round stay pending. Design:
-   `docs/superpowers/specs/2026-09-02-per-item-kitchen-status-design.md`;
-   plan: `docs/superpowers/plans/2026-09-02-per-item-kitchen-status.md`.
-   New `order_items.status` enum (`preparing/ready/served`, migration
-   `0082`) with a roll-up trigger (`sync_order_status_from_items`) that
-   derives `orders.status` from its items — every existing completion/
-   table-cleaning trigger needed zero changes. Staff-only RLS policy
-   column-scoped to `status` (revoked the blanket `anon`/`authenticated`
-   UPDATE grant first, per this project's migration-0047 pattern).
-   `order_items` added to the `supabase_realtime` publication so a tick
-   that doesn't flip the parent order's own status still reaches other
-   devices. KDS UI (`kitchen-board.tsx`) now shows a per-item tick
-   control on every line item instead of one button per order; the
-   table's bulk "Mark Served" (`kitchen-tables-column.tsx`, unchanged)
-   now bulk-updates items instead of orders via a new
-   `markOrderItemsServed` query function. Applies uniformly to
-   dine-in/pickup/POS. Migration applied live via Supabase MCP and
-   behaviorally verified against real order data inside a rolled-back
-   transaction (partial-progress → `preparing`, full-served → `served`,
-   both confirmed). Full test suite (226/226) and `npx tsc --noEmit`
-   both verified clean after Node.js was installed mid-session (nvm,
-   v24.20.0) — the plan's Tasks 1-4 are all checked off.
-   **Task 5 live-verified 2026-09-02**: the user confirmed the
-   per-item tick controls working on the live board (items ticking via
-   "Mark Ready" independently within one order). All 5 tasks are now
-   done — worth migrating this feature's entry from here into
-   `CLAUDE.md`'s "Feature areas" next time that file gets touched.
-   **Same session, adjacent follow-up work** (not part of the original
-   plan, prompted by a live layout complaint from the user): the KDS
-   board got an adaptive 3-tier responsive redesign (mobile
-   tab-switcher / 768-1279px 2x2 grid / >=1280px 1x4 kanban,
-   `kitchen-board.tsx`), a wait-time-driven urgency color on order
-   timers, an adaptive table-card grid, and 44px touch targets
-   (`kitchen-tables-column.tsx`) -- pushed across 4 commits
-   (`0e7b374`..`87db224`). Two real overflow bugs were found live (via
-   user screenshots, not a working browser tool) and fixed: order-item
-   rows and table-card action rows could push their button past the
-   card edge on a narrow card; fixed by letting the row wrap
-   (`flex-wrap` + `ml-auto`) instead of forcing everything onto one
-   line. Playwright MCP still isn't connected this session (`npx` was
-   missing from the harness's spawn `$PATH`; symlinked `node`/`npm`/
-   `npx` into `~/.local/bin` mid-session, but MCP servers only connect
-   at startup -- needs a fresh session to actually take effect and let
-   a real browser check replace screenshot-driven debugging).
+**Spec:** Current-state rules in `AGENTS.md`; audit performed 2026-09-02 against source, production, tests, TypeScript, lint, and build output. This file is the user-requested plan and replaces the old recap-heavy backlog.
 
-9. **Two heavy libraries ship in the initial JS bundle when they're
-   only needed after a user action — not started, found 2026-09-02
-   while investigating a report of "3D lagging."** Neither
-   `components/marketing/coffee-cup-hero.tsx` (imports `three` +
-   `GLTFLoader`, easily 500-600KB min) nor
-   `lib/export-dashboard-excel.ts` (imports `xlsx`,
-   `node_modules/xlsx/dist/xlsx.full.min.js` alone is ~880KB) is
-   loaded via `next/dynamic` — `landing-view.tsx` statically imports
-   the hero (mounted on first paint of the public landing page) and
-   `dashboard-view.tsx` statically imports the Excel exporter (only
-   actually used when the admin clicks "Export to Excel"). No
-   `next/dynamic` usage exists anywhere in the repo today (`grep`
-   confirmed). Switching both to `next/dynamic(() => import(...), {
-   ssr: false })` would code-split them into separate chunks loaded
-   only when needed, cutting initial JS for the highest-traffic page
-   (landing) and the admin dashboard, with no behavior change (the 3D
-   hero is already WebGL/client-only via its own `isWebGLAvailable()`
-   check, and the exporter only ever runs from an onClick handler).
-   Separately, `public/models/coffee-cup.glb` is 1.9MB uncompressed —
-   worth a Draco/meshopt pass (e.g. `gltf-transform`) if the 3D hero's
-   load time on mobile networks is still a concern after the
-   code-split. The render loop itself already does the right things
-   (capped `devicePixelRatio`, `IntersectionObserver` pause when
-   scrolled out of view, `prefers-reduced-motion` respected, proper
-   geometry/material disposal on unmount) — this is a load-time
-   finding, not a runtime frame-rate one.
+## Global constraints
 
-## Known gaps (documented, not hidden — pick up whenever that area is next touched)
+- Keep `/vi` and `/en` behavior identical; every new message/accessible label goes into both catalogs.
+- Keep all money calculations server-authoritative and all guest operations behind narrow QR-token/order-id RPCs.
+- Preserve the unfiltered Realtime subscription convention; filter received payloads client-side and refetch safely.
+- Do not cache personalized data. Public menu caching may remain at its current 20-second TTL.
+- Verify completion on `https://phadincafe.vercel.app`, not only locally.
+- Every mutation must have pending, success, and failure behavior; never close a form or clear state before the write succeeds.
 
-- `VNPAY_RETURN_URL` (synced to Vercel) is dead — VNPay's actual return
-  URL is built dynamically in `place-order` pointing at the Supabase
-  function URL instead. Worth removing the unused Vercel var, or
-  documenting why it's kept, next time env vars are audited.
-- `next build` still prints the "middleware deprecated, use proxy"
-  warning (Next.js 16.2.10). Renaming `middleware.ts` → `proxy.ts` also
-  touches `lib/middleware-rules.ts`, which it depends on. Not urgent.
-- No Vitest/RTL coverage beyond the `lib/supabase/*.ts` query layers and
-  `lib/middleware-rules.ts`/`lib/get-current-role.ts` — component-level
-  tests were never added (skipped so far, not a regression).
-- POS (`components/staff/pos-terminal.tsx`) always collects payment in
-  person (`paymentCollected: true`) — Pay Later is a self-checkout-only
-  concept, deliberately (POS staff are standing right there).
-- A **pickup** Pay Later order sitting at `served`/unpaid has no
-  staff-side "Mark Cash"/"Undo" surface (unlike dine-in's table card in
-  KDS) — only the customer's own tracking page can choose/change a
-  method for it. Pickup has no table to attach that control to.
-- **Shared table ordering session, parked from the final review** (see
-  `.superpowers/sdd/2026-08-28-shared-table-ordering-session/progress.md`
-  for full detail): (1) `markTableCashPayment` is table-scoped while
-  `confirm_table_cash_payment` is session-scoped — a legacy order with
-  `table_session_id is null` could silently no-op Confirm Cash with zero
-  feedback; not reachable from any current code path (checkout is
-  pickup-only, POS always pays in person), data-migration risk only.
-  (2) The KDS table card's `awaitingPaymentOrders[0]?.paymentMethod`
-  heuristic could theoretically hide both the Mark Cash and Confirm Cash
-  buttons under a mixed-payment-method scenario across one table's
-  rounds — same unreachable-today legacy-data precondition as (1).
-  (3) `useTableSession`'s Realtime-triggered refetch failures are
-  silently swallowed with no error-state signal to the guest (the 10s
-  poll self-heals transient failures, so this is a display gap, not a
-  functional one). (4) `kitchen-tables-column.tsx` has a few pre-existing
-  unused destructured bindings from the KDS table-card rework
-  (`confirmCashPayment`/`markCashPayment`/`undoCashPayment`/
-  `awaitingPaymentTotal`) — harmless (warn-only lint), not build-blocking.
-  (5) The regenerated `types/database.types.ts` correctly reflects
-  `increment_table_scan_count`/`notify_table_cleaning`'s new
-  set-returning shape, but nothing in `lib/supabase/` actually
-  parameterizes `createClient` with `Database` anywhere in this project
-  — the generated types are documentation-only today, a pre-existing gap
-  this just made newly visible.
+## Audit baseline (2026-09-02)
 
-Two throwaway test accounts (staff/customer roles, credentials in
-`.env.local` and the gitignored `test-accounts.md`) are kept
-deliberately for the user's ongoing manual testing — not a cleanup gap,
-don't remove or flag these.
+- `npm test -- --reporter=dot`: **233/233 passed**.
+- `npx tsc --noEmit`: **passed**.
+- `npm run build`: **passed**.
+- `npm run lint`: **failed — 23 errors, 11 warnings**.
+- Production public-route timing, three warm/cold samples: `/en` TTFB **0.90–2.04s**, `/en/menu` **0.44–0.47s**, `/en/cart` **0.44–0.45s**, `/en/login` **0.42–0.45s**.
+- Production emitted React hydration error **#418** on the landing, Menu, Cart, and Login routes.
+- Mobile checks at 390×844 found no horizontal overflow on Menu, Cart, or Login. The visual hierarchy is strong and the primary CTAs are clear.
+- Production Menu contains an active item named **“test”** with description **“non”**; hide it immediately through Admin Menu until real content exists.
+- Previous backlog item claiming static `three`/`xlsx` imports is stale: both are already dynamically imported. The remaining 1.8MB GLB is a measurement item, not a confirmed code-splitting bug.
+
+---
+
+### Task 1: Make table checkout and settings safe (P0)
+
+**Files:**
+- Modify: `supabase/config.toml`
+- Create: `supabase/migrations/0083_table_checkout_recovery.sql`
+- Create: `supabase/migrations/0084_settings_authorization_constraints.sql`
+- Modify: `supabase/functions/checkout-table-session/index.ts`
+- Modify: `lib/supabase/settings-data.ts`
+- Modify: `components/admin/settings-view.tsx`
+- Test: `lib/supabase/settings-data.test.ts`
+
+**Interfaces:**
+- `checkout_table_session(...)` returns an attempt identifier for gateway checkouts.
+- New guest-safe `release_table_checkout(p_qr_token text, p_attempt_id uuid)` only clears the matching unfinished attempt.
+- Settings accept tax in the business-approved range `0..100`, earning rate `> 0`, and redemption value `>= 0`; Postgres enforces the same checks.
+
+- [ ] Add `[functions.checkout-table-session] verify_jwt = false`; deploy with that checked-in posture and confirm an anonymous request reaches the handler rather than JWT rejection.
+- [ ] Persist `checkout_attempt_id` and `checkout_started_at` when locking a table session. Call `release_table_checkout` on every pre-redirect Stripe/VNPay failure; never let an old attempt clear a newer attempt or clear a successful attempt.
+- [ ] Narrow `shop_settings_update_admin` and `loyalty_settings_update_admin` RLS from `manager|admin` to `admin` in both `USING` and `WITH CHECK`, matching route/product rules.
+- [ ] Add idempotent Postgres constraints for tax and loyalty ranges, then mirror them in the Settings form with translated field-level errors.
+- [ ] Test missing gateway secrets, Stripe/VNPay timeout/error, mismatched attempt release, manager update denial, admin success, and invalid numeric values.
+- [ ] Verify live with a guest table session and manager/admin accounts; run Supabase security advisors afterward.
+
+### Task 2: Eliminate duplicate/lost order and shared-cart actions (P0)
+
+**Files:**
+- Create: `supabase/migrations/0085_order_idempotency_and_table_cart_concurrency.sql`
+- Modify: `supabase/functions/place-order/index.ts`
+- Modify: `supabase/functions/pay-order/index.ts`
+- Modify: `supabase/functions/checkout-table-session/index.ts`
+- Modify: `supabase/functions/_shared/stripe.ts`
+- Modify: `components/customer/checkout-view.tsx`
+- Modify: `components/customer/order-tracking.tsx`
+- Modify: `components/customer/check-bill-sheet.tsx`
+- Modify: `hooks/useCart.tsx`
+- Modify: `hooks/useTableSession.tsx`
+- Modify: `lib/supabase/table-session-data.ts`
+- Modify: `lib/supabase/order-mapping.ts`
+- Modify: `lib/supabase/orders-data.ts`
+- Modify: `components/customer/order-history.tsx`
+- Test: corresponding `*.test.ts` files plus concurrent live RPC checks.
+
+**Interfaces:**
+- Order creation accepts a client-generated `submissionId` and returns the existing order/session on an exact retry.
+- Stripe receives a stable `Idempotency-Key` derived from the stored submission/attempt id.
+- Shared-cart quantity changes use an atomic delta or optimistic version, not an absolute last-writer-wins value.
+
+- [ ] Generate and retain one submission id per checkout attempt; add a unique stored submission id and make `place_order` return the existing matching order on retry without double-counting promotions, inventory, loyalty, or payment sessions.
+- [ ] Apply the same stable-attempt/idempotency behavior to deferred `pay-order` and aggregate table checkout, including reuse of an already-created hosted session when safe.
+- [ ] Make first `table_sessions` creation atomic by locking the resolved table row before create/read (consistent lock order) or using a conflict-safe insert.
+- [ ] Replace absolute shared-cart increments with an atomic delta/versioned mutation; reject stale edits with a visible refetch/retry result.
+- [ ] Preserve size, modifiers, and notes in order mapping and Reorder. If a historic option no longer exists, route that item back through configuration instead of silently changing it.
+- [ ] Test simultaneous first adds, simultaneous increments from two clients, response timeout followed by retry, and reorder of sized/modified/noted items.
+
+### Task 3: Replace blank, frozen, and false-empty screens (P1)
+
+**Files:**
+- Create: `components/shared/async-state.tsx`
+- Modify: `components/customer/order-tracking.tsx`
+- Modify: `components/customer/table-landing.tsx`
+- Modify: `components/customer/table-ordering-session.tsx`
+- Modify: `components/customer/cart-view.tsx`
+- Modify: `components/customer/review-form.tsx`
+- Modify: `components/customer/address-book-view.tsx`
+- Modify: `components/customer/loyalty-view.tsx`
+- Modify: `hooks/useOrders.tsx`
+- Modify: `hooks/useTableSession.tsx`
+- Modify: `hooks/useKitchenOrders.tsx`
+- Modify: `hooks/useDashboardStats.tsx`
+- Modify: `components/admin/stock-adjust-form.tsx`
+- Add route-group `loading.tsx` and `error.tsx` boundaries under customer, staff, and admin.
+
+**Interfaces:**
+- Async views distinguish `loading | data | empty | error | stale`; refresh failure retains last-good data.
+- Mutations expose per-entity pending state and a translated, screen-reader-announced error.
+
+- [ ] Show skeleton/progress and retry instead of returning `null` for order tracking, QR resolution, table-session load, and review lookup.
+- [ ] Catch guest polling and Realtime refetch failures; retain last-good order/table data and label it stale until recovery.
+- [ ] Put promo Apply in `try/catch/finally` so rejection never leaves the button permanently disabled.
+- [ ] Stop turning order, loyalty, dashboard, and address-book failures into genuine-looking empty/zero states.
+- [ ] Await table-cart, stock-adjust, dashboard-restock, cash-confirm, serving, and per-item KDS mutations; disable only the affected control and show success/failure.
+- [ ] Add retry/failure tests for every state above, including rapid double taps and recovery after a transient error.
+
+### Task 4: Stop unnecessary requests and Realtime amplification (P1)
+
+**Files:**
+- Modify: `app/[locale]/layout.tsx`
+- Modify: `app/[locale]/(customer)/layout.tsx`
+- Modify: `app/[locale]/staff/layout.tsx`
+- Modify: `app/[locale]/admin/layout.tsx`
+- Modify: `components/admin/admin-layout-client.tsx`
+- Modify: `middleware.ts`
+- Modify: `lib/get-current-role.ts`
+- Create: `hooks/useLatestRefetch.ts`
+- Modify: `hooks/useTableSession.tsx`
+- Modify: `hooks/useKitchenOrders.tsx`
+- Modify: `hooks/useDashboardStats.tsx`
+- Modify: `hooks/useShift.tsx`
+- Modify: `hooks/useInventory.tsx`
+- Modify: `lib/supabase/inventory-data.ts`
+
+**Interfaces:**
+- `useLatestRefetch(load, delayMs)` coalesces event bursts, allows one active fetch, and ignores stale completions.
+- Middleware overwrites a private resolved-role request header; downstream layouts reuse that trusted result instead of repeating auth/profile queries.
+
+- [ ] Remove `TablesProvider` and `OrdersProvider` from the root. Mount Cart/Orders/Tables only in the customer or specific staff/admin routes that consume them.
+- [ ] Mount `KitchenOrdersProvider` only on the live KDS page, not POS and order-history pages. Mount Inventory/Shift providers only where their data is required.
+- [ ] Skip remote role lookup for requests with no Supabase auth cookie; resolve an authenticated role once and reuse it in root/staff/admin layouts.
+- [ ] Filter unfiltered table-session payloads against the known session/table ids before refetch; keep the required 10-second poll only for guest-invisible order changes.
+- [ ] Coalesce order + order-item event bursts in KDS/dashboard/shift, and use latest-wins sequencing so an older response cannot overwrite newer state.
+- [ ] Defer inventory logs until the Logs tab opens and cursor-paginate instead of silently truncating at 200.
+- [ ] Re-run production timing and record before/after TTFB plus request/channel counts for Landing, Login, Menu, KDS, Dashboard, Settings, and Shift.
+
+### Task 5: Fix database hot paths with measured indexes (P1)
+
+**Files:**
+- Create after measurement: `supabase/migrations/0086_order_hot_path_indexes.sql`
+- Recreate the canonical `get_dashboard_stats()` function inside that new migration; do not edit an already-applied migration.
+
+- [ ] Run live performance advisors and the missing-FK-index query before choosing indexes.
+- [ ] Run `EXPLAIN (ANALYZE, BUFFERS)` for KDS nested order reads, per-item rollup, table-session assembly, customer order history, and dashboard date ranges.
+- [ ] Add only evidenced indexes; current candidates are `order_items(order_id)`, `orders(table_id)`, `orders(customer_id)`, and a partial paid-order time index.
+- [ ] Rewrite dashboard day filters from casts on `created_at` to explicit Asia/Ho_Chi_Minh day boundaries expressed as UTC timestamp ranges so an index remains usable.
+- [ ] Re-run plans/advisors and record row counts, scan type, buffers, and execution time before/after.
+
+### Task 6: Repair hydration, accessibility, and bilingual UX (P1/P2)
+
+**Files:**
+- Modify: `app/[locale]/layout.tsx`
+- Modify: `hooks/useTheme.tsx`
+- Modify: `components/shared/theme-toggle.tsx`
+- Create: `components/ui/dialog.tsx` using `@base-ui/react/dialog`
+- Modify: `components/motion/bottom-sheet.tsx`, `components/motion/side-drawer.tsx`
+- Modify: all admin/staff/customer modal and sheet callers.
+- Modify: `components/customer/menu-browser.tsx`
+- Modify: `components/auth/login-form.tsx`, `components/auth/signup-form.tsx`
+- Modify: `messages/vi.json`, `messages/en.json`
+- Add component test dependencies/config only as part of the first tested UI fix.
+
+- [ ] Remove production hydration error #418: keep the server/client theme markup stable, suppress only the intentional `<html>` theme-class difference, and test stored/system light and dark preferences.
+- [ ] Replace the nested Menu card `<button>` + `role="button"` quick-add span with sibling semantic controls; Enter/Space must activate both paths.
+- [ ] Build one accessible Dialog module with focus trap/restore, Escape, labelled title/description, `aria-modal`, and inert background; migrate admin forms, confirmations, QR scanner, quick-add, Check Bill, rewards, and drawers/sheets.
+- [ ] Add confirmations for menu deletion, QR regeneration (explicitly warn printed codes stop working), cash received, and mark-out-of-stock.
+- [ ] Raise all interactive targets to at least 44×44 CSS pixels. Confirmed small targets include the 40px global controls, 36px Menu category chips, Login password reveal, Forgot Password, and Sign Up link.
+- [ ] Add `autocomplete="email"`, `current-password`, `new-password`, name, tel, and address tokens to auth/profile/address forms.
+- [ ] Translate hardcoded auth artwork, landing gallery, table-cart, star-rating, and staff tooltip text in both catalogs.
+- [ ] Run axe, keyboard-only traversal, focus-order, 200% zoom, and screen-reader smoke tests in both locales and themes.
+
+### Task 7: Restore quality gates and cover real failure behavior (P2)
+
+**Files:**
+- Modify the 20 files currently reported by ESLint.
+- Modify: `vitest.config.ts` or module format so the Vite native-loader warning is removed.
+- Create: component/hook tests for customer checkout/tracking/table session and KDS/admin mutation flows.
+- Create: `.github/workflows/quality.yml`
+
+- [ ] Fix all 23 lint errors and 11 warnings; do not disable React purity/compiler rules globally to make the command green.
+- [ ] Specifically remove render-time `Date.now()`, render-time ref mutation, cascading effect state, and the Cart memoization pattern that prevents React compiler optimization.
+- [ ] Add tests for OAuth initiation failure, payment/promo pending reset, stale-data presentation, Realtime disconnect/recovery, modal keyboard behavior, and settings authorization/constraints.
+- [ ] Make `lint`, `tsc --noEmit`, `test`, and `build` required pre-merge checks.
+- [ ] Add localized route error boundaries so an unexpected render/server failure offers Retry/Home instead of Next.js’s generic English 500 page.
+
+### Task 8: Production acceptance pass and content cleanup (release gate)
+
+- [ ] Remove/disable the live **“test / non”** menu item and audit every public menu item for both-locale name, description, image, price, availability, sizes, and modifiers.
+- [ ] Mobile matrix: real iOS Safari + Android Chrome; Landing, Menu search/filter/quick-add, pickup cart/checkout, QR shared cart on two devices, running tab, Check Bill, payment return, tracking, profile, loyalty.
+- [ ] Staff matrix: POS, per-item KDS progression, table serve/cleaning, cash confirmation, Realtime disconnect/reconnect, pickup Pay Later edge case, shift join/open/close/history.
+- [ ] Admin matrix: dashboard KPI cross-check + Excel export, menu/inventory/tables/promotions/staff/settings permissions, invalid values, destructive confirmations, dark mode, both locales.
+- [ ] Payment matrix: Cash, Stripe, VNPay success/cancel/timeout/retry, duplicate-submit protection, gateway-setup failure unlock, stale webhook, and amount cross-check.
+- [ ] Performance budgets to approve before release: no hydration/console errors; no public-route unused Supabase channels; no blank loading state; no indefinitely disabled action; establish LCP/INP/CLS and route-TTFB baselines on a mid-tier Android connection before deciding whether to mesh-compress the 1.8MB GLB.
+
+## Carry-over business decisions/manual checks
+
+- Set the real tax rate and shop name/address/phone/hours after Task 1 adds safe validation; current tax is intentionally `0`.
+- Complete the real emailed password-reset link round trip.
+- Decide whether staff need a pickup Pay Later Cash/Undo control; dine-in already has the table-card equivalent.
+- Remove the dead `VNPAY_RETURN_URL` variable if confirmed unused, and later migrate deprecated `middleware.ts` to Next.js `proxy.ts` as a separate low-risk cleanup.
+- Legacy table-session rows with `table_session_id is null` remain a data-migration-only edge case; cover them only if production data contains such rows.
+- Root `AGENTS.md` refers to `components/customer/AGENTS.md`, `components/staff/AGENTS.md`, and `components/admin/AGENTS.md`, but those files are absent in this checkout; restore them or correct the structural map before the next area-specific agent task.
+
+## Completion gate
+
+This plan is complete only when Tasks 1–8 are checked, all four local gates pass, Supabase security/performance advisors have no new actionable findings, and the deployed two-locale/two-device/payment matrix is recorded with no P0/P1 issue left open.
