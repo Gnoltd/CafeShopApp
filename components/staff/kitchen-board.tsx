@@ -154,8 +154,8 @@ export function KitchenBoard({
                     </div>
                     <div className="space-y-2 p-3">
                       {order.items.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between gap-2">
-                          <div className="flex min-w-0 flex-1 items-start gap-3">
+                        <div key={item.id} className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex min-w-0 items-start gap-3">
                             <div className="nb-border-sm flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-chip text-sm font-bold text-card-foreground">
                               {item.quantity}x
                             </div>
@@ -180,7 +180,7 @@ export function KitchenBoard({
                               type="button"
                               onClick={() => onAdvanceItem(order.id, item.id)}
                               className={cn(
-                                "nb-press-sm nb-border-sm nb-shadow-sm flex h-11 shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-extrabold text-white",
+                                "nb-press-sm nb-border-sm nb-shadow-sm ml-auto flex h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-extrabold text-white",
                                 item.status === "preparing" && "bg-amber-600",
                                 item.status === "ready" && "bg-green-600"
                               )}
