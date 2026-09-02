@@ -70,7 +70,7 @@ export function KitchenSidebar({
         <button
           type="button"
           disabled
-          title="Not implemented yet — Inventory is manager/admin-only"
+          title={t("inventoryTooltip")}
           className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-muted-foreground opacity-60"
         >
           <Boxes className="h-4 w-4" />

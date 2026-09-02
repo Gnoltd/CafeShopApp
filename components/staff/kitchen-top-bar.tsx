@@ -97,7 +97,7 @@ export function KitchenTopBar() {
           <button
             type="button"
             disabled
-            title="Not implemented yet — no notification system"
+            title={t("notificationsTooltip")}
             className="rounded-full p-2 text-muted-foreground opacity-50"
           >
             <Bell className="h-4 w-4" />
@@ -105,7 +105,7 @@ export function KitchenTopBar() {
           <button
             type="button"
             disabled
-            title="Not implemented yet — no staff settings page"
+            title={t("settingsTooltip")}
             className="rounded-full p-2 text-muted-foreground opacity-50"
           >
             <Settings className="h-4 w-4" />

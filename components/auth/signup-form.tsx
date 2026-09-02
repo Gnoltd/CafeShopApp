@@ -12,6 +12,7 @@ import { ROLE_HOME } from "@/lib/roles"
 
 function AuthLayoutWrapper({ children }: { children: React.ReactNode }) {
   const tBrand = useTranslations("Brand")
+  const t = useTranslations("Auth")
   return (
     <div className="mx-auto w-full max-w-sm px-4 md:max-w-4xl md:px-0">
       <div className="flex overflow-hidden md:rounded-2xl md:border-2 md:border-ink md:bg-card md:shadow-[4px_4px_0_var(--ink)]">
@@ -26,11 +27,11 @@ function AuthLayoutWrapper({ children }: { children: React.ReactNode }) {
               {tBrand("tagline")}
             </h2>
             <p className="text-sm opacity-80">
-              Join us to track orders in real-time, collect loyalty points, and redeem delicious drinks.
+              {t("artworkBody")}
             </p>
           </div>
           <div className="text-xs opacity-60">
-            &copy; {new Date().getFullYear()} {tBrand("name")}. All rights reserved.
+            &copy; {new Date().getFullYear()} {tBrand("name")}. {t("artworkRights")}
           </div>
         </div>
 

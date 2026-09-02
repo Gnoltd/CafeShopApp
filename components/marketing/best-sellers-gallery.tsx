@@ -32,6 +32,7 @@ function ArcItem({
   scrollYProgress: any
 }) {
   const locale = useLocale()
+  const t = useTranslations("Landing")
   const name = locale === "vi" ? item.nameVi : item.nameEn
 
   const step = 1 / Math.max(total, 1)
@@ -108,7 +109,7 @@ function ArcItem({
           <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between text-white md:bottom-4 md:left-5 md:right-5">
             <div className="max-w-[70%]">
               <span className="text-[10px] font-extrabold uppercase tracking-widest text-accent md:text-xs">
-                PhaDin Selection
+                {t("selectionTag")}
               </span>
               <h4 className="line-clamp-1 text-lg font-black md:text-2xl">{name}</h4>
             </div>
@@ -288,10 +289,10 @@ export function BestSellersGallery({ items }: { items: MenuItem[] }) {
         <div className="relative z-10 text-center px-4">
           <div className="flex items-center justify-center gap-2 text-accent">
             <Sparkles className="h-4 w-4" />
-            <span className="text-xs font-extrabold uppercase tracking-widest">Craft & Motion</span>
+            <span className="text-xs font-extrabold uppercase tracking-widest">{t("craftMotionLabel")}</span>
           </div>
           <h2 className="mt-1 text-2xl font-black text-white sm:text-4xl md:text-5xl">{t("bestSellers")}</h2>
-          <p className="mt-1 text-xs text-white/60 md:text-sm">Scroll down to explore signature creations</p>
+          <p className="mt-1 text-xs text-white/60 md:text-sm">{t("craftMotionHint")}</p>
         </div>
 
         {/* Arc Trajectory Motion Viewport across ALL devices */}

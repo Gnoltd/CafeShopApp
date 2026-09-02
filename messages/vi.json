@@ -65,7 +65,10 @@
     "viewAll": "Xem Tất Cả",
     "categories": "Danh Mục",
     "signatureStream": "Signature Stream",
-    "signatureStreamHint": "Di chuột để khám phá"
+    "signatureStreamHint": "Di chuột để khám phá",
+    "craftMotionLabel": "Craft & Motion",
+    "craftMotionHint": "Cuộn xuống để khám phá các món đặc trưng",
+    "selectionTag": "PhaDin Selection"
   },
   "Auth": {
     "login": "Đăng Nhập",
@@ -111,7 +114,9 @@
     "setNewPasswordButton": "Đặt Mật Khẩu Mới",
     "passwordResetSuccess": "Đã đặt lại mật khẩu! Đang chuyển hướng…",
     "resetLinkExpiredError": "Liên kết đặt lại này không hợp lệ hoặc đã hết hạn.",
-    "passwordUpdateError": "Không thể cập nhật mật khẩu — vui lòng thử lại."
+    "passwordUpdateError": "Không thể cập nhật mật khẩu — vui lòng thử lại.",
+    "artworkBody": "Cùng chúng tôi theo dõi đơn hàng theo thời gian thực, tích điểm thành viên và đổi những thức uống thơm ngon.",
+    "artworkRights": "Đã đăng ký bản quyền."
   },
   "Customer": {
     "back": "Quay Lại",
@@ -335,7 +340,8 @@
     "reviewCancelButton": "Hủy",
     "reviewCommentPlaceholder": "Chia sẻ cảm nhận của bạn về món này…",
     "reviewRatingRequiredError": "Vui lòng chọn số sao đánh giá.",
-    "reviewSubmitError": "Không thể gửi đánh giá — vui lòng thử lại."
+    "reviewSubmitError": "Không thể gửi đánh giá — vui lòng thử lại.",
+    "starRatingLabel": "{value} sao"
   },
   "TableLanding": {
     "orderingAt": "Bạn đang đặt món tại",
@@ -392,7 +398,10 @@
     "checkBillClose": "Đóng",
     "checkBillNothingToPay": "Hiện chưa có gì cần thanh toán.",
     "addItemError": "Không thể thêm món này — vui lòng thử lại.",
-    "placeOrderFailed": "Không thể đặt món — vui lòng thử lại."
+    "placeOrderFailed": "Không thể đặt món — vui lòng thử lại.",
+    "decreaseQuantityLabel": "Giảm số lượng",
+    "increaseQuantityLabel": "Tăng số lượng",
+    "removeItemLabel": "Xoá món"
   },
   "Loyalty": {
     "currentBalance": "Số Dư Hiện Tại",
@@ -522,7 +531,10 @@
     "notesLabel": "Ghi chú (tùy chọn)",
     "confirmCashTitle": "Xác nhận đã nhận tiền mặt?",
     "confirmCashBody": "Đơn #{order} sẽ được đánh dấu đã thanh toán tiền mặt. Chỉ xác nhận khi bạn đã cầm tiền.",
-    "confirmTableCashBody": "Tất cả đơn chưa thanh toán của bàn {table} sẽ được đánh dấu đã thanh toán tiền mặt. Chỉ xác nhận khi bạn đã cầm tiền."
+    "confirmTableCashBody": "Tất cả đơn chưa thanh toán của bàn {table} sẽ được đánh dấu đã thanh toán tiền mặt. Chỉ xác nhận khi bạn đã cầm tiền.",
+    "inventoryTooltip": "Chưa khả dụng — Kho Hàng chỉ dành cho quản lý/quản trị viên",
+    "notificationsTooltip": "Chưa khả dụng — chưa có hệ thống thông báo",
+    "settingsTooltip": "Chưa khả dụng — chưa có trang cài đặt cho nhân viên"
   },
   "MyRedemptions": {
     "title": "Ưu Đãi Của Tôi",

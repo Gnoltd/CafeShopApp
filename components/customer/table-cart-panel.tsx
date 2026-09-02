@@ -70,7 +70,7 @@ export function TableCartPanel({
                     type="button"
                     onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
                     className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-background"
-                    aria-label="decrease"
+                    aria-label={t("decreaseQuantityLabel")}
                   >
                     <Minus className="h-4 w-4" />
                   </button>
@@ -79,7 +79,7 @@ export function TableCartPanel({
                     type="button"
                     onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
                     className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-background"
-                    aria-label="increase"
+                    aria-label={t("increaseQuantityLabel")}
                   >
                     <Plus className="h-4 w-4" />
                   </button>
@@ -88,7 +88,7 @@ export function TableCartPanel({
                   type="button"
                   onClick={() => onRemoveItem(item.id)}
                   className="shrink-0 text-muted-foreground hover:text-destructive"
-                  aria-label="remove"
+                  aria-label={t("removeItemLabel")}
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>

@@ -65,7 +65,10 @@
     "viewAll": "View All",
     "categories": "Categories",
     "signatureStream": "Signature Stream",
-    "signatureStreamHint": "Hover to explore"
+    "signatureStreamHint": "Hover to explore",
+    "craftMotionLabel": "Craft & Motion",
+    "craftMotionHint": "Scroll down to explore signature creations",
+    "selectionTag": "PhaDin Selection"
   },
   "Auth": {
     "login": "Log In",
@@ -111,7 +114,9 @@
     "setNewPasswordButton": "Set New Password",
     "passwordResetSuccess": "Password reset! Redirecting…",
     "resetLinkExpiredError": "This reset link is invalid or has expired.",
-    "passwordUpdateError": "Couldn't update password — please try again."
+    "passwordUpdateError": "Couldn't update password — please try again.",
+    "artworkBody": "Join us to track orders in real-time, collect loyalty points, and redeem delicious drinks.",
+    "artworkRights": "All rights reserved."
   },
   "Customer": {
     "back": "Back",
@@ -335,7 +340,8 @@
     "reviewCancelButton": "Cancel",
     "reviewCommentPlaceholder": "Share your thoughts about this item…",
     "reviewRatingRequiredError": "Please select a star rating.",
-    "reviewSubmitError": "Couldn't submit your review — please try again."
+    "reviewSubmitError": "Couldn't submit your review — please try again.",
+    "starRatingLabel": "{value} star"
   },
   "TableLanding": {
     "orderingAt": "You're ordering at",
@@ -392,7 +398,10 @@
     "checkBillClose": "Close",
     "checkBillNothingToPay": "Nothing to pay right now.",
     "addItemError": "Couldn't add that item — please try again.",
-    "placeOrderFailed": "Couldn't place your order — please try again."
+    "placeOrderFailed": "Couldn't place your order — please try again.",
+    "decreaseQuantityLabel": "Decrease quantity",
+    "increaseQuantityLabel": "Increase quantity",
+    "removeItemLabel": "Remove item"
   },
   "Loyalty": {
     "currentBalance": "Current Balance",
@@ -522,7 +531,10 @@
     "notesLabel": "Note (optional)",
     "confirmCashTitle": "Confirm cash received?",
     "confirmCashBody": "Order #{order} will be marked paid in cash. Only confirm once you have the money in hand.",
-    "confirmTableCashBody": "Table {table}’s unpaid orders will all be marked paid in cash. Only confirm once you have the money in hand."
+    "confirmTableCashBody": "Table {table}’s unpaid orders will all be marked paid in cash. Only confirm once you have the money in hand.",
+    "inventoryTooltip": "Not implemented yet — Inventory is manager/admin-only",
+    "notificationsTooltip": "Not implemented yet — no notification system",
+    "settingsTooltip": "Not implemented yet — no staff settings page"
   },
   "MyRedemptions": {
     "title": "My Rewards",
