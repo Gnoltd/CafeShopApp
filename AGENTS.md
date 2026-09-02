@@ -6,6 +6,45 @@ design+plan pair per feature (e.g. `2026-07-07-vnpay-payment-integration-{design
 This file is the current-state summary; check the dated docs for "why" a
 decision was made or the full bug-hunt narrative behind a fix.
 
+## Task split for `daily.md`'s remediation plan (2026-09-02)
+
+The user is running a Claude Code session and a Codex session against
+this same checkout in parallel, relaying messages between them by
+hand — there is no live channel between the two agents, so this note
+is the handoff. Coordination happens through git: commit and push
+after each task (or clearly-separable sub-step) so the other side can
+see progress via `git log`, and pull/rebase before starting a task
+whose file list might have moved.
+
+**Codex owns, in this order: Task 1 -> Task 2 -> Task 5** (table
+checkout/settings safety, order/cart idempotency, DB hot-path
+indexes — the P0 payment/order-correctness and DB track).
+
+**Claude owns, in this order: Task 6 -> Task 4 -> Task 3** (hydration/
+accessibility/bilingual UX, provider scoping + Realtime amplification,
+async-state/loading-empty-error-stale handling). Task 6 is already
+in progress as of this note.
+
+**Task 7 (lint/tests/CI) and Task 8 (acceptance pass) are unclaimed**
+— pick up after Tasks 1-6 land, split by area or done jointly.
+
+Why this split and not some other one: nearly every task in the plan
+shares files with at least one other task (`checkout-table-session/
+index.ts` is in both Task 1 and Task 2; `useTableSession.tsx`,
+`useKitchenOrders.tsx`, `useDashboardStats.tsx`, and `order-tracking.tsx`
+each appear in 2-3 tasks across 2/3/4). This split was chosen because
+Codex's track (1/2/5) and Claude's first task (6) share zero files, so
+both can start immediately without collision. Claude's Task 4 and
+Task 3 are deliberately queued behind Codex's Task 2, since both edit
+the same hook files Task 2 changes (`useTableSession.tsx` particularly)
+— starting them before Task 2 lands risks building on a version of
+those hooks that's about to change underneath. If Codex's actual
+approach ends up touching different files than the plan's stated file
+list, or Task 2 is taking a while, say so in a commit message or back
+through the user rather than silently reordering — the other side has
+no way to detect a silent reorder except by diffing files it didn't
+expect touched.
+
 ## Status
 
 Everything shipped so far is real end-to-end. Next.js app (bilingual,
