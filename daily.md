@@ -178,6 +178,37 @@
    and confirming login with it afterward hasn't been confirmed — same
    documented shared-email-sender rate-limit risk as signup confirmation
    and Google-linking. Plan: `docs/superpowers/plans/2026-07-11-forgot-password.md`.
+8. **Per-item KDS ticking — design only, not yet planned or built.**
+   Prompted by a user question: today `order_items` has no `status`
+   column at all, so one order (e.g. a table round with several drinks)
+   can only ever advance as a whole block on the KDS board — there's no
+   way to tick one drink done while others in the same round stay
+   pending. Design: `docs/superpowers/specs/2026-09-02-per-item-kitchen-status-design.md`;
+   plan: `docs/superpowers/plans/2026-09-02-per-item-kitchen-status.md`.
+   **Tasks 1-4 code complete and committed, live UI/cross-device
+   verification (Task 5) not yet performed.** New `order_items.status`
+   enum (`preparing/ready/served`, migration `0082`) with a roll-up
+   trigger (`sync_order_status_from_items`) that derives `orders.status`
+   from its items — every existing completion/table-cleaning trigger
+   needed zero changes. Staff-only RLS policy column-scoped to `status`
+   (revoked the blanket `anon`/`authenticated` UPDATE grant first, per
+   this project's migration-0047 pattern). `order_items` added to the
+   `supabase_realtime` publication so a tick that doesn't flip the
+   parent order's own status still reaches other devices. KDS UI
+   (`kitchen-board.tsx`) now shows a per-item tick control on every line
+   item instead of one button per order; the table's bulk "Mark Served"
+   (`kitchen-tables-column.tsx`, unchanged) now bulk-updates items
+   instead of orders via a new `markOrderItemsServed` query function.
+   Applies uniformly to dine-in/pickup/POS. Migration applied live via
+   Supabase MCP and behaviorally verified against real order data
+   inside a rolled-back transaction (partial-progress → `preparing`,
+   full-served → `served`, both confirmed). **Still needed**: this
+   session had no Node.js available to run `npm test`/`npx tsc
+   --noEmit`, and no working browser automation (Playwright MCP failed
+   to connect) to live-verify the KDS board — both need a manual pass.
+   Also note item 0 above: the whole Vercel deployment may still be
+   behind SSO, which would block live UI verification entirely until
+   that's resolved.
 
 ## Known gaps (documented, not hidden — pick up whenever that area is next touched)
 
