@@ -30,6 +30,27 @@ export function formatElapsed(createdAt: number, now: number): string {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
 }
 
+export type UrgencyLevel = "normal" | "warning" | "critical"
+
+const WARNING_MINUTES = 10
+const CRITICAL_MINUTES = 15
+
+// Driven by actual wait time rather than column -- an order sitting in
+// "New" for 12 minutes is just as urgent as one sitting in "Preparing"
+// for 12 minutes, and staff should see that at a glance.
+export function urgencyLevelFor(createdAt: number, now: number): UrgencyLevel {
+  const minutes = Math.max(0, now - createdAt) / 60_000
+  if (minutes >= CRITICAL_MINUTES) return "critical"
+  if (minutes >= WARNING_MINUTES) return "warning"
+  return "normal"
+}
+
+const URGENCY_TIMER_CLASS: Record<UrgencyLevel, string> = {
+  normal: "",
+  warning: "text-amber-600",
+  critical: "animate-pulse text-destructive",
+}
+
 export function KitchenBoard({
   orders,
   now,
@@ -44,7 +65,7 @@ export function KitchenBoard({
   const [activeColumn, setActiveColumn] = useState<BoardColumnKey>("paid")
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-hidden p-4 md:grid md:grid-cols-2 lg:grid-cols-4">
+    <div className="flex h-full flex-col gap-3 overflow-hidden p-3 sm:p-4 md:grid md:grid-cols-2 md:grid-rows-2 md:gap-3 xl:grid-cols-4 xl:grid-rows-1 xl:gap-4">
       <SegmentedControl
         variant="tabs"
         layoutId="kds-column-pill"
@@ -83,16 +104,17 @@ export function KitchenBoard({
               )}
               {columnOrders.map((order) => {
                 const isReady = column.status === "ready"
+                const urgency = isReady ? "normal" : urgencyLevelFor(order.createdAt, now)
                 return (
                   <div key={order.id} className="nb-border-sm nb-shadow-sm rounded-xl bg-card">
                     <div
                       className={cn(
-                        "flex items-start justify-between border-b p-3",
+                        "flex items-start justify-between border-b p-3 md:p-4",
                         isReady && "bg-green-50 dark:bg-green-950/20"
                       )}
                     >
                       <div>
-                        <h3 className="text-xl font-black text-card-foreground">#{formatOrderId(order.id)}</h3>
+                        <h3 className="text-xl font-black text-card-foreground md:text-2xl">#{formatOrderId(order.id)}</h3>
                         <span
                           className={cn(
                             "mt-1 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold",
@@ -111,14 +133,14 @@ export function KitchenBoard({
                       </div>
                       <div className="text-right">
                         {isReady ? (
-                          <div className="text-xl font-bold text-green-600">{t("doneLabel")}</div>
+                          <div className="text-xl font-bold text-green-600 md:text-2xl">{t("doneLabel")}</div>
                         ) : (
                           <>
                             <div
                               className={cn(
-                                "text-xl font-bold",
-                                column.status === "paid" && "text-primary",
-                                column.status === "preparing" && "text-amber-600"
+                                "text-xl font-bold md:text-2xl",
+                                urgency === "normal" && (column.status === "paid" ? "text-primary" : "text-amber-600"),
+                                URGENCY_TIMER_CLASS[urgency]
                               )}
                             >
                               {formatElapsed(order.createdAt, now)}
@@ -130,11 +152,11 @@ export function KitchenBoard({
                         )}
                       </div>
                     </div>
-                    <div className="space-y-2 p-3">
+                    <div className="space-y-2 p-3 md:p-4">
                       {order.items.map((item) => (
                         <div key={item.id} className="flex items-center justify-between gap-3">
                           <div className="flex items-start gap-3">
-                            <div className="nb-border-sm flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-chip text-sm font-bold text-card-foreground">
+                            <div className="nb-border-sm flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-chip text-sm font-bold text-card-foreground">
                               {item.quantity}x
                             </div>
                             <div>
@@ -158,15 +180,15 @@ export function KitchenBoard({
                               type="button"
                               onClick={() => onAdvanceItem(order.id, item.id)}
                               className={cn(
-                                "nb-press-sm nb-border-sm nb-shadow-sm flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-white",
+                                "nb-press-sm nb-border-sm nb-shadow-sm flex h-11 shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-extrabold text-white",
                                 item.status === "preparing" && "bg-amber-600",
                                 item.status === "ready" && "bg-green-600"
                               )}
                             >
                               {item.status === "preparing" ? (
-                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                <CheckCircle2 className="h-4 w-4" />
                               ) : (
-                                <PackageCheck className="h-3.5 w-3.5" />
+                                <PackageCheck className="h-4 w-4" />
                               )}
                               {item.status === "preparing" ? t("markReady") : t("markServed")}
                             </button>

@@ -39,7 +39,7 @@ export function KitchenTablesColumn({ active }: { active: boolean }) {
       {error && (
         <p className="mx-3 mt-2 shrink-0 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
       )}
-      <div className="flex-1 space-y-2 overflow-y-auto p-3">
+      <div className="grid flex-1 auto-rows-min grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-2 overflow-y-auto p-3">
         {tables.map((table) => {
           const location = locale === "vi" ? table.locationVi : table.locationEn
           const tableOrders = orders.filter((o) => o.tableId === table.id)
@@ -63,7 +63,7 @@ export function KitchenTablesColumn({ active }: { active: boolean }) {
             <div
               key={table.id}
               className={cn(
-                "nb-border-sm flex items-center justify-between gap-2 rounded-lg p-3",
+                "nb-border-sm flex items-start justify-between gap-2 rounded-lg p-3",
                 table.status === "available" && "bg-green-50 dark:bg-green-950/20",
                 table.status === "occupied" && "bg-red-50 dark:bg-red-950/20",
                 table.status === "cleaning" && "bg-amber-50 dark:bg-amber-950/20"
@@ -89,7 +89,7 @@ export function KitchenTablesColumn({ active }: { active: boolean }) {
                         : t("cleaningDone")
                   }
                   className={cn(
-                    "nb-border-sm nb-shadow-sm nb-press-sm inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-extrabold",
+                    "nb-border-sm nb-shadow-sm nb-press-sm inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-extrabold",
                     table.status === "available" && "bg-green-100 text-green-700 hover:bg-green-200",
                     table.status === "occupied" && "bg-red-100 text-red-700 hover:bg-red-200",
                     table.status === "cleaning" && "bg-amber-100 text-amber-700 hover:bg-amber-200"
@@ -123,7 +123,7 @@ export function KitchenTablesColumn({ active }: { active: boolean }) {
                       setError(null)
                       serveTable(readyOrderIds).catch(() => setError(t("updateError")))
                     }}
-                    className="nb-border-sm nb-shadow-sm nb-press-sm flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-xs font-extrabold text-primary-foreground"
+                    className="nb-border-sm nb-shadow-sm nb-press-sm flex min-h-10 items-center gap-1 rounded-lg bg-primary px-3 py-2 text-xs font-extrabold text-primary-foreground"
                   >
                     <Utensils className="h-3 w-3" />
                     {t("markServed")}
@@ -136,7 +136,7 @@ export function KitchenTablesColumn({ active }: { active: boolean }) {
                       setError(null)
                       markTableCashPayment(table.id).catch(() => setError(t("updateError")))
                     }}
-                    className="nb-border-sm nb-shadow-sm nb-press-sm rounded-lg bg-secondary px-3 py-2 text-xs font-extrabold text-secondary-foreground"
+                    className="nb-border-sm nb-shadow-sm nb-press-sm min-h-10 rounded-lg bg-secondary px-3 py-2 text-xs font-extrabold text-secondary-foreground"
                   >
                     {t("markCash")}
                   </button>
@@ -148,7 +148,7 @@ export function KitchenTablesColumn({ active }: { active: boolean }) {
                       setError(null)
                       confirmTableCashPayment(table.id).catch(() => setError(t("updateError")))
                     }}
-                    className="nb-border-sm nb-shadow-sm nb-press-sm rounded-lg bg-secondary px-3 py-2 text-xs font-extrabold text-secondary-foreground"
+                    className="nb-border-sm nb-shadow-sm nb-press-sm min-h-10 rounded-lg bg-secondary px-3 py-2 text-xs font-extrabold text-secondary-foreground"
                   >
                     {t("confirmCashReceived")}
                   </button>
