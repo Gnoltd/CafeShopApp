@@ -146,6 +146,7 @@ export function LoginForm() {
                 <Input
                   id="reset-email"
                   type="email"
+                  autoComplete="email"
                   required
                   value={resetEmail}
                   onChange={(e) => setResetEmail(e.target.value)}
@@ -204,6 +205,7 @@ export function LoginForm() {
               <Input
                 id="login-email"
                 type="email"
+                autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -222,6 +224,7 @@ export function LoginForm() {
               <Input
                 id="login-password"
                 type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -232,7 +235,7 @@ export function LoginForm() {
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
                 aria-label={showPassword ? t("hidePassword") : t("showPassword")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+                className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-r-xl text-muted-foreground hover:text-primary"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -241,7 +244,7 @@ export function LoginForm() {
               <button
                 type="button"
                 onClick={() => setView("requestReset")}
-                className="text-xs font-medium text-primary hover:underline"
+                className="flex min-h-11 items-center px-1 text-xs font-medium text-primary hover:underline"
               >
                 {t("forgotPassword")}
               </button>
@@ -280,7 +283,12 @@ export function LoginForm() {
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           {t("noAccount")}{" "}
-          <Link href="/signup" className="font-bold text-primary hover:underline">
+          {/* Inline text link — WCAG 2.5.5's 44x44 target size has a
+              built-in exception for links inside a sentence/block of text,
+              since forcing a full box here would break the reading flow.
+              py-3 still grows the vertical hit area to 44px without
+              wrapping the link onto its own line or affecting layout. */}
+          <Link href="/signup" className="inline-block px-1 py-3 font-bold text-primary hover:underline">
             {t("signup")}
           </Link>
         </p>

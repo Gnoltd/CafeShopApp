@@ -134,6 +134,7 @@ export function SignupForm() {
               <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="signup-name"
+                autoComplete="name"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -152,6 +153,7 @@ export function SignupForm() {
               <Input
                 id="signup-email"
                 type="email"
+                autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -170,6 +172,7 @@ export function SignupForm() {
               <Input
                 id="signup-phone"
                 type="tel"
+                autoComplete="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder={t("phonePlaceholder")}
@@ -187,6 +190,7 @@ export function SignupForm() {
               <Input
                 id="signup-password"
                 type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
                 required
                 minLength={6}
                 value={password}
@@ -198,7 +202,7 @@ export function SignupForm() {
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
                 aria-label={showPassword ? t("hidePassword") : t("showPassword")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+                className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-r-xl text-muted-foreground hover:text-primary"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -242,7 +246,8 @@ export function SignupForm() {
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           {t("haveAccount")}{" "}
-          <Link href="/login" className="font-bold text-primary hover:underline">
+          {/* Inline text link — see the matching note in login-form.tsx. */}
+          <Link href="/login" className="inline-block px-1 py-3 font-bold text-primary hover:underline">
             {t("login")}
           </Link>
         </p>

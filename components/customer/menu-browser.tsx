@@ -114,20 +114,37 @@ export function MenuBrowser({
       <StaggerList staggerKey={selectedCategory + searchQuery} className="flex flex-col gap-3 md:grid md:grid-cols-3 lg:grid-cols-4 md:gap-6">
         {visibleItems.map((item) => (
           <StaggerItem key={item.id} className="h-full">
-            <button
-              type="button"
-              onClick={() => openItem(item)}
+            {/* A <button> can't nest another interactive element (the quick-add
+                control below), so "open item" and "quick add" are sibling
+                controls here rather than parent/child: an absolutely
+                positioned full-card button underneath handles "open item" for
+                any tap that lands outside quick-add's own hit area (the same
+                area quick-add previously stopped propagation on), while the
+                visible content sits above it with pointer-events disabled
+                except on quick-add itself, which stays independently
+                reachable/activatable via Tab + Enter/Space. */}
+            <div
               className={cn(
-                "nb-border nb-shadow nb-press flex w-full items-center gap-3 rounded-xl bg-card p-2 text-left md:h-full md:flex-col md:items-stretch md:p-0 md:overflow-hidden",
+                "nb-border nb-shadow nb-press relative flex w-full items-center gap-3 rounded-xl bg-card p-2 text-left md:h-full md:flex-col md:items-stretch md:p-0 md:overflow-hidden",
                 !item.isAvailable && "opacity-70"
               )}
             >
+              <button
+                type="button"
+                onClick={() => openItem(item)}
+                disabled={!item.isAvailable}
+                aria-label={name(item)}
+                className="absolute inset-0 z-0 rounded-xl focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-default"
+              />
               <ItemImage
                 item={item}
-                className={cn("h-28 w-28 shrink-0 rounded-lg md:h-48 md:w-full md:rounded-none", !item.isAvailable && "grayscale")}
+                className={cn(
+                  "relative z-10 pointer-events-none h-28 w-28 shrink-0 rounded-lg md:h-48 md:w-full md:rounded-none",
+                  !item.isAvailable && "grayscale"
+                )}
                 sizes="(max-width: 768px) 112px, 400px"
               />
-              <div className="flex min-w-0 flex-1 flex-col gap-1 md:p-4">
+              <div className="relative z-10 pointer-events-none flex min-w-0 flex-1 flex-col gap-1 md:p-4">
                 <div className="flex items-start justify-between gap-2">
                   <span className="line-clamp-1 font-bold text-card-foreground md:text-base">{name(item)}</span>
                   {item.isPopular && (
@@ -140,27 +157,24 @@ export function MenuBrowser({
                 <div className="mt-1 flex items-center justify-between">
                   <span className="font-extrabold text-price md:text-base">{formatVND(item.basePrice)}</span>
                   {item.isAvailable ? (
-                    <motion.span
-                      role="button"
+                    <motion.button
+                      type="button"
                       aria-label={t("add")}
                       whileTap={TAP_SCALE}
                       transition={TAP_TRANSITION}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        quickAdd(item)
-                      }}
-                      className="nb-border-sm nb-shadow-sm flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                      onClick={() => quickAdd(item)}
+                      className="pointer-events-auto nb-border-sm nb-shadow-sm flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
                     >
                       <Plus className="h-4 w-4" />
-                    </motion.span>
+                    </motion.button>
                   ) : (
-                    <span className="nb-border-sm flex h-8 w-8 items-center justify-center rounded-full bg-chip text-muted-foreground">
+                    <span className="pointer-events-none nb-border-sm flex h-8 w-8 items-center justify-center rounded-full bg-chip text-muted-foreground">
                       <Ban className="h-4 w-4" />
                     </span>
                   )}
                 </div>
               </div>
-            </button>
+            </div>
           </StaggerItem>
         ))}
       </StaggerList>

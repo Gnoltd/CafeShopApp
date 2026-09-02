@@ -76,6 +76,14 @@ export default async function RootLayout({
     <html
       lang={locale}
       className={`${beVietnamPro.variable} ${playfairDisplay.variable} h-full antialiased`}
+      // The inline no-flash script below adds/removes the "dark" class
+      // before React hydrates, based on localStorage/matchMedia -- info
+      // the server render can't know. That's an intentional, one-level
+      // deep divergence between server and client markup on this exact
+      // element; suppress only its warning rather than papering over any
+      // other real mismatch (see hooks/useTheme.tsx for the matching fix
+      // to ThemeProvider's initial state).
+      suppressHydrationWarning
     >
       <head>
         <script

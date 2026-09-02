@@ -122,6 +122,7 @@ export function ProfileSettingsView() {
               </label>
               <input
                 type="password"
+                autoComplete="current-password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 className="nb-border-sm h-11 w-full rounded-xl bg-card px-4 text-card-foreground focus:outline-none"
@@ -131,6 +132,7 @@ export function ProfileSettingsView() {
               <label className="block px-1 text-xs font-medium text-muted-foreground">{t("newPasswordLabel")}</label>
               <input
                 type="password"
+                autoComplete="new-password"
                 minLength={6}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -143,6 +145,7 @@ export function ProfileSettingsView() {
               </label>
               <input
                 type="password"
+                autoComplete="new-password"
                 minLength={6}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}

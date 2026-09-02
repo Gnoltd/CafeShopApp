@@ -37,6 +37,11 @@ const FIELD_LABEL_KEYS: Record<Field, "fullName" | "phoneNumber"> = {
   phone: "phoneNumber",
 }
 
+const FIELD_INPUT_PROPS: Record<Field, { type: string; autoComplete: string }> = {
+  name: { type: "text", autoComplete: "name" },
+  phone: { type: "tel", autoComplete: "tel" },
+}
+
 export function ProfileView({ role = null }: { role?: string | null }) {
   const t = useTranslations("Profile")
   const tNav = useTranslations("Nav")
@@ -190,6 +195,8 @@ export function ProfileView({ role = null }: { role?: string | null }) {
                     <div className="flex items-center gap-1.5">
                       <input
                         autoFocus
+                        type={FIELD_INPUT_PROPS[field].type}
+                        autoComplete={FIELD_INPUT_PROPS[field].autoComplete}
                         value={draft}
                         onChange={(e) => setDraft(e.target.value)}
                         onKeyDown={(e) => {

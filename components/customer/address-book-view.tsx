@@ -138,15 +138,18 @@ export function AddressBookView() {
                 value={form.address}
                 onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
                 placeholder={t("addressPlaceholder")}
+                autoComplete="street-address"
                 className="nb-border-sm h-11 w-full rounded-xl bg-card px-4 text-card-foreground focus:outline-none"
               />
             </div>
             <div className="space-y-1.5">
               <label className="block px-1 text-xs font-medium text-muted-foreground">{t("phoneField")}</label>
               <input
+                type="tel"
                 value={form.phone}
                 onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                 placeholder={t("phonePlaceholder")}
+                autoComplete="tel"
                 className="nb-border-sm h-11 w-full rounded-xl bg-card px-4 text-card-foreground focus:outline-none"
               />
             </div>

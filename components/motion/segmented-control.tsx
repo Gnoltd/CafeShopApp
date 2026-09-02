@@ -19,8 +19,11 @@ const VARIANT_STYLES = {
     pill: "nb-border-sm absolute inset-0 rounded-md bg-card",
   },
   chips: {
+    // min-h-11 (44px): the un-bumped py-2 chip only reached ~36px tall,
+    // below the WCAG 2.5.5/Apple HIG 44x44 touch-target minimum.
     container: "flex gap-2 overflow-x-auto pb-1",
-    option: "relative shrink-0 rounded-full bg-muted px-4 py-2 text-sm font-medium transition-colors",
+    option:
+      "relative inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-muted px-4 py-2 text-sm font-medium transition-colors",
     activeText: "text-primary-foreground",
     inactiveText: "text-muted-foreground hover:bg-accent/40",
     pill: "nb-border-sm absolute inset-0 rounded-full bg-primary",
