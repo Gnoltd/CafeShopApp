@@ -8,6 +8,7 @@ import {
   placeTableRound,
   abandonTableSession,
   checkoutTableSession,
+  importTableCart,
 } from "./table-session-data"
 
 function mockRpc(result: { data?: unknown; error?: unknown }) {
@@ -97,6 +98,52 @@ describe("addCartItem", () => {
       p_note: null,
       p_quantity: 1,
     })
+  })
+})
+
+describe("importTableCart", () => {
+  it("sends the complete cart to one atomic RPC", async () => {
+    const { rpc, supabase } = mockRpc({ data: 2, error: null })
+
+    const imported = await importTableCart(supabase, "qr-token-1", "transfer-1", [
+      {
+        menuItemId: "mi-1",
+        sizeId: "size-1",
+        modifierIds: ["mod-b", "mod-a"],
+        note: "less ice",
+        quantity: 2,
+      },
+      { menuItemId: "mi-2", modifierIds: [], quantity: 1 },
+    ])
+
+    expect(rpc).toHaveBeenCalledWith("import_table_cart", {
+      p_qr_token: "qr-token-1",
+      p_transfer_id: "transfer-1",
+      p_items: [
+        {
+          menuItemId: "mi-1",
+          sizeId: "size-1",
+          modifierIds: ["mod-a", "mod-b"],
+          note: "less ice",
+          quantity: 2,
+        },
+        {
+          menuItemId: "mi-2",
+          sizeId: null,
+          modifierIds: [],
+          note: null,
+          quantity: 1,
+        },
+      ],
+    })
+    expect(imported).toBe(2)
+  })
+
+  it("throws without calling the RPC for an empty cart", async () => {
+    const { rpc, supabase } = mockRpc({ data: 0, error: null })
+
+    await expect(importTableCart(supabase, "qr-token-1", "transfer-1", [])).rejects.toThrow("cart is empty")
+    expect(rpc).not.toHaveBeenCalled()
   })
 })
 

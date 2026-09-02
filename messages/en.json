@@ -221,10 +221,12 @@
     "noteLabel": "Note",
     "discount": "Discount",
     "orderType": "Order Type",
-    "pickup": "Pickup",
+    "pickup": "Takeaway",
     "dineIn": "Dine-in",
     "dineInRequiresScan": "Scan your table's QR code to order dine-in",
     "scanTableQr": "Scan Table QR",
+    "openCamera": "Open Camera",
+    "cartTransferPrepareError": "Couldn't prepare your cart for table ordering. Please try again.",
     "table": "Table",
     "pickupTime": "Pickup Time",
     "asap": "As Soon As Possible",
@@ -338,7 +340,12 @@
     "cleaningTitle": "This Table Is Being Cleaned",
     "cleaningMessage": "We're getting this table ready for the next guest. Please wait a moment.",
     "notifyStaff": "Notify Staff",
-    "staffNotified": "Staff Notified"
+    "staffNotified": "Staff Notified",
+    "transferringCart": "Moving your cart to this table…",
+    "transferFailedTitle": "Couldn't Move Your Cart",
+    "transferFailedMessage": "Your original cart is still safe. Please try again.",
+    "retryTransfer": "Try Again",
+    "backToCheckout": "Back to Checkout"
   },
   "TableSession": {
     "menuTabLabel": "Menu",

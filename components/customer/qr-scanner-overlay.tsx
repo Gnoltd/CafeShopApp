@@ -9,7 +9,13 @@ import { extractTableToken } from "@/lib/qr-table-token"
 
 type ScannerStatus = "requesting" | "scanning" | "not-a-table-code" | "permission-denied" | "no-camera"
 
-export function QrScannerOverlay({ onClose }: { onClose: () => void }) {
+export function QrScannerOverlay({
+  onClose,
+  onScan,
+}: {
+  onClose: () => void
+  onScan?: (token: string) => void
+}) {
   const t = useTranslations("Landing")
   const router = useRouter()
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -54,7 +60,11 @@ export function QrScannerOverlay({ onClose }: { onClose: () => void }) {
         if (token) {
           stopCamera()
           onClose()
-          router.push(`/table/${token}`)
+          if (onScan) {
+            onScan(token)
+          } else {
+            router.push(`/table/${token}`)
+          }
           return
         }
         setStatus((prev) => {

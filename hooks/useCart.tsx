@@ -11,6 +11,7 @@ import {
 import { createClient } from "@/lib/supabase/client"
 import { validatePromoCode, type PromoValidation } from "@/lib/supabase/promotions-data"
 import { resolvePromoDiscount, type PromoRule } from "@/lib/order-total"
+import { subtractTransferredQuantities, type TableCartTransferItem } from "@/lib/table-cart-transfer"
 
 export type CartModifier = {
   groupId: string
@@ -40,6 +41,7 @@ type CartContextValue = {
   updateQuantity: (cartItemId: string, quantity: number) => void
   removeItem: (cartItemId: string) => void
   clear: () => void
+  consumeTransfer: (items: TableCartTransferItem[]) => void
   subtotal: number
   itemCount: number
   promoCode: string | null
@@ -117,6 +119,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setPromoRule(null)
   }
 
+  function consumeTransfer(transferredItems: TableCartTransferItem[]) {
+    setItems((prev) => subtractTransferredQuantities(prev, transferredItems))
+    setPromoCode(null)
+    setPromoRule(null)
+  }
+
   async function applyPromoCode(code: string): Promise<PromoValidation> {
     const normalized = code.trim().toUpperCase()
     const result = await validatePromoCode(supabase, normalized, subtotal)
@@ -150,6 +158,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         updateQuantity,
         removeItem,
         clear,
+        consumeTransfer,
         subtotal,
         itemCount,
         promoCode,

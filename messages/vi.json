@@ -225,6 +225,8 @@
     "dineIn": "Tại Bàn",
     "dineInRequiresScan": "Quét mã QR trên bàn để đặt món tại chỗ",
     "scanTableQr": "Quét QR Bàn",
+    "openCamera": "Mở Camera",
+    "cartTransferPrepareError": "Không thể chuẩn bị giỏ hàng để đặt tại bàn. Vui lòng thử lại.",
     "table": "Bàn",
     "pickupTime": "Thời Gian Nhận",
     "asap": "Sớm Nhất Có Thể",
@@ -338,7 +340,12 @@
     "cleaningTitle": "Bàn Đang Được Dọn Dẹp",
     "cleaningMessage": "Chúng tôi đang chuẩn bị bàn này cho khách tiếp theo. Vui lòng đợi trong giây lát.",
     "notifyStaff": "Báo Nhân Viên",
-    "staffNotified": "Đã Báo Nhân Viên"
+    "staffNotified": "Đã Báo Nhân Viên",
+    "transferringCart": "Đang chuyển giỏ hàng vào bàn…",
+    "transferFailedTitle": "Không Thể Chuyển Giỏ Hàng",
+    "transferFailedMessage": "Giỏ hàng cũ vẫn được giữ nguyên. Vui lòng thử lại.",
+    "retryTransfer": "Thử Lại",
+    "backToCheckout": "Quay Lại Thanh Toán"
   },
   "TableSession": {
     "menuTabLabel": "Thực Đơn",

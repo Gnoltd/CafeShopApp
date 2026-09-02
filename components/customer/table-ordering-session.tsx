@@ -17,15 +17,17 @@ export function TableOrderingSession({
   qrToken,
   categories,
   items,
+  initialTab = "menu",
 }: {
   table: TableRecord
   qrToken: string
   categories: MenuCategory[]
   items: MenuItem[]
+  initialTab?: "menu" | "order"
 }) {
   const t = useTranslations("TableSession")
   const session = useTableSession(qrToken)
-  const [tab, setTab] = useState<"menu" | "order">("menu")
+  const [tab, setTab] = useState<"menu" | "order">(initialTab)
   const [isPlacingRound, setIsPlacingRound] = useState(false)
   const [placeOrderError, setPlaceOrderError] = useState<string | null>(null)
   const [addItemError, setAddItemError] = useState<string | null>(null)

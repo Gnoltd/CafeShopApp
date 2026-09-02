@@ -87,6 +87,29 @@ export async function addCartItem(supabase: SupabaseClient, qrToken: string, inp
   if (error) throw error
 }
 
+export async function importTableCart(
+  supabase: SupabaseClient,
+  qrToken: string,
+  transferId: string,
+  items: AddCartItemInput[]
+): Promise<number> {
+  if (items.length === 0) throw new Error("cart is empty")
+
+  const { data, error } = await supabase.rpc("import_table_cart", {
+    p_qr_token: qrToken,
+    p_transfer_id: transferId,
+    p_items: items.map((item) => ({
+      menuItemId: item.menuItemId,
+      sizeId: item.sizeId ?? null,
+      modifierIds: [...item.modifierIds].sort(),
+      note: item.note ?? null,
+      quantity: item.quantity ?? 1,
+    })),
+  })
+  if (error) throw error
+  return data as number
+}
+
 export async function updateCartItemQuantity(
   supabase: SupabaseClient,
   qrToken: string,
