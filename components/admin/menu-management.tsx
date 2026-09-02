@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl"
 import { Coffee, CupSoda, Cookie, Milk, Search, Plus, Pencil, Trash2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { ConfirmDialog } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { formatVND } from "@/lib/format"
 import { createClient } from "@/lib/supabase/client"
@@ -52,6 +53,10 @@ export function MenuManagement({
   const [formMode, setFormMode] = useState<FormMode>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [error, setError] = useState<string | null>(null)
+  // Deleting a menu item is irreversible and takes its sizes/extras/recipe
+  // links with it, so the Trash button only stages the item here — the real
+  // delete runs from the confirmation dialog at the bottom of this component.
+  const [itemPendingDelete, setItemPendingDelete] = useState<MenuItem | null>(null)
 
   const categoryLabel = (id: string) => {
     const category = categories.find((c) => c.id === id)
@@ -144,6 +149,26 @@ export function MenuManagement({
       {error && (
         <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
       )}
+
+      <ConfirmDialog
+        open={itemPendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setItemPendingDelete(null)
+        }}
+        destructive
+        title={t("deleteConfirmTitle")}
+        description={t("deleteConfirmBody", {
+          name: itemPendingDelete
+            ? locale === "vi"
+              ? itemPendingDelete.nameVi
+              : itemPendingDelete.nameEn
+            : "",
+        })}
+        confirmLabel={t("delete")}
+        onConfirm={async () => {
+          if (itemPendingDelete) await removeItem(itemPendingDelete.id)
+        }}
+      />
 
       {formMode && (
         <MenuItemForm
@@ -262,7 +287,7 @@ export function MenuManagement({
                   </button>
                   <button
                     type="button"
-                    onClick={() => removeItem(item.id)}
+                    onClick={() => setItemPendingDelete(item)}
                     aria-label={t("delete")}
                     title={t("delete")}
                     className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
@@ -399,7 +424,7 @@ export function MenuManagement({
                       </button>
                       <button
                         type="button"
-                        onClick={() => removeItem(item.id)}
+                        onClick={() => setItemPendingDelete(item)}
                         aria-label={t("delete")}
                         title={t("delete")}
                         className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"

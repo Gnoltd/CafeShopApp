@@ -6,6 +6,13 @@
   "Theme": {
     "toggleLabel": "Chuyển giao diện sáng/tối"
   },
+  "Dialog": {
+    "close": "Đóng",
+    "cancel": "Hủy",
+    "confirm": "Xác nhận",
+    "working": "Đang xử lý…",
+    "navigation": "Điều hướng"
+  },
   "Nav": {
     "menu": "Thực Đơn",
     "cart": "Giỏ Hàng",
@@ -511,7 +518,10 @@
     "plannedStartLabel": "Giờ bắt đầu dự kiến (tùy chọn)",
     "plannedEndLabel": "Giờ kết thúc dự kiến (tùy chọn)",
     "countedCashLabel": "Tiền mặt kiểm đếm trong ngăn kéo (VNĐ)",
-    "notesLabel": "Ghi chú (tùy chọn)"
+    "notesLabel": "Ghi chú (tùy chọn)",
+    "confirmCashTitle": "Xác nhận đã nhận tiền mặt?",
+    "confirmCashBody": "Đơn #{order} sẽ được đánh dấu đã thanh toán tiền mặt. Chỉ xác nhận khi bạn đã cầm tiền.",
+    "confirmTableCashBody": "Tất cả đơn chưa thanh toán của bàn {table} sẽ được đánh dấu đã thanh toán tiền mặt. Chỉ xác nhận khi bạn đã cầm tiền."
   },
   "MyRedemptions": {
     "title": "Ưu Đãi Của Tôi",
@@ -702,12 +712,13 @@
     "cancel": "Hủy",
     "edit": "Sửa",
     "delete": "Xóa",
-    "deleteConfirm": "Xóa khuyến mãi này? Không thể hoàn tác.",
     "requiredFieldsError": "Cần có mã và giá trị giảm giá dương.",
     "saveError": "Không thể lưu khuyến mãi — vui lòng thử lại.",
     "loadError": "Không thể tải khuyến mãi — vui lòng thử lại.",
     "loading": "Đang tải…",
-    "emptyState": "Chưa có khuyến mãi nào."
+    "emptyState": "Chưa có khuyến mãi nào.",
+    "deleteConfirmTitle": "Xóa khuyến mãi này?",
+    "deleteConfirmBody": "Mã khuyến mãi “{code}” sẽ ngừng hoạt động ngay lập tức. Không thể hoàn tác."
   },
   "AdminMenu": {
     "title": "Quản Lý Thực Đơn",
@@ -781,7 +792,9 @@
     "deleteError": "Xóa món thất bại. Vui lòng thử lại.",
     "showingItems": "Hiển thị {start}-{end} trong {total} món",
     "previous": "Trước",
-    "next": "Sau"
+    "next": "Sau",
+    "deleteConfirmTitle": "Xóa món này?",
+    "deleteConfirmBody": "“{name}” sẽ bị xóa khỏi thực đơn cùng với các size, món thêm và công thức liên quan. Không thể hoàn tác."
   },
   "AdminInventory": {
     "title": "Kho Hàng",
@@ -834,7 +847,9 @@
     "ingredientSaveError": "Lưu nguyên liệu thất bại. Vui lòng thử lại.",
     "edit": "Sửa",
     "cancel": "Hủy",
-    "save": "Lưu"
+    "save": "Lưu",
+    "markOutOfStockConfirmTitle": "Đánh dấu hết hàng?",
+    "markOutOfStockConfirmBody": "“{name}” sẽ được đặt về 0 và mọi món dùng nguyên liệu này sẽ không thể bán. Không thể hoàn tác."
   },
   "AdminTables": {
     "title": "Quản Lý Bàn",
@@ -859,7 +874,9 @@
     "tableNumberLabel": "Số Bàn",
     "tableNumberRequiredError": "Vui lòng nhập số bàn.",
     "tableNumberTakenError": "Số bàn này đã được sử dụng.",
-    "updateError": "Cập nhật bàn thất bại. Vui lòng thử lại."
+    "updateError": "Cập nhật bàn thất bại. Vui lòng thử lại.",
+    "regenerateConfirmTitle": "Tạo lại mã QR này?",
+    "regenerateConfirmBody": "Mọi mã QR đã in cho bàn {table} sẽ ngừng hoạt động ngay khi bạn tạo lại. Khách quét mã cũ sẽ gặp lỗi cho tới khi bạn in và đặt mã mới."
   },
   "AdminStaff": {
     "title": "Nhân Viên",

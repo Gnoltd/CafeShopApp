@@ -4,6 +4,16 @@ import { useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import { Banknote, CreditCard, QrCode, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  DialogBackdrop,
+  DialogClose,
+  DialogDescription,
+  DialogPopup,
+  DialogPortal,
+  DialogRoot,
+  DialogTitle,
+  DialogViewport,
+} from "@/components/ui/dialog"
 import { formatVND } from "@/lib/format"
 import { createClient } from "@/lib/supabase/client"
 import { checkoutTableSession } from "@/lib/supabase/table-session-data"
@@ -51,57 +61,80 @@ export function CheckBillSheet({
     }
   }
 
-  if (unpaidTotal === 0) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
-        <div className="nb-border nb-shadow w-full max-w-sm rounded-t-2xl bg-card p-6 sm:rounded-2xl">
-          <p className="mb-4 text-sm text-muted-foreground">{t("checkBillNothingToPay")}</p>
-          <Button variant="neubrutal" className="h-11 w-full" onClick={onClose}>
-            {t("checkBillClose")}
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
-      <div className="nb-border nb-shadow w-full max-w-sm rounded-t-2xl bg-card p-6 sm:rounded-2xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-card-foreground">{t("checkBillTitle")}</h2>
-          <button type="button" onClick={onClose} aria-label={t("checkBillClose")} className="text-muted-foreground hover:text-destructive">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+    <DialogRoot
+      open
+      onOpenChange={(nextOpen) => {
+        // Payment is in flight (and about to redirect to a gateway) — don't
+        // let Escape or a backdrop press tear the sheet down mid-request.
+        if (isSubmitting && !nextOpen) return
+        if (!nextOpen) onClose()
+      }}
+    >
+      <DialogPortal>
+        <DialogBackdrop />
+        <DialogViewport align="sheet">
+          <DialogPopup variant="sheet" size="sm" className="nb-shadow p-6">
+            {unpaidTotal === 0 ? (
+              <>
+                <DialogTitle className="sr-only">{t("checkBillTitle")}</DialogTitle>
+                <DialogDescription className="mb-4 text-sm text-muted-foreground">
+                  {t("checkBillNothingToPay")}
+                </DialogDescription>
+                <Button variant="neubrutal" className="h-11 w-full" onClick={onClose}>
+                  {t("checkBillClose")}
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="mb-4 flex items-center justify-between">
+                  <DialogTitle>{t("checkBillTitle")}</DialogTitle>
+                  <DialogClose
+                    aria-label={t("checkBillClose")}
+                    className="flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="h-5 w-5" />
+                  </DialogClose>
+                </div>
 
-        <div className="mb-4 flex items-center justify-between border-t pt-3">
-          <span className="text-sm text-muted-foreground">{t("checkBillTotal")}</span>
-          <span className="text-xl font-extrabold text-price">{formatVND(unpaidTotal)}</span>
-        </div>
+                <div className="mb-4 flex items-center justify-between border-t pt-3">
+                  <span className="text-sm text-muted-foreground">{t("checkBillTotal")}</span>
+                  <span className="text-xl font-extrabold text-price">{formatVND(unpaidTotal)}</span>
+                </div>
 
-        <div className="mb-4 grid grid-cols-3 gap-2">
-          {METHODS.map(({ id, icon: Icon, labelKey }) => (
-            <button
-              key={id}
-              type="button"
-              disabled={isSubmitting}
-              onClick={() => setMethod(id)}
-              className={`nb-border nb-shadow-sm flex flex-col items-center gap-2 rounded-xl p-4 disabled:opacity-50 ${
-                method === id ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
-              }`}
-            >
-              <Icon className="h-6 w-6" />
-              <span className="text-xs font-bold">{t(labelKey)}</span>
-            </button>
-          ))}
-        </div>
+                <div className="mb-4 grid grid-cols-3 gap-2">
+                  {METHODS.map(({ id, icon: Icon, labelKey }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      disabled={isSubmitting}
+                      aria-pressed={method === id}
+                      onClick={() => setMethod(id)}
+                      className={`nb-border nb-shadow-sm flex flex-col items-center gap-2 rounded-xl p-4 disabled:opacity-50 ${
+                        method === id ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
+                      }`}
+                    >
+                      <Icon className="h-6 w-6" />
+                      <span className="text-xs font-bold">{t(labelKey)}</span>
+                    </button>
+                  ))}
+                </div>
 
-        {error && <p className="mb-3 text-sm text-destructive">{error}</p>}
+                {error && <p className="mb-3 text-sm text-destructive">{error}</p>}
 
-        <Button variant="neubrutal" className="h-11 w-full" disabled={!method || isSubmitting} onClick={handleConfirm}>
-          {isSubmitting ? t("checkBillLoading") : t("checkBillConfirm")}
-        </Button>
-      </div>
-    </div>
+                <Button
+                  variant="neubrutal"
+                  className="h-11 w-full"
+                  disabled={!method || isSubmitting}
+                  onClick={handleConfirm}
+                >
+                  {isSubmitting ? t("checkBillLoading") : t("checkBillConfirm")}
+                </Button>
+              </>
+            )}
+          </DialogPopup>
+        </DialogViewport>
+      </DialogPortal>
+    </DialogRoot>
   )
 }

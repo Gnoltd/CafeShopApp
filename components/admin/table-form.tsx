@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import { useTranslations } from "next-intl"
-import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { FormDialog } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import type { TableInput } from "@/hooks/useTables"
 
@@ -37,46 +37,34 @@ export function TableForm({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="nb-border nb-shadow flex w-full max-w-sm flex-col overflow-hidden rounded-xl bg-card">
-        <div className="nb-border border-x-0 border-t-0 flex items-center justify-between px-6 py-4">
-          <h2 className="text-lg font-bold text-card-foreground">{t("addTable")}</h2>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="nb-border-sm nb-press-sm rounded-full bg-card p-1 text-muted-foreground"
-            aria-label={t("cancel")}
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="space-y-4 px-6 py-4">
-          {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">{t("tableNumberLabel")}</label>
-            <Input value={number} onChange={(e) => setNumber(e.target.value)} className="h-10" />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">{t("locationViLabel")}</label>
-            <Input value={locationVi} onChange={(e) => setLocationVi(e.target.value)} className="h-10" />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">{t("locationEnLabel")}</label>
-            <Input value={locationEn} onChange={(e) => setLocationEn(e.target.value)} className="h-10" />
-          </div>
-        </div>
-
-        <div className="nb-border border-x-0 border-b-0 flex justify-end gap-2 px-6 py-4">
+    <FormDialog
+      onClose={onCancel}
+      title={t("addTable")}
+      footer={
+        <>
           <Button variant="neubrutal" className="bg-card text-foreground" onClick={onCancel}>
             {t("cancel")}
           </Button>
           <Button variant="neubrutal" onClick={handleSave} disabled={isSaving}>
             {t("save")}
           </Button>
-        </div>
+        </>
+      }
+    >
+      {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-muted-foreground">{t("tableNumberLabel")}</label>
+        <Input value={number} onChange={(e) => setNumber(e.target.value)} className="h-10" />
       </div>
-    </div>
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-muted-foreground">{t("locationViLabel")}</label>
+        <Input value={locationVi} onChange={(e) => setLocationVi(e.target.value)} className="h-10" />
+      </div>
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-muted-foreground">{t("locationEnLabel")}</label>
+        <Input value={locationEn} onChange={(e) => setLocationEn(e.target.value)} className="h-10" />
+      </div>
+    </FormDialog>
   )
 }

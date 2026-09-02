@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { formatVND } from "@/lib/format"
 import { BottomSheet } from "@/components/motion/bottom-sheet"
+import { DialogClose, DialogTitle } from "@/components/ui/dialog"
 import { SegmentedControl } from "@/components/motion/segmented-control"
 import { PressFeedback } from "@/components/motion/press-feedback"
 import { useSizeModifierSelection } from "@/hooks/useSizeModifierSelection"
@@ -73,15 +74,15 @@ export function SizeExtrasSheet({
   return (
     <BottomSheet onClose={onClose}>
       <div className="flex items-center justify-between border-b px-5 py-4">
-        <h2 className="font-bold text-card-foreground">{locale === "vi" ? item.nameVi : item.nameEn}</h2>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-full p-1 text-muted-foreground hover:bg-muted"
+        <DialogTitle className="text-base font-bold text-card-foreground">
+          {locale === "vi" ? item.nameVi : item.nameEn}
+        </DialogTitle>
+        <DialogClose
+          className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
           aria-label={t("close")}
         >
           <X className="h-5 w-5" />
-        </button>
+        </DialogClose>
       </div>
 
       <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto px-5 py-4">

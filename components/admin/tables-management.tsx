@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl"
 import QRCode from "qrcode"
 import { QrCode, Download, RefreshCw, Plus, Pencil, Check, X, Grid2x2, CircleCheck, User, ScanLine, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ConfirmDialog } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { useTables } from "@/hooks/useTables"
 import { TableForm } from "@/components/admin/table-form"
@@ -24,6 +25,10 @@ export function TablesManagement() {
   const [tokensById, setTokensById] = useState<Record<string, string>>({})
   const [showAddForm, setShowAddForm] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Regenerating a token silently kills every already-printed QR code sitting
+  // on a physical table, so the button only stages the table id here and the
+  // confirmation dialog below does the actual regeneration.
+  const [tableIdPendingRegen, setTableIdPendingRegen] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -277,15 +282,7 @@ export function TablesManagement() {
                   variant="neubrutal"
                   size="sm"
                   className="h-9 w-full gap-1.5 bg-secondary sm:flex-1"
-                  onClick={() =>
-                    regenerateToken(table.id)
-                      .then((updated) => {
-                        if (updated.qrToken) {
-                          setTokensById((prev) => ({ ...prev, [table.id]: updated.qrToken! }))
-                        }
-                      })
-                      .catch(() => setError(t("updateError")))
-                  }
+                  onClick={() => setTableIdPendingRegen(table.id)}
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
                   {t("regenerateCode")}
@@ -295,6 +292,31 @@ export function TablesManagement() {
           )
         })}
       </div>
+
+      <ConfirmDialog
+        open={tableIdPendingRegen !== null}
+        onOpenChange={(open) => {
+          if (!open) setTableIdPendingRegen(null)
+        }}
+        destructive
+        title={t("regenerateConfirmTitle")}
+        description={t("regenerateConfirmBody", {
+          table: tables.find((table) => table.id === tableIdPendingRegen)?.number ?? "",
+        })}
+        confirmLabel={t("regenerateCode")}
+        onConfirm={async () => {
+          const id = tableIdPendingRegen
+          if (!id) return
+          try {
+            const updated = await regenerateToken(id)
+            if (updated.qrToken) {
+              setTokensById((prev) => ({ ...prev, [id]: updated.qrToken! }))
+            }
+          } catch {
+            setError(t("updateError"))
+          }
+        }}
+      />
 
       {showAddForm && (
         <TableForm

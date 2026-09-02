@@ -4,6 +4,16 @@ import { useEffect, useRef, useState } from "react"
 import jsQR from "jsqr"
 import { useTranslations } from "next-intl"
 import { X } from "lucide-react"
+import {
+  DialogBackdrop,
+  DialogClose,
+  DialogDescription,
+  DialogPopup,
+  DialogPortal,
+  DialogRoot,
+  DialogTitle,
+  DialogViewport,
+} from "@/components/ui/dialog"
 import { useRouter } from "@/i18n/navigation"
 import { extractTableToken } from "@/lib/qr-table-token"
 
@@ -105,49 +115,64 @@ export function QrScannerOverlay({
   }, [])
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black">
-      <div className="flex items-center justify-between p-4">
-        <span className="text-sm font-medium text-white">{t("scanInstructions")}</span>
-        <button
-          type="button"
-          onClick={handleClose}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
-          aria-label={t("closeScanner")}
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
+    // Full-screen, but a real modal dialog now (Task 6): Escape closes it,
+    // focus is trapped between the instructions and the close button instead
+    // of wandering into the page behind the camera feed, and that page is
+    // `inert` while the scanner is up.
+    <DialogRoot
+      open
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) handleClose()
+      }}
+    >
+      <DialogPortal>
+        <DialogBackdrop className="bg-black" />
+        <DialogViewport align="fullscreen">
+          <DialogPopup variant="fullscreen" size="full">
+            <div className="flex items-center justify-between p-4">
+              <DialogTitle className="text-sm font-medium text-white">
+                {t("scanInstructions")}
+              </DialogTitle>
+              <DialogClose
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+                aria-label={t("closeScanner")}
+              >
+                <X className="h-5 w-5" />
+              </DialogClose>
+            </div>
 
-      <div className="relative flex-1 overflow-hidden">
-        <video ref={videoRef} muted playsInline className="h-full w-full object-cover" />
-        <canvas ref={canvasRef} className="hidden" />
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="h-56 w-56 rounded-2xl border-4 border-white/80" />
-        </div>
-      </div>
+            <div className="relative flex-1 overflow-hidden">
+              <video ref={videoRef} muted playsInline className="h-full w-full object-cover" />
+              <canvas ref={canvasRef} className="hidden" />
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="h-56 w-56 rounded-2xl border-4 border-white/80" />
+              </div>
+            </div>
 
-      {(status === "permission-denied" || status === "no-camera") && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/90 p-6 text-center">
-          <p className="text-white">
-            {status === "permission-denied" ? t("cameraPermissionDenied") : t("noCameraFound")}
-          </p>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="rounded-xl bg-white px-6 py-3 font-bold text-black"
-          >
-            {t("closeScanner")}
-          </button>
-        </div>
-      )}
+            {(status === "permission-denied" || status === "no-camera") && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/90 p-6 text-center">
+                <DialogDescription className="text-white">
+                  {status === "permission-denied" ? t("cameraPermissionDenied") : t("noCameraFound")}
+                </DialogDescription>
+                <DialogClose className="rounded-xl bg-white px-6 py-3 font-bold text-black">
+                  {t("closeScanner")}
+                </DialogClose>
+              </div>
+            )}
 
-      {status === "not-a-table-code" && (
-        <div className="absolute inset-x-0 bottom-24 flex justify-center">
-          <span className="rounded-full bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground">
-            {t("notATableCode")}
-          </span>
-        </div>
-      )}
-    </div>
+            {status === "not-a-table-code" && (
+              <div
+                role="status"
+                className="absolute inset-x-0 bottom-24 flex justify-center"
+              >
+                <span className="rounded-full bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground">
+                  {t("notATableCode")}
+                </span>
+              </div>
+            )}
+          </DialogPopup>
+        </DialogViewport>
+      </DialogPortal>
+    </DialogRoot>
   )
 }

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl"
 import { X } from "lucide-react"
 import { BottomSheet } from "@/components/motion/bottom-sheet"
 import { Button } from "@/components/ui/button"
+import { DialogClose, DialogTitle } from "@/components/ui/dialog"
 import { useShift } from "@/hooks/useShift"
 
 type Props = {
@@ -14,6 +15,7 @@ type Props = {
 
 export function ShiftControlsDialog({ mode, onClose }: Props) {
   const t = useTranslations("KitchenDisplay")
+  const tDialog = useTranslations("Dialog")
   const { openShift, closeShift } = useShift()
   const [startingCash, setStartingCash] = useState("")
   const [plannedStart, setPlannedStart] = useState("")
@@ -60,12 +62,15 @@ export function ShiftControlsDialog({ mode, onClose }: Props) {
   return (
     <BottomSheet onClose={onClose}>
       <div className="flex items-center justify-between border-b p-4">
-        <h2 className="font-extrabold text-card-foreground">
+        <DialogTitle className="text-base font-extrabold text-card-foreground">
           {mode === "open" ? t("openShiftButton") : t("closeShiftButton")}
-        </h2>
-        <button type="button" onClick={onClose} className="rounded-full p-1 text-muted-foreground">
+        </DialogTitle>
+        <DialogClose
+          aria-label={tDialog("close")}
+          className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground"
+        >
           <X className="h-5 w-5" />
-        </button>
+        </DialogClose>
       </div>
 
       <div className="flex flex-col gap-3 p-4">

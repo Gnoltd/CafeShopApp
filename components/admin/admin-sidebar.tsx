@@ -19,6 +19,7 @@ import {
 import { Link, usePathname } from "@/i18n/navigation"
 import { cn } from "@/lib/utils"
 import { SideDrawer } from "@/components/motion/side-drawer"
+import { DialogTitle } from "@/components/ui/dialog"
 
 const NAV_ITEMS = [
   { href: "/admin/dashboard", labelKey: "dashboard", icon: LayoutDashboard },
@@ -97,6 +98,8 @@ function AdminNavContent({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export function AdminSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const tDialog = useTranslations("Dialog")
+
   return (
     <>
       <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto border-r bg-card py-4 md:flex">
@@ -105,6 +108,10 @@ export function AdminSidebar({ open, onClose }: { open: boolean; onClose: () => 
       <AnimatePresence>
         {open && (
           <SideDrawer key="admin-side-drawer" onClose={onClose}>
+            {/* The drawer is a modal dialog and needs an accessible name;
+                the visible chrome is the nav list itself, so the title is
+                screen-reader only rather than drawn. */}
+            <DialogTitle className="sr-only">{tDialog("navigation")}</DialogTitle>
             <div className="flex h-full flex-col overflow-y-auto py-4">
               <AdminNavContent onNavigate={onClose} />
             </div>

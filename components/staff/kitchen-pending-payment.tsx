@@ -1,9 +1,10 @@
 "use client"
 
-import { memo } from "react"
+import { memo, useState } from "react"
 import { useTranslations } from "next-intl"
 import { Banknote } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ConfirmDialog } from "@/components/ui/dialog"
 import { formatOrderId } from "@/lib/format"
 import type { KdsOrder } from "@/hooks/useKitchenOrders"
 
@@ -18,6 +19,9 @@ function KitchenPendingPaymentComponent({
   onConfirm: (orderId: string) => Promise<void>
 }) {
   const t = useTranslations("KitchenDisplay")
+  // Confirming cash marks the order paid with no staff-facing undo on this
+  // surface, so the tap only stages the order and the dialog commits it.
+  const [orderPendingConfirm, setOrderPendingConfirm] = useState<KdsOrder | null>(null)
 
   return (
     <div className="nb-border-sm shrink-0 rounded-xl border-amber-500 bg-amber-50 p-3 dark:bg-amber-950/20">
@@ -32,12 +36,27 @@ function KitchenPendingPaymentComponent({
             <span className="text-muted-foreground">
               {order.orderType === "pickup" ? t("pickup") : t("table", { table: order.table ?? "" })}
             </span>
-            <Button variant="neubrutal" onClick={() => onConfirm(order.id)}>
+            <Button variant="neubrutal" onClick={() => setOrderPendingConfirm(order)}>
               {t("confirmCashReceived")}
             </Button>
           </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={orderPendingConfirm !== null}
+        onOpenChange={(open) => {
+          if (!open) setOrderPendingConfirm(null)
+        }}
+        title={t("confirmCashTitle")}
+        description={t("confirmCashBody", {
+          order: orderPendingConfirm ? formatOrderId(orderPendingConfirm.id) : "",
+        })}
+        confirmLabel={t("confirmCashReceived")}
+        onConfirm={async () => {
+          if (orderPendingConfirm) await onConfirm(orderPendingConfirm.id)
+        }}
+      />
     </div>
   )
 }

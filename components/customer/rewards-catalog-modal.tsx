@@ -9,6 +9,7 @@ import { formatNumber, formatOrderId } from "@/lib/format"
 import { createClient } from "@/lib/supabase/client"
 import { getRewardsCatalog, redeemReward, type Reward } from "@/lib/supabase/rewards-data"
 import { BottomSheet } from "@/components/motion/bottom-sheet"
+import { DialogClose, DialogTitle } from "@/components/ui/dialog"
 
 /**
  * Rewards catalog + redemption modal, opened from the Loyalty page's
@@ -72,16 +73,16 @@ export function RewardsCatalogModal({
       <div className="nb-border border-x-0 border-t-0 flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-2">
           <Gift className="h-5 w-5 text-primary" />
-          <h2 className="font-bold text-card-foreground">{t("rewardsCatalogTitle")}</h2>
+          <DialogTitle className="text-base font-bold text-card-foreground">
+            {t("rewardsCatalogTitle")}
+          </DialogTitle>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="nb-border-sm nb-press-sm flex h-10 w-10 items-center justify-center rounded-full bg-card text-muted-foreground"
+        <DialogClose
+          className="nb-border-sm nb-press-sm flex h-11 w-11 items-center justify-center rounded-full bg-card text-muted-foreground"
           aria-label={tMenu("close")}
         >
           <X className="h-5 w-5" />
-        </button>
+        </DialogClose>
       </div>
 
       {successName ? (

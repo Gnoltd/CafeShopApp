@@ -3,6 +3,7 @@
 import { memo, useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import { Bell, CircleCheck, Sparkles, User, Utensils, Wallet } from "lucide-react"
+import { ConfirmDialog } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { useTables } from "@/hooks/useTables"
 import { useKitchenOrders } from "@/hooks/useKitchenOrders"
@@ -27,6 +28,11 @@ function KitchenTablesColumnComponent({ active }: { active: boolean }) {
     undoCashPayment,
   } = useKitchenOrders()
   const [error, setError] = useState<string | null>(null)
+  // Same reasoning as the pending-payment strip: confirming cash settles the
+  // table's whole tab with no undo here, so it goes through a confirmation.
+  const [tablePendingCashConfirm, setTablePendingCashConfirm] = useState<{ id: string; number: string } | null>(
+    null
+  )
 
   return (
     <section
@@ -150,10 +156,9 @@ function KitchenTablesColumnComponent({ active }: { active: boolean }) {
                 {awaitingPaymentMethod === "cash" && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setError(null)
-                      confirmTableCashPayment(table.id).catch(() => setError(t("updateError")))
-                    }}
+                    onClick={() =>
+                      setTablePendingCashConfirm({ id: table.id, number: table.number })
+                    }
                     className="nb-border-sm nb-shadow-sm nb-press-sm min-h-10 rounded-lg bg-secondary px-3 py-2 text-xs font-extrabold text-secondary-foreground"
                   >
                     {t("confirmCashReceived")}
@@ -164,6 +169,25 @@ function KitchenTablesColumnComponent({ active }: { active: boolean }) {
           )
         })}
       </div>
+
+      <ConfirmDialog
+        open={tablePendingCashConfirm !== null}
+        onOpenChange={(open) => {
+          if (!open) setTablePendingCashConfirm(null)
+        }}
+        title={t("confirmCashTitle")}
+        description={t("confirmTableCashBody", { table: tablePendingCashConfirm?.number ?? "" })}
+        confirmLabel={t("confirmCashReceived")}
+        onConfirm={async () => {
+          if (!tablePendingCashConfirm) return
+          setError(null)
+          try {
+            await confirmTableCashPayment(tablePendingCashConfirm.id)
+          } catch {
+            setError(t("updateError"))
+          }
+        }}
+      />
     </section>
   )
 }

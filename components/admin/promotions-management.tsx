@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
 import { Plus, Pencil, Trash2, Ticket } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ConfirmDialog, FormDialog } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { formatVND } from "@/lib/format"
@@ -67,105 +68,103 @@ function PromotionForm({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="nb-border nb-shadow flex max-h-[90vh] w-full max-w-lg flex-col overflow-y-auto rounded-xl bg-card p-6">
-        <h2 className="mb-4 text-lg font-bold text-card-foreground">
-          {initial ? t("edit") : t("addPromotion")}
-        </h2>
-        {error && <p className="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
-
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">{t("codeLabel")}</label>
-            <Input value={code} onChange={(e) => setCode(e.target.value)} className="h-10 uppercase" />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">{t("discountTypeLabel")}</label>
-            <div className="flex gap-2">
-              {(["percent", "fixed"] as const).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setDiscountType(type)}
-                  className={cn(
-                    "nb-border-sm flex-1 rounded-lg px-3 py-2 text-sm font-bold",
-                    discountType === type ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
-                  )}
-                >
-                  {type === "percent" ? t("discountTypePercent") : t("discountTypeFixed")}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              {t("discountValueLabel")} ({discountType === "percent" ? t("discountValuePercentSuffix") : t("discountValueFixedSuffix")})
-            </label>
-            <Input type="number" min={0} value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} className="h-10" />
-          </div>
-
-          <div className="flex items-center justify-between rounded-lg border bg-muted/40 p-3">
-            <span className="text-sm font-medium text-card-foreground">{t("activeToggle")}</span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={active}
-              onClick={() => setActive((prev) => !prev)}
-              className={cn("relative h-6 w-11 rounded-full transition-colors", active ? "bg-primary" : "bg-muted-foreground/30")}
-            >
-              <span
-                className={cn(
-                  "absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform",
-                  active ? "translate-x-5" : "translate-x-0"
-                )}
-              />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">{t("startsAtLabel")}</label>
-              <input
-                type="datetime-local"
-                value={startsAt}
-                onChange={(e) => setStartsAt(e.target.value)}
-                className="nb-border-sm h-10 w-full rounded-lg bg-card px-3 text-sm text-card-foreground"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">{t("endsAtLabel")}</label>
-              <input
-                type="datetime-local"
-                value={endsAt}
-                onChange={(e) => setEndsAt(e.target.value)}
-                className="nb-border-sm h-10 w-full rounded-lg bg-card px-3 text-sm text-card-foreground"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">{t("maxRedemptionsLabel")}</label>
-            <Input type="number" min={0} value={maxRedemptions} onChange={(e) => setMaxRedemptions(e.target.value)} className="h-10" />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">{t("minSubtotalLabel")}</label>
-            <Input type="number" min={0} value={minSubtotal} onChange={(e) => setMinSubtotal(e.target.value)} className="h-10" />
-          </div>
-        </div>
-
-        <div className="mt-5 flex justify-end gap-2">
+    <FormDialog
+      onClose={onCancel}
+      size="lg"
+      title={initial ? t("edit") : t("addPromotion")}
+      footer={
+        <>
           <Button variant="neubrutal" className="bg-card text-foreground" onClick={onCancel}>
             {t("cancel")}
           </Button>
           <Button variant="neubrutal" onClick={handleSave}>
             {t("save")}
           </Button>
+        </>
+      }
+    >
+      {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-muted-foreground">{t("codeLabel")}</label>
+        <Input value={code} onChange={(e) => setCode(e.target.value)} className="h-10 uppercase" />
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-muted-foreground">{t("discountTypeLabel")}</label>
+        <div className="flex gap-2">
+          {(["percent", "fixed"] as const).map((type) => (
+            <button
+              key={type}
+              type="button"
+              onClick={() => setDiscountType(type)}
+              className={cn(
+                "nb-border-sm flex-1 rounded-lg px-3 py-2 text-sm font-bold",
+                discountType === type ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
+              )}
+            >
+              {type === "percent" ? t("discountTypePercent") : t("discountTypeFixed")}
+            </button>
+          ))}
         </div>
       </div>
-    </div>
+
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-muted-foreground">
+          {t("discountValueLabel")} ({discountType === "percent" ? t("discountValuePercentSuffix") : t("discountValueFixedSuffix")})
+        </label>
+        <Input type="number" min={0} value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} className="h-10" />
+      </div>
+
+      <div className="flex items-center justify-between rounded-lg border bg-muted/40 p-3">
+        <span className="text-sm font-medium text-card-foreground">{t("activeToggle")}</span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={active}
+          onClick={() => setActive((prev) => !prev)}
+          className={cn("relative h-6 w-11 rounded-full transition-colors", active ? "bg-primary" : "bg-muted-foreground/30")}
+        >
+          <span
+            className={cn(
+              "absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform",
+              active ? "translate-x-5" : "translate-x-0"
+            )}
+          />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-muted-foreground">{t("startsAtLabel")}</label>
+          <input
+            type="datetime-local"
+            value={startsAt}
+            onChange={(e) => setStartsAt(e.target.value)}
+            className="nb-border-sm h-10 w-full rounded-lg bg-card px-3 text-sm text-card-foreground"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-muted-foreground">{t("endsAtLabel")}</label>
+          <input
+            type="datetime-local"
+            value={endsAt}
+            onChange={(e) => setEndsAt(e.target.value)}
+            className="nb-border-sm h-10 w-full rounded-lg bg-card px-3 text-sm text-card-foreground"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-muted-foreground">{t("maxRedemptionsLabel")}</label>
+        <Input type="number" min={0} value={maxRedemptions} onChange={(e) => setMaxRedemptions(e.target.value)} className="h-10" />
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-muted-foreground">{t("minSubtotalLabel")}</label>
+        <Input type="number" min={0} value={minSubtotal} onChange={(e) => setMinSubtotal(e.target.value)} className="h-10" />
+      </div>
+    </FormDialog>
   )
 }
 
@@ -176,6 +175,7 @@ export function PromotionsManagement() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [formMode, setFormMode] = useState<FormMode>(null)
+  const [promotionPendingDelete, setPromotionPendingDelete] = useState<Promotion | null>(null)
 
   useEffect(() => {
     getPromotions(supabase)
@@ -202,7 +202,6 @@ export function PromotionsManagement() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t("deleteConfirm"))) return
     setError(null)
     try {
       await deletePromotion(supabase, id)
@@ -226,6 +225,20 @@ export function PromotionsManagement() {
       </div>
 
       {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+
+      <ConfirmDialog
+        open={promotionPendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setPromotionPendingDelete(null)
+        }}
+        destructive
+        title={t("deleteConfirmTitle")}
+        description={t("deleteConfirmBody", { code: promotionPendingDelete?.code ?? "" })}
+        confirmLabel={t("delete")}
+        onConfirm={async () => {
+          if (promotionPendingDelete) await handleDelete(promotionPendingDelete.id)
+        }}
+      />
 
       {formMode && (
         <PromotionForm
@@ -277,7 +290,7 @@ export function PromotionsManagement() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleDelete(promo.id)}
+                  onClick={() => setPromotionPendingDelete(promo)}
                   aria-label={t("delete")}
                   title={t("delete")}
                   className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"

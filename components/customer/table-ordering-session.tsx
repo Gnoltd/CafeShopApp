@@ -3,6 +3,15 @@
 import { useState } from "react"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
+import {
+  DialogBackdrop,
+  DialogDescription,
+  DialogPopup,
+  DialogPortal,
+  DialogRoot,
+  DialogTitle,
+  DialogViewport,
+} from "@/components/ui/dialog"
 import { MenuBrowser } from "@/components/customer/menu-browser"
 import { TableCartPanel } from "@/components/customer/table-cart-panel"
 import { CheckBillSheet } from "@/components/customer/check-bill-sheet"
@@ -102,20 +111,36 @@ export function TableOrderingSession({
       )}
 
       {session.showIdlePrompt && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
-          <div className="nb-border nb-shadow w-full max-w-sm rounded-t-2xl bg-card p-6 sm:rounded-2xl">
-            <h2 className="mb-2 text-lg font-bold text-card-foreground">{t("idlePromptTitle")}</h2>
-            <p className="mb-4 text-sm text-muted-foreground">{t("idlePromptBody")}</p>
-            <div className="flex flex-col gap-2">
-              <Button variant="neubrutal" className="h-11 w-full" onClick={session.confirmStillHere}>
-                {t("idlePromptYes")}
-              </Button>
-              <Button variant="ghost" className="h-11 w-full" onClick={session.dismissAndAbandon}>
-                {t("idlePromptNo")}
-              </Button>
-            </div>
-          </div>
-        </div>
+        <DialogRoot
+          open
+          onOpenChange={(nextOpen) => {
+            // "Are you still here?" is a question that has to be answered —
+            // dismissing it by Escape/backdrop would leave the session in the
+            // same idle limbo that raised it, so only the two buttons resolve
+            // it. (`disablePointerDismissal` covers the backdrop; the no-op
+            // handler covers Escape.)
+            if (!nextOpen) return
+          }}
+          disablePointerDismissal
+        >
+          <DialogPortal>
+            <DialogBackdrop />
+            <DialogViewport align="sheet">
+              <DialogPopup variant="sheet" size="sm" className="nb-shadow p-6">
+                <DialogTitle className="mb-2">{t("idlePromptTitle")}</DialogTitle>
+                <DialogDescription className="mb-4">{t("idlePromptBody")}</DialogDescription>
+                <div className="flex flex-col gap-2">
+                  <Button variant="neubrutal" className="h-11 w-full" onClick={session.confirmStillHere}>
+                    {t("idlePromptYes")}
+                  </Button>
+                  <Button variant="ghost" className="h-11 w-full" onClick={session.dismissAndAbandon}>
+                    {t("idlePromptNo")}
+                  </Button>
+                </div>
+              </DialogPopup>
+            </DialogViewport>
+          </DialogPortal>
+        </DialogRoot>
       )}
 
       {isCheckBillOpen && (

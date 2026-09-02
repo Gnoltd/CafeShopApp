@@ -6,6 +6,13 @@
   "Theme": {
     "toggleLabel": "Toggle light/dark theme"
   },
+  "Dialog": {
+    "close": "Close",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "working": "Working…",
+    "navigation": "Navigation"
+  },
   "Nav": {
     "menu": "Menu",
     "cart": "Cart",
@@ -511,7 +518,10 @@
     "plannedStartLabel": "Planned start time (optional)",
     "plannedEndLabel": "Planned end time (optional)",
     "countedCashLabel": "Counted cash in drawer (VND)",
-    "notesLabel": "Note (optional)"
+    "notesLabel": "Note (optional)",
+    "confirmCashTitle": "Confirm cash received?",
+    "confirmCashBody": "Order #{order} will be marked paid in cash. Only confirm once you have the money in hand.",
+    "confirmTableCashBody": "Table {table}’s unpaid orders will all be marked paid in cash. Only confirm once you have the money in hand."
   },
   "MyRedemptions": {
     "title": "My Rewards",
@@ -702,12 +712,13 @@
     "cancel": "Cancel",
     "edit": "Edit",
     "delete": "Delete",
-    "deleteConfirm": "Delete this promotion? This can't be undone.",
     "requiredFieldsError": "Code and a positive discount value are required.",
     "saveError": "Couldn't save the promotion — please try again.",
     "loadError": "Couldn't load promotions — please try again.",
     "loading": "Loading…",
-    "emptyState": "No promotions yet."
+    "emptyState": "No promotions yet.",
+    "deleteConfirmTitle": "Delete this promotion?",
+    "deleteConfirmBody": "Promo code “{code}” will stop working immediately. This can’t be undone."
   },
   "AdminMenu": {
     "title": "Manage Menu",
@@ -781,7 +792,9 @@
     "deleteError": "Failed to delete item. Try again.",
     "showingItems": "Showing {start}-{end} of {total} items",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "deleteConfirmTitle": "Delete this item?",
+    "deleteConfirmBody": "“{name}” will be removed from the menu along with its sizes, extras and recipe links. This can’t be undone."
   },
   "AdminInventory": {
     "title": "Inventory",
@@ -834,7 +847,9 @@
     "ingredientSaveError": "Failed to save ingredient. Try again.",
     "edit": "Edit",
     "cancel": "Cancel",
-    "save": "Save"
+    "save": "Save",
+    "markOutOfStockConfirmTitle": "Mark as out of stock?",
+    "markOutOfStockConfirmBody": "“{name}” will be set to zero stock, and every menu item using it becomes unavailable. This can’t be undone."
   },
   "AdminTables": {
     "title": "Tables",
@@ -859,7 +874,9 @@
     "tableNumberLabel": "Table Number",
     "tableNumberRequiredError": "Enter a table number.",
     "tableNumberTakenError": "That table number is already taken.",
-    "updateError": "Failed to update table. Try again."
+    "updateError": "Failed to update table. Try again.",
+    "regenerateConfirmTitle": "Regenerate this QR code?",
+    "regenerateConfirmBody": "Any printed QR code for table {table} will stop working the moment you regenerate. Guests scanning the old code get an error until you print and place the new one."
   },
   "AdminStaff": {
     "title": "Staff Accounts",
