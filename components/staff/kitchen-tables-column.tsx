@@ -1,13 +1,19 @@
 "use client"
 
-import { useState } from "react"
+import { memo, useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import { Bell, CircleCheck, Sparkles, User, Utensils, Wallet } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTables } from "@/hooks/useTables"
 import { useKitchenOrders } from "@/hooks/useKitchenOrders"
 
-export function KitchenTablesColumn({ active }: { active: boolean }) {
+// Memoized: its only prop (`active`) rarely changes, so this skips
+// re-rendering when the sibling order columns re-render on the KDS board's
+// once-a-second `now` tick -- this component doesn't show elapsed time and
+// has no dependency on `now` at all. Its own data (tables/orders) still
+// comes from hooks inside it, so a real Realtime update still re-renders it
+// normally; memo only blocks re-renders caused by an unrelated parent prop.
+function KitchenTablesColumnComponent({ active }: { active: boolean }) {
   const locale = useLocale()
   const t = useTranslations("KitchenDisplay")
   const { tables, setStatus } = useTables()
@@ -161,3 +167,5 @@ export function KitchenTablesColumn({ active }: { active: boolean }) {
     </section>
   )
 }
+
+export const KitchenTablesColumn = memo(KitchenTablesColumnComponent)

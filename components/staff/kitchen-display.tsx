@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
 import { KitchenStatsFooter } from "@/components/staff/kitchen-stats-footer"
 import { KitchenBoard } from "@/components/staff/kitchen-board"
@@ -19,15 +19,24 @@ export function KitchenDisplay() {
     return () => clearInterval(interval)
   }, [])
 
-  function handleAdvanceItem(orderId: string, itemId: string) {
-    setError(null)
-    advanceItem(orderId, itemId).catch(() => setError(t("updateError")))
-  }
+  // Stable references so KitchenPendingPayment/KitchenTablesColumn (memoized
+  // below and in their own files) can actually skip re-rendering on the
+  // once-a-second `now` tick, instead of getting a fresh closure every time.
+  const handleAdvanceItem = useCallback(
+    (orderId: string, itemId: string) => {
+      setError(null)
+      advanceItem(orderId, itemId).catch(() => setError(t("updateError")))
+    },
+    [advanceItem, t]
+  )
 
-  function handleConfirmCashPayment(orderId: string) {
-    setError(null)
-    return confirmCashPayment(orderId).catch(() => setError(t("updateError")))
-  }
+  const handleConfirmCashPayment = useCallback(
+    (orderId: string) => {
+      setError(null)
+      return confirmCashPayment(orderId).catch(() => setError(t("updateError")))
+    },
+    [confirmCashPayment, t]
+  )
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-hidden p-3">

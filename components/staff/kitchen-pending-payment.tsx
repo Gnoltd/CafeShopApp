@@ -1,12 +1,16 @@
 "use client"
 
+import { memo } from "react"
 import { useTranslations } from "next-intl"
 import { Banknote } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatOrderId } from "@/lib/format"
 import type { KdsOrder } from "@/hooks/useKitchenOrders"
 
-export function KitchenPendingPayment({
+// Memoized: doesn't depend on the KDS board's once-a-second `now` tick, so
+// this should skip re-rendering on every tick as long as its parent passes
+// stable `orders`/`onConfirm` references (see kitchen-display.tsx).
+function KitchenPendingPaymentComponent({
   orders,
   onConfirm,
 }: {
@@ -37,3 +41,5 @@ export function KitchenPendingPayment({
     </div>
   )
 }
+
+export const KitchenPendingPayment = memo(KitchenPendingPaymentComponent)
