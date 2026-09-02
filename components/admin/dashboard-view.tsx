@@ -20,7 +20,6 @@ import { cn } from "@/lib/utils"
 import { useInventory, type IngredientIcon } from "@/hooks/useInventory"
 import { useTables } from "@/hooks/useTables"
 import { useDashboardStats } from "@/hooks/useDashboardStats"
-import { exportDashboardExcel } from "@/lib/export-dashboard-excel"
 
 const INGREDIENT_ICONS: Record<IngredientIcon, typeof Coffee> = {
   coffee: Coffee,
@@ -51,14 +50,15 @@ export function DashboardView({ locale }: { locale: string }) {
         <Button
           variant="outline"
           className="h-10 gap-2"
-          onClick={() =>
+          onClick={async () => {
+            const { exportDashboardExcel } = await import("@/lib/export-dashboard-excel")
             exportDashboardExcel({
               stats,
               lowStock,
               tableCounts: { available: availableCount, occupied: occupiedCount, cleaning: cleaningCount },
               locale,
             })
-          }
+          }}
         >
           <FileSpreadsheet className="h-4 w-4" />
           {t("exportExcel")}
