@@ -316,6 +316,7 @@ export function MenuItemForm({
       onClose={onCancel}
       size="xl"
       title={isEditing ? t("editItemTitle") : t("addItem")}
+      isBusy={isUploading}
       footer={
         <>
           <Button variant="neubrutal" className="bg-card text-foreground" onClick={onCancel}>

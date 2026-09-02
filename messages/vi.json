@@ -11,7 +11,8 @@
     "cancel": "Hủy",
     "confirm": "Xác nhận",
     "working": "Đang xử lý…",
-    "navigation": "Điều hướng"
+    "navigation": "Điều hướng",
+    "error": "Đã xảy ra lỗi. Vui lòng thử lại."
   },
   "Nav": {
     "menu": "Thực Đơn",

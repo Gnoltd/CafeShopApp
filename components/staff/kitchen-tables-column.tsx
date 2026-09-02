@@ -183,8 +183,11 @@ function KitchenTablesColumnComponent({ active }: { active: boolean }) {
           setError(null)
           try {
             await confirmTableCashPayment(tablePendingCashConfirm.id)
-          } catch {
+          } catch (err) {
             setError(t("updateError"))
+            // Rethrow so ConfirmDialog's own catch keeps the dialog open
+            // and shows the failure, instead of closing as if it worked.
+            throw err
           }
         }}
       />

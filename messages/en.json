@@ -11,7 +11,8 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "working": "Working…",
-    "navigation": "Navigation"
+    "navigation": "Navigation",
+    "error": "Something went wrong. Please try again."
   },
   "Nav": {
     "menu": "Menu",

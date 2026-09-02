@@ -27,6 +27,7 @@ export function StockAdjustForm({
   const [amount, setAmount] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isConfirmingOutOfStock, setIsConfirmingOutOfStock] = useState(false)
+  const [isMarkingOutOfStock, setIsMarkingOutOfStock] = useState(false)
 
   const name = locale === "vi" ? ingredient.nameVi : ingredient.nameEn
   const parsedAmount = Number(amount)
@@ -54,6 +55,7 @@ export function StockAdjustForm({
     <FormDialog
       onClose={onClose}
       title={t("adjustStockTitle")}
+      isBusy={isMarkingOutOfStock}
       footer={
         <Button variant="neubrutal" className="bg-card text-foreground" onClick={onClose}>
           {t("close")}
@@ -120,8 +122,13 @@ export function StockAdjustForm({
         description={t("markOutOfStockConfirmBody", { name })}
         confirmLabel={t("markOutOfStock")}
         onConfirm={async () => {
-          await onMarkOutOfStock()
-          onClose()
+          setIsMarkingOutOfStock(true)
+          try {
+            await onMarkOutOfStock()
+            onClose()
+          } finally {
+            setIsMarkingOutOfStock(false)
+          }
         }}
       />
     </FormDialog>

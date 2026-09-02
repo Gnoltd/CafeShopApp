@@ -76,6 +76,7 @@ export function IngredientForm({
       onClose={onCancel}
       size="md"
       title={isEditing ? t("editIngredientTitle") : t("addIngredientTitle")}
+      isBusy={isSaving}
       footer={
         <>
           <Button variant="neubrutal" className="bg-card text-foreground" onClick={onCancel}>

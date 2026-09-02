@@ -40,6 +40,7 @@ export function TableForm({
     <FormDialog
       onClose={onCancel}
       title={t("addTable")}
+      isBusy={isSaving}
       footer={
         <>
           <Button variant="neubrutal" className="bg-card text-foreground" onClick={onCancel}>

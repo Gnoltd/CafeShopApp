@@ -109,8 +109,12 @@ export function MenuManagement({
     try {
       await deleteMenuItem(supabase, id)
       setItems((prev) => prev.filter((item) => item.id !== id))
-    } catch {
+    } catch (err) {
       setError(t("deleteError"))
+      // Rethrow so the ConfirmDialog that invoked this can catch it too —
+      // it must keep the dialog open and show the failure in place, rather
+      // than resolving as if the delete had succeeded.
+      throw err
     }
   }
 

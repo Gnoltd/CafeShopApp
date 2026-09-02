@@ -35,7 +35,7 @@ function PromotionForm({
 }: {
   initial?: Promotion
   onCancel: () => void
-  onSave: (input: PromotionInput) => void
+  onSave: (input: PromotionInput) => void | Promise<void>
 }) {
   const t = useTranslations("AdminPromotions")
   const [code, setCode] = useState(initial?.code ?? "")
@@ -47,6 +47,7 @@ function PromotionForm({
   const [maxRedemptions, setMaxRedemptions] = useState(initial?.maxRedemptions ? String(initial.maxRedemptions) : "")
   const [minSubtotal, setMinSubtotal] = useState(initial?.minSubtotalVnd ? String(initial.minSubtotalVnd) : "")
   const [error, setError] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
 
   function handleSave() {
     const parsedValue = Number(discountValue)
@@ -55,7 +56,12 @@ function PromotionForm({
       return
     }
     setError(null)
-    onSave({
+    setIsSaving(true)
+    // onSave (the parent's handleSave) already catches its own errors and
+    // sets a page-level error banner rather than rejecting — so this only
+    // needs to track "is the write still outstanding" for FormDialog's
+    // Escape/backdrop guard, not branch on success/failure itself.
+    Promise.resolve(onSave({
       code: code.trim().toUpperCase(),
       discountType,
       discountValue: parsedValue,
@@ -64,7 +70,7 @@ function PromotionForm({
       endsAt: endsAt ? new Date(endsAt).getTime() : null,
       maxRedemptions: maxRedemptions ? Number(maxRedemptions) : null,
       minSubtotalVnd: minSubtotal ? Number(minSubtotal) : null,
-    })
+    })).finally(() => setIsSaving(false))
   }
 
   return (
@@ -72,12 +78,13 @@ function PromotionForm({
       onClose={onCancel}
       size="lg"
       title={initial ? t("edit") : t("addPromotion")}
+      isBusy={isSaving}
       footer={
         <>
           <Button variant="neubrutal" className="bg-card text-foreground" onClick={onCancel}>
             {t("cancel")}
           </Button>
-          <Button variant="neubrutal" onClick={handleSave}>
+          <Button variant="neubrutal" onClick={handleSave} disabled={isSaving}>
             {t("save")}
           </Button>
         </>
@@ -206,8 +213,11 @@ export function PromotionsManagement() {
     try {
       await deletePromotion(supabase, id)
       setPromotions((prev) => prev.filter((p) => p.id !== id))
-    } catch {
+    } catch (err) {
       setError(t("saveError"))
+      // Rethrow so the ConfirmDialog that invoked this catches it too and
+      // keeps itself open instead of closing as if the delete had worked.
+      throw err
     }
   }
 

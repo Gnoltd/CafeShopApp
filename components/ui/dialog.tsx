@@ -14,13 +14,32 @@ import { cn } from "@/lib/utils"
  *
  * It is a thin styled wrapper over `@base-ui/react/dialog`, which already
  * implements — correctly, and better than anything hand-rolled here would —
- * focus trap, focus restore on close/unmount, Escape-to-close,
- * outside-press dismissal, `role="dialog"` + `aria-modal`, `aria-labelledby`
- * wiring from `Dialog.Title`, `aria-describedby` from `Dialog.Description`,
- * scroll locking, and `inert` + `aria-hidden` on all background content
- * (`floating-ui-react/utils/markOthers`). Nothing in this file re-implements
- * any of that: if a behaviour is missing, the fix belongs in how we call the
- * primitive, never in bespoke focus/inert bookkeeping.
+ * focus trap, focus restore on close/unmount, Escape-to-close, outside-press
+ * dismissal, `role="dialog"`, `aria-labelledby` wiring from `Dialog.Title`,
+ * `aria-describedby` from `Dialog.Description`, and scroll locking. Nothing
+ * in this file re-implements any of that: if a behaviour is missing, the fix
+ * belongs in how we call the primitive, never in bespoke focus bookkeeping.
+ *
+ * Two things worth being precise about, checked directly against the
+ * installed library source rather than assumed:
+ *
+ * - **Background isolation is `aria-hidden`, not `inert`.**
+ *   `FloatingFocusManager` calls `markOthers(insideElements, { ariaHidden:
+ *   modal, mark: false })` — `mark: false` means the `inert` attribute is
+ *   never actually set (`markOthers.js`'s `controlAttribute` branch is
+ *   dead in this call). Outside content gets `aria-hidden="true"` only.
+ *   Pointer-event isolation for a modal dialog comes from a *separate*
+ *   `InternalBackdrop` element `DialogPortal` renders behind the popup, not
+ *   from making background content `inert`. The practical accessibility
+ *   result is equivalent (screen readers skip it, clicks can't reach it),
+ *   just via two different mechanisms than `inert`.
+ * - **`aria-modal` is not set by the primitive at all** — grep the
+ *   installed package and the only `aria-modal` in it is in
+ *   `toast/root/ToastRoot.js`, unrelated to Dialog. `DialogPopup` below
+ *   sets `aria-modal="true"` itself so every dialog in this app (all of
+ *   which use the library's default `modal: true`) actually carries the
+ *   attribute assistive tech looks for, rather than relying only on the
+ *   `aria-hidden`/focus-trap combination being equivalent by other means.
  *
  * Layout is split across three parts, mirroring the primitive:
  * `DialogBackdrop` paints the scrim, `DialogViewport` positions (it is the
@@ -121,6 +140,7 @@ function DialogPopup({
   return (
     <DialogPrimitive.Popup
       data-slot="dialog-popup"
+      aria-modal="true"
       className={cn(dialogPopupVariants({ variant, size }), className)}
       {...props}
     />
@@ -231,6 +251,7 @@ function FormDialog({
   footer,
   className,
   children,
+  isBusy = false,
 }: {
   open?: boolean
   onClose: () => void
@@ -240,11 +261,20 @@ function FormDialog({
   footer?: React.ReactNode
   className?: string
   children: React.ReactNode
+  /**
+   * Set while the caller has an async write in flight (saving, uploading,
+   * etc). Blocks Escape/backdrop/close-button dismissal, matching
+   * `ConfirmDialog`'s own pending guard — otherwise Escape mid-write
+   * unmounts the form while the write is still outstanding, losing any
+   * `saveError` the (now-gone) form would have shown.
+   */
+  isBusy?: boolean
 }) {
   return (
     <DialogRoot
       open={open}
       onOpenChange={(nextOpen) => {
+        if (isBusy && !nextOpen) return
         if (!nextOpen) onClose()
       }}
     >
@@ -252,7 +282,7 @@ function FormDialog({
         <DialogBackdrop />
         <DialogViewport align="center">
           <DialogPopup size={size} className={className}>
-            <DialogHeader title={title} description={description} />
+            <DialogHeader title={title} description={description} showClose={!isBusy} />
             <DialogBody>{children}</DialogBody>
             {footer ? <DialogFooter>{footer}</DialogFooter> : null}
           </DialogPopup>
@@ -279,6 +309,7 @@ function ConfirmDialog({
   confirmLabel,
   cancelLabel,
   pendingLabel,
+  errorLabel,
   destructive = false,
   onConfirm,
 }: {
@@ -289,17 +320,31 @@ function ConfirmDialog({
   confirmLabel?: React.ReactNode
   cancelLabel?: React.ReactNode
   pendingLabel?: React.ReactNode
+  /** Shown inline when `onConfirm` rejects. Defaults to `Dialog.error`. */
+  errorLabel?: React.ReactNode
   destructive?: boolean
   onConfirm: () => void | Promise<void>
 }) {
   const t = useTranslations("Dialog")
   const [isPending, setIsPending] = React.useState(false)
+  const [hasError, setHasError] = React.useState(false)
+
+  // Reset any stale error from a previous attempt whenever the dialog is
+  // (re-)opened for a new confirmation.
+  React.useEffect(() => {
+    if (open) setHasError(false)
+  }, [open])
 
   async function handleConfirm() {
     setIsPending(true)
+    setHasError(false)
     try {
       await onConfirm()
       onOpenChange(false)
+    } catch {
+      // Keep the dialog open and show the failure in place — the caller's
+      // mutation failed, so vanishing here would look like it succeeded.
+      setHasError(true)
     } finally {
       setIsPending(false)
     }
@@ -320,6 +365,13 @@ function ConfirmDialog({
         <DialogViewport align="center">
           <DialogPopup size="sm">
             <DialogHeader title={title} description={description} showClose={!isPending} />
+            {hasError && (
+              <div className="px-6 pb-4">
+                <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {errorLabel ?? t("error")}
+                </p>
+              </div>
+            )}
             <DialogFooter>
               <Button
                 variant="neubrutal"

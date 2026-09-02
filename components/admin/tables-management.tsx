@@ -312,8 +312,11 @@ export function TablesManagement() {
             if (updated.qrToken) {
               setTokensById((prev) => ({ ...prev, [id]: updated.qrToken! }))
             }
-          } catch {
+          } catch (err) {
             setError(t("updateError"))
+            // Rethrow so ConfirmDialog's own catch keeps the dialog open
+            // and shows the failure, instead of closing as if it worked.
+            throw err
           }
         }}
       />

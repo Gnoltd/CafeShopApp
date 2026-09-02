@@ -51,6 +51,7 @@ export function StaffMemberForm({
       onClose={onCancel}
       size="md"
       title={isEditing ? t("editStaffTitle") : t("addStaff")}
+      isBusy={isSaving}
       footer={
         <>
           <Button variant="neubrutal" className="bg-card text-foreground" onClick={onCancel}>

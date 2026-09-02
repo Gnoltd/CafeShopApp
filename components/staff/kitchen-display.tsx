@@ -33,7 +33,12 @@ export function KitchenDisplay() {
   const handleConfirmCashPayment = useCallback(
     (orderId: string) => {
       setError(null)
-      return confirmCashPayment(orderId).catch(() => setError(t("updateError")))
+      return confirmCashPayment(orderId).catch((err) => {
+        setError(t("updateError"))
+        // Rethrow so the ConfirmDialog in KitchenPendingPayment catches it
+        // too and keeps itself open instead of closing as if it worked.
+        throw err
+      })
     },
     [confirmCashPayment, t]
   )
