@@ -63,17 +63,17 @@ export function KitchenTablesColumn({ active }: { active: boolean }) {
             <div
               key={table.id}
               className={cn(
-                "nb-border-sm flex items-start justify-between gap-2 rounded-lg p-3",
+                "nb-border-sm flex flex-wrap items-start justify-between gap-2 rounded-lg p-3",
                 table.status === "available" && "bg-green-50 dark:bg-green-950/20",
                 table.status === "occupied" && "bg-red-50 dark:bg-red-950/20",
                 table.status === "cleaning" && "bg-amber-50 dark:bg-amber-950/20"
               )}
             >
-              <div>
-                <p className="font-bold text-card-foreground">{table.number}</p>
-                {location && <p className="text-xs text-muted-foreground">{location}</p>}
+              <div className="min-w-0">
+                <p className="break-words font-bold text-card-foreground">{table.number}</p>
+                {location && <p className="break-words text-xs text-muted-foreground">{location}</p>}
               </div>
-              <div className="flex shrink-0 flex-col items-end gap-1.5">
+              <div className="ml-auto flex shrink-0 flex-col items-end gap-1.5">
                 <button
                   type="button"
                   onClick={() => {
