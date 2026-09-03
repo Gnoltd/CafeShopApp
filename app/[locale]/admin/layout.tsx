@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
-import { headers } from "next/headers"
+import { createClient } from "@/lib/supabase/server"
+import { getCurrentRole } from "@/lib/get-current-role"
 import { ROLE_HOME, canAccessAdmin } from "@/lib/roles"
 import { AdminLayoutClient } from "@/components/admin/admin-layout-client"
 
@@ -17,10 +18,17 @@ export default async function AdminLayout({
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
-  // Resolved once in middleware.ts and reused here via a trusted, private
-  // request header -- see app/[locale]/layout.tsx's matching comment for
-  // why this can't be spoofed by a client.
-  const role = (await headers()).get("x-resolved-role") || null
+  // Deliberately NOT the x-resolved-role request header the rest of the
+  // app reads. That header is only trustworthy on a request middleware
+  // actually ran on -- and a matcher gap (or any future one) means "did
+  // middleware run here?" is exactly the question this gate must not have
+  // to answer. Resolving the role independently, server-side, is what
+  // makes the defense-in-depth claim above true rather than circular; the
+  // extra Auth + profiles round trip is the accepted cost on the two
+  // authorization gates specifically (the 5 display/data-only readers
+  // keep the header optimization).
+  const supabase = await createClient()
+  const role = await getCurrentRole(supabase)
 
   if (!canAccessAdmin(role)) {
     redirect(`/${locale}${role ? (ROLE_HOME[role] ?? "/menu") : "/login"}`)

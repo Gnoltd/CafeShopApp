@@ -162,8 +162,22 @@ export async function middleware(request: NextRequest) {
   return intlResponse
 }
 
+// The static-asset extension exclusion is deliberately anchored to a
+// SINGLE path segment (`[^/]+\.ext$`, not `.*\.ext$`). Every real static
+// file this app serves from public/ lives at the root (`/icon-192.png`,
+// `/favicon.ico`, `/manifest.webmanifest`, the five root .svg files), with
+// `/models/` (coffee-cup.glb) the one nested exception, excluded by name.
+//
+// Security-critical: the previous unanchored `.*\.(?:...)$` alternative
+// matched ANY path ending in one of those extensions -- including a real
+// app route whose dynamic segment happened to, e.g.
+// `/vi/staff/orders/history/abc.png`. Middleware never ran on such a
+// request, so nothing overwrote a client-supplied `X-Resolved-Role`
+// header and nothing applied resolveRedirect's role gate. Keep this
+// anchored; see lib/middleware-rules.test.ts's "middleware matcher"
+// suite, which asserts the literal below against both cases.
 export const config = {
   matcher: [
-    "/((?!api|_next|_vercel|favicon.ico|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest|glb)$).*)",
+    "/((?!api|_next|_vercel|models/|[^/]+\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest|glb)$).*)",
   ],
 }
