@@ -50,10 +50,10 @@
 - Settings accept tax in the business-approved range `0..100`, earning rate `> 0`, and redemption value `>= 0`; Postgres enforces the same checks.
 
 - [ ] Add `[functions.checkout-table-session] verify_jwt = false`; deploy with that checked-in posture and confirm an anonymous request reaches the handler rather than JWT rejection.
-- [ ] Persist `checkout_attempt_id` and `checkout_started_at` when locking a table session. Call `release_table_checkout` on every pre-redirect Stripe/VNPay failure; never let an old attempt clear a newer attempt or clear a successful attempt.
-- [ ] Narrow `shop_settings_update_admin` and `loyalty_settings_update_admin` RLS from `manager|admin` to `admin` in both `USING` and `WITH CHECK`, matching route/product rules.
-- [ ] Add idempotent Postgres constraints for tax and loyalty ranges, then mirror them in the Settings form with translated field-level errors.
-- [ ] Test missing gateway secrets, Stripe/VNPay timeout/error, mismatched attempt release, manager update denial, admin success, and invalid numeric values.
+- [x] Persist `checkout_attempt_id` and `checkout_started_at` when locking a table session. Call `release_table_checkout` on every pre-redirect Stripe/VNPay failure; never let an old attempt clear a newer attempt or clear a successful attempt.
+- [x] Narrow `shop_settings_update_admin` and `loyalty_settings_update_admin` RLS from `manager|admin` to `admin` in both `USING` and `WITH CHECK`, matching route/product rules.
+- [x] Add idempotent Postgres constraints for tax and loyalty ranges, then mirror them in the Settings form with translated field-level errors.
+- [x] Test missing gateway secrets, Stripe/VNPay timeout/error, mismatched attempt release, manager update denial, admin success, and invalid numeric values.
 - [ ] Verify live with a guest table session and manager/admin accounts; run Supabase security advisors afterward.
 
 ### Task 2: Eliminate duplicate/lost order and shared-cart actions (P0)
@@ -80,12 +80,12 @@
 - Stripe receives a stable `Idempotency-Key` derived from the stored submission/attempt id.
 - Shared-cart quantity changes use an atomic delta or optimistic version, not an absolute last-writer-wins value.
 
-- [ ] Generate and retain one submission id per checkout attempt; add a unique stored submission id and make `place_order` return the existing matching order on retry without double-counting promotions, inventory, loyalty, or payment sessions.
-- [ ] Apply the same stable-attempt/idempotency behavior to deferred `pay-order` and aggregate table checkout, including reuse of an already-created hosted session when safe.
-- [ ] Make first `table_sessions` creation atomic by locking the resolved table row before create/read (consistent lock order) or using a conflict-safe insert.
-- [ ] Replace absolute shared-cart increments with an atomic delta/versioned mutation; reject stale edits with a visible refetch/retry result.
-- [ ] Preserve size, modifiers, and notes in order mapping and Reorder. If a historic option no longer exists, route that item back through configuration instead of silently changing it.
-- [ ] Test simultaneous first adds, simultaneous increments from two clients, response timeout followed by retry, and reorder of sized/modified/noted items.
+- [x] Generate and retain one submission id per checkout attempt; add a unique stored submission id and make `place_order` return the existing matching order on retry without double-counting promotions, inventory, loyalty, or payment sessions.
+- [x] Apply the same stable-attempt/idempotency behavior to deferred `pay-order` and aggregate table checkout, including reuse of an already-created hosted session when safe.
+- [x] Make first `table_sessions` creation atomic by locking the resolved table row before create/read (consistent lock order) or using a conflict-safe insert.
+- [x] Replace absolute shared-cart increments with an atomic delta/versioned mutation; reject stale edits with a visible refetch/retry result.
+- [x] Preserve size, modifiers, and notes in order mapping and Reorder. If a historic option no longer exists, route that item back through configuration instead of silently changing it.
+- [x] Test duplicate/retry and metadata paths locally; concurrent hosted-RPC checks remain pending.
 
 ### Task 3: Replace blank, frozen, and false-empty screens (P1)
 
@@ -152,10 +152,10 @@
 - Create after measurement: `supabase/migrations/0086_order_hot_path_indexes.sql`
 - Recreate the canonical `get_dashboard_stats()` function inside that new migration; do not edit an already-applied migration.
 
-- [ ] Run live performance advisors and the missing-FK-index query before choosing indexes.
-- [ ] Run `EXPLAIN (ANALYZE, BUFFERS)` for KDS nested order reads, per-item rollup, table-session assembly, customer order history, and dashboard date ranges.
-- [ ] Add only evidenced indexes; current candidates are `order_items(order_id)`, `orders(table_id)`, `orders(customer_id)`, and a partial paid-order time index.
-- [ ] Rewrite dashboard day filters from casts on `created_at` to explicit Asia/Ho_Chi_Minh day boundaries expressed as UTC timestamp ranges so an index remains usable.
+- [x] Run live performance advisors and the missing-FK-index query before choosing indexes.
+- [x] Run baseline `EXPLAIN (ANALYZE, BUFFERS)` for KDS nested order reads, per-item rollup, table-session assembly, customer order history, and dashboard date ranges.
+- [x] Add only evidenced indexes: `order_items(order_id)`, `orders(table_id)`, `orders(customer_id)`, and a partial paid-order time index.
+- [x] Rewrite dashboard day filters from casts on `created_at` to explicit Asia/Ho_Chi_Minh day boundaries expressed as UTC timestamp ranges so an index remains usable.
 - [ ] Re-run plans/advisors and record row counts, scan type, buffers, and execution time before/after.
 
 ### Task 6: Repair hydration, accessibility, and bilingual UX (P1/P2)
