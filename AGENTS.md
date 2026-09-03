@@ -33,14 +33,26 @@ retention) are done. The remainder is split in `daily.md` as **3b
 (Claude)** — promo Apply try/catch/finally, order/address-book
 false-empty states, and table-cart mutation-awaiting, all in files
 Claude already has fresh context in from today's Task 3a/Task 4 work
-— and **3c (Codex)** — loyalty/dashboard false-empty states,
-stock-adjust/dashboard-restock mutation-awaiting, and cash-confirm/
-serving/per-item-KDS mutation-awaiting. Same file-collision logic as
-the original split: 3b and 3c touch disjoint files, except 3c's KDS
-files (`useKitchenOrders.tsx`, `kitchen-board.tsx`) which Claude
-edited today for the optimistic-update/race fix (`d7f3b6d`,
-`1bcde6d`) — Codex should pull `main` before starting 3c so that work
-isn't built against a stale version of those files.
+— and **3c (originally Codex)** — loyalty/dashboard false-empty
+states, stock-adjust/dashboard-restock mutation-awaiting, and
+cash-confirm/serving/per-item-KDS mutation-awaiting.
+
+**3c reassignment (2026-09-03, evening): the user reported Codex
+couldn't log in this session, so Claude picked up 3c too rather than
+leave it blocked** — done in `8411361`, checked off in `daily.md`.
+Turned out to need less than planned: per-item KDS advance
+(`useKitchenOrders.tsx`) and every cash-confirm path that goes through
+`ConfirmDialog` were already solid from earlier today's `d7f3b6d`/
+`1bcde6d` and the Task 6 Dialog work, so the file-collision concern
+above (Codex needing to pull past those commits) never actually
+mattered. The real gaps were dashboard/loyalty false-zero-on-error,
+stock-adjust/restock not being awaited, and Mark Served/Mark Cash
+having no per-table pending state — see `daily.md` Task 3's status
+line for the full list, including one explicitly-out-of-scope finding
+(`confirmCashPayment`/`markCashPayment`/`undoCashPayment` destructured
+but never called in `kitchen-tables-column.tsx` — pre-existing dead
+code, not touched). If Codex's login gets fixed, there's nothing left
+in Task 3 for it to pick up; point it at Task 7 or 8 instead.
 
 **Task 7 (lint/tests/CI) and Task 8 (acceptance pass) are unclaimed**
 — pick up after Tasks 1-6 land, split by area or done jointly.

@@ -140,23 +140,39 @@ staff/admin-facing so neither track edits a file the other is touching:**
   anywhere in the repo yet. Same class of gap as Task 6's axe/keyboard pass
   and Task 7's own test-coverage item; not specific to 3b.
 
-**Codex owns 3c (staff/admin-facing, zero file overlap with 3b):**
-- [ ] Stop turning loyalty and dashboard failures into genuine-looking
+**3c reassigned to Claude (2026-09-03, evening): Codex couldn't log in this
+session, so Claude did 3c too instead of leaving it blocked.**
+- [x] Stop turning loyalty and dashboard failures into genuine-looking
   empty/zero states (`components/customer/loyalty-view.tsx`,
   `hooks/useDashboardStats.tsx`, `components/admin/dashboard-view.tsx`).
-- [ ] Await stock-adjust and dashboard-restock mutations
+  (`8411361`; loyalty-view.tsx also gained a real loading skeleton — it had
+  none before, so every mount briefly showed the same false-empty content
+  even on a normal load, not just a failure.)
+- [x] Await stock-adjust and dashboard-restock mutations
   (`components/admin/stock-adjust-form.tsx`,
-  `components/admin/inventory-management.tsx`,
-  `components/admin/dashboard-view.tsx`).
-- [ ] Await cash-confirm, serving, and per-item KDS mutations
-  (`components/staff/kitchen-tables-column.tsx`,
-  `components/staff/kitchen-board.tsx`, `components/staff/kitchen-display.tsx`,
-  `components/staff/pos-terminal.tsx`, `hooks/useKitchenOrders.tsx`) — **pull
-  latest `main` first**: Claude's optimistic-update/race fixes (`d7f3b6d`,
-  `1bcde6d`) landed in `useKitchenOrders.tsx`/`kitchen-board.tsx` today, this
-  sub-task must build on top of those, not before them.
+  `components/admin/dashboard-view.tsx`). (`8411361`; `inventory-management.tsx`
+  needed no change — its `onAdd`/`onRemove` already returned the promise,
+  the gap was entirely in `StockAdjustForm` not awaiting it.)
+- [x] Await cash-confirm, serving, and per-item KDS mutations
+  (`components/staff/kitchen-tables-column.tsx`). (`8411361`; per-item KDS
+  advance and cash-confirm-via-ConfirmDialog were already solid from
+  today's earlier `d7f3b6d`/`1bcde6d` and the Task 6 Dialog work — only
+  gap found was Mark Served/Mark Cash having no per-table pending state.
+  Found but explicitly NOT fixed, out of this item's scope: `confirmCashPayment`/
+  `markCashPayment`/`undoCashPayment` are destructured in
+  `kitchen-tables-column.tsx` but never called anywhere — 4 pre-existing
+  no-unused-vars warnings, confirmed via `git stash` not introduced by this
+  work. Looks like a missing-UI/dead-code gap, not an "await this mutation"
+  one — flagged for whoever picks up Task 7's lint pass or the "Undo"
+  button gap AGENTS.md's feature-area notes already mention.)
 - [ ] Add retry/failure tests (rapid double taps, recovery after a transient
-  error) for all of the above.
+  error) for all of the above. **Blocked**: same rendering-harness gap as
+  3b's identical item — not specific to 3c.
+
+**Task 3 status: 4/6 items done (both halves' await/false-empty-state work
+complete), 2 test-coverage items blocked on a missing rendering harness.
+tsc/vitest (355/355)/build/eslint all clean at every commit
+(`117e9af`/`0d7e886`/`5adedb9`/`c5749cf`/`8411361`).**
 
 ### Task 4: Stop unnecessary requests and Realtime amplification (P1)
 
