@@ -14,6 +14,21 @@
     "navigation": "Navigation",
     "error": "Something went wrong. Please try again."
   },
+  "AsyncState": {
+    "loadingLabel": "Loading…",
+    "retryButton": "Retry",
+    "retryingButton": "Retrying…",
+    "genericErrorMessage": "Something went wrong. Please try again.",
+    "staleNotice": "Showing the last known data — refresh failed.",
+    "emptyMessage": "Nothing to show yet."
+  },
+  "RouteBoundary": {
+    "loadingLabel": "Loading…",
+    "errorTitle": "Something went wrong",
+    "errorMessage": "This page hit an unexpected error. Please try again.",
+    "retryButton": "Retry",
+    "homeButton": "Go home"
+  },
   "Nav": {
     "menu": "Menu",
     "cart": "Cart",

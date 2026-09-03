@@ -20,6 +20,7 @@ import { useTableSession } from "@/hooks/useTableSession"
 import type { TableRecord } from "@/hooks/useTables"
 import type { MenuCategory, MenuItem } from "@/lib/supabase/menu-data"
 import type { AddToCartInput } from "@/hooks/useCart"
+import { AsyncRetryError, AsyncSkeleton } from "@/components/shared/async-state"
 
 export function TableOrderingSession({
   table,
@@ -74,7 +75,15 @@ export function TableOrderingSession({
     }
   }
 
-  if (session.isLoading) return null
+  if (session.isLoading) return <AsyncSkeleton variant="page" />
+
+  if (session.hasLoadError) {
+    return (
+      <div className="mx-auto flex min-h-[70vh] w-full max-w-md items-center justify-center px-6">
+        <AsyncRetryError onRetry={session.retryLoad} />
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto w-full max-w-2xl md:max-w-6xl">

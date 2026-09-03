@@ -17,6 +17,7 @@ import {
 import { createClient } from "@/lib/supabase/client"
 import { importTableCart } from "@/lib/supabase/table-session-data"
 import type { MenuCategory, MenuItem } from "@/lib/supabase/menu-data"
+import { AsyncRetryError, AsyncSkeleton } from "@/components/shared/async-state"
 
 export function TableLanding({
   qrToken,
@@ -35,6 +36,8 @@ export function TableLanding({
   const { setActiveTableByToken, notifyCleaning } = useTables()
   const { consumeTransfer } = useCart()
   const [resolvedTable, setResolvedTable] = useState<TableRecord | null | undefined>(undefined)
+  const [resolveError, setResolveError] = useState(false)
+  const [resolveRetryNonce, setResolveRetryNonce] = useState(0)
   const [notified, setNotified] = useState(false)
   const [transferSnapshot] = useState<TableCartTransferItem[] | null>(() => {
     if (!transferId || typeof window === "undefined") return null
@@ -47,15 +50,31 @@ export function TableLanding({
 
   useEffect(() => {
     let cancelled = false
-    setActiveTableByToken(qrToken).then((table) => {
-      if (!cancelled) setResolvedTable(table)
-    })
+    setResolveError(false)
+    setActiveTableByToken(qrToken)
+      .then((table) => {
+        if (!cancelled) setResolvedTable(table)
+      })
+      .catch(() => {
+        // getTableByToken throws on any RPC/network error (a genuinely
+        // invalid/unknown token instead resolves to `null`) -- without
+        // this catch `resolvedTable` stayed `undefined` forever, a
+        // permanent blank screen on the very page a scanned QR code
+        // lands a guest on.
+        if (!cancelled) setResolveError(true)
+      })
     return () => {
       cancelled = true
     }
-    // Runs once per token; setActiveTableByToken is stable within a TablesProvider lifetime.
+    // Runs once per token (and once more on Retry); setActiveTableByToken is
+    // stable within a TablesProvider lifetime.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qrToken])
+  }, [qrToken, resolveRetryNonce])
+
+  function handleRetryResolve() {
+    setResolvedTable(undefined)
+    setResolveRetryNonce((n) => n + 1)
+  }
 
   useEffect(() => {
     if (!transferId || !resolvedTable || resolvedTable.status === "cleaning") return
@@ -90,8 +109,16 @@ export function TableLanding({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transferId, resolvedTable, retryNonce, qrToken, supabase])
 
+  if (resolveError) {
+    return (
+      <div className="mx-auto flex min-h-[70vh] w-full max-w-md items-center justify-center px-6">
+        <AsyncRetryError onRetry={handleRetryResolve} />
+      </div>
+    )
+  }
+
   if (resolvedTable === undefined) {
-    return null
+    return <AsyncSkeleton variant="page" />
   }
 
   if (!resolvedTable) {

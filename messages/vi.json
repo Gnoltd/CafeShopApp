@@ -14,6 +14,21 @@
     "navigation": "Điều hướng",
     "error": "Đã xảy ra lỗi. Vui lòng thử lại."
   },
+  "AsyncState": {
+    "loadingLabel": "Đang tải…",
+    "retryButton": "Thử lại",
+    "retryingButton": "Đang thử lại…",
+    "genericErrorMessage": "Đã xảy ra lỗi. Vui lòng thử lại.",
+    "staleNotice": "Đang hiển thị dữ liệu gần nhất — làm mới không thành công.",
+    "emptyMessage": "Chưa có gì để hiển thị."
+  },
+  "RouteBoundary": {
+    "loadingLabel": "Đang tải…",
+    "errorTitle": "Đã xảy ra lỗi",
+    "errorMessage": "Trang này gặp lỗi ngoài dự kiến. Vui lòng thử lại.",
+    "retryButton": "Thử lại",
+    "homeButton": "Về trang chủ"
+  },
   "Nav": {
     "menu": "Thực Đơn",
     "cart": "Giỏ Hàng",

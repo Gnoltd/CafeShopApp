@@ -45,6 +45,12 @@ type TableSessionState = {
   unpaidTotal: number
   paymentPending: boolean
   isLoading: boolean
+  /** True only when the session has never loaded successfully and its most
+   * recent load attempt failed -- distinct from a background
+   * Realtime/poll-refetch failure once real data is already showing (that
+   * "retain last-good data, mark stale" behavior is a separate, later fix;
+   * see daily.md Task 3's second checklist item). */
+  hasLoadError: boolean
   showIdlePrompt: boolean
   addItem: (input: AddCartItemInput) => Promise<void>
   updateQuantity: (cartItemId: string, quantity: number) => Promise<void>
@@ -53,6 +59,10 @@ type TableSessionState = {
   confirmStillHere: () => void
   dismissAndAbandon: () => Promise<void>
   refetch: () => Promise<void>
+  /** Re-runs the initial load after `hasLoadError` -- distinct from
+   * `refetch` only in that it also drives `isLoading` back to true, so a
+   * retry from the blank/error state shows the loading skeleton again. */
+  retryLoad: () => void
 }
 
 export function useTableSession(qrToken: string | undefined): TableSessionState {
@@ -63,6 +73,8 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
   const [unpaidTotal, setUnpaidTotal] = useState(0)
   const [paymentPending, setPaymentPending] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [hasLoadError, setHasLoadError] = useState(false)
+  const hasLoadedOnceRef = useRef(false)
   const [showIdlePrompt, setShowIdlePrompt] = useState(false)
   const [stillHereNonce, setStillHereNonce] = useState(0)
   const idleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -77,20 +89,35 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
   const load = useCallback(
     async ({ isStale }: LoadContext) => {
       if (!qrToken) return
-      const session = await getTableSession(supabase, qrToken)
-      // Latest wins: an older response resolving after a newer one must not
-      // roll this device's view of the shared cart backwards.
-      if (isStale()) return
-      knownRef.current = {
-        sessionId: session.sessionId,
-        cartItemIds: new Set(session.cartItems.map((item) => item.id)),
-        roundIds: new Set(session.rounds.map((round) => round.id)),
+      try {
+        const session = await getTableSession(supabase, qrToken)
+        // Latest wins: an older response resolving after a newer one must
+        // not roll this device's view of the shared cart backwards.
+        if (isStale()) return
+        knownRef.current = {
+          sessionId: session.sessionId,
+          cartItemIds: new Set(session.cartItems.map((item) => item.id)),
+          roundIds: new Set(session.rounds.map((round) => round.id)),
+        }
+        setHasSession(session.hasSession)
+        setCartItems(session.cartItems)
+        setRounds(session.rounds)
+        setUnpaidTotal(session.unpaidTotal)
+        setPaymentPending(session.paymentPending)
+        hasLoadedOnceRef.current = true
+        setHasLoadError(false)
+      } catch (error) {
+        if (isStale()) return
+        // Only surface a blocking error state for the FIRST load -- a
+        // background refetch (Realtime trigger, the guest poll) failing
+        // once real data is already on screen should keep showing that
+        // data rather than yanking it away; retaining it and marking it
+        // stale is a separate, later fix (daily.md Task 3's second
+        // checklist item). This dispatch only fixes the initial blank
+        // screen with no way to recover.
+        if (!hasLoadedOnceRef.current) setHasLoadError(true)
+        throw error
       }
-      setHasSession(session.hasSession)
-      setCartItems(session.cartItems)
-      setRounds(session.rounds)
-      setUnpaidTotal(session.unpaidTotal)
-      setPaymentPending(session.paymentPending)
     },
     [supabase, qrToken]
   )
@@ -101,12 +128,19 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
 
   useEffect(() => {
     knownRef.current = EMPTY_KNOWN_TABLE_SESSION
+    hasLoadedOnceRef.current = false
     setIsLoading(true)
+    setHasLoadError(false)
     // A load still in flight for the previous qrToken must not apply to the
     // table we just switched to.
     invalidate()
     run().finally(() => setIsLoading(false))
   }, [run, invalidate, qrToken])
+
+  const retryLoad = useCallback(() => {
+    setIsLoading(true)
+    void run().finally(() => setIsLoading(false))
+  }, [run])
 
   // Unfiltered subscribe + refetch on any change, matching this
   // project's established Realtime convention (a server-side `filter`
@@ -236,6 +270,7 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
     unpaidTotal,
     paymentPending,
     isLoading,
+    hasLoadError,
     showIdlePrompt,
     addItem,
     updateQuantity,
@@ -244,5 +279,6 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
     confirmStillHere,
     dismissAndAbandon,
     refetch,
+    retryLoad,
   }
 }

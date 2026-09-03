@@ -17,6 +17,7 @@ import { useOrders, type OrderForTracking, type OrderStatus } from "@/hooks/useO
 import { StepProgress } from "@/components/motion/step-progress"
 import { PressFeedback } from "@/components/motion/press-feedback"
 import { ReviewForm } from "@/components/customer/review-form"
+import { AsyncRetryError, AsyncSkeleton } from "@/components/shared/async-state"
 
 const GUEST_POLL_INTERVAL_MS = 10000
 
@@ -65,6 +66,8 @@ export function OrderTracking({ orderId, table }: { orderId: string; table?: str
   const [supabase] = useState(() => createClient())
 
   const [order, setOrder] = useState<OrderForTracking | null | undefined>(undefined)
+  const [loadError, setLoadError] = useState(false)
+  const [loadRetryNonce, setLoadRetryNonce] = useState(0)
   const [isGuestPolling, setIsGuestPolling] = useState(false)
   const [isPaying, setIsPaying] = useState(false)
   const [paymentAttemptId] = useState(() => crypto.randomUUID())
@@ -135,7 +138,18 @@ export function OrderTracking({ orderId, table }: { orderId: string; table?: str
     let channel: ReturnType<typeof supabase.channel> | undefined
 
     async function load() {
-      const found = await getOrder(orderId)
+      setLoadError(false)
+      let found: OrderForTracking | null
+      try {
+        found = await getOrder(orderId)
+      } catch {
+        // getOrderForTracking throws on any RPC/network error (not just
+        // "not found", which resolves to `null` instead) -- without this
+        // catch `order` stayed `undefined` forever, a permanent blank
+        // screen with no way to recover short of a manual page reload.
+        if (!cancelled) setLoadError(true)
+        return
+      }
       if (cancelled) return
       setOrder(found)
       if (!found) return
@@ -190,9 +204,24 @@ export function OrderTracking({ orderId, table }: { orderId: string; table?: str
       if (channel) supabase.removeChannel(channel)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId])
+  }, [orderId, loadRetryNonce])
 
-  if (order === undefined) return null
+  function handleRetryLoad() {
+    setOrder(undefined)
+    setLoadRetryNonce((n) => n + 1)
+  }
+
+  if (loadError) {
+    return (
+      <div className="mx-auto flex min-h-[50vh] w-full max-w-md items-center justify-center px-6">
+        <AsyncRetryError onRetry={handleRetryLoad} />
+      </div>
+    )
+  }
+
+  if (order === undefined) {
+    return <AsyncSkeleton variant="page" />
+  }
 
   if (order === null) {
     return (
