@@ -28,6 +28,13 @@ export type TableSessionRound = {
 }
 
 export type TableSession = {
+  /**
+   * The active session's id, or null when this table has no active session
+   * yet. Exposed so a client watching the (deliberately unfiltered)
+   * table_sessions/table_cart_items/orders Realtime streams can tell which
+   * change events actually belong to its own table.
+   */
+  sessionId: string | null
   hasSession: boolean
   paymentPending: boolean
   checkoutPromoCode: string | null
@@ -66,6 +73,7 @@ export async function getTableSession(supabase: SupabaseClient, qrToken: string)
   if (error) throw error
   const json = data as GetTableSessionJson
   return {
+    sessionId: json.session?.id ?? null,
     hasSession: json.session !== null,
     paymentPending: json.session?.paymentPending ?? false,
     checkoutPromoCode: json.session?.checkoutPromoCode ?? null,

@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRealtimeChannel } from "@/hooks/useRealtimeChannel"
+import { useLatestRefetch, type LoadContext } from "@/hooks/useLatestRefetch"
 import {
   advanceOrderItemStatus,
   markOrderItemsServed,
@@ -66,6 +67,13 @@ type KitchenOrdersContextValue = {
 
 const KitchenOrdersContext = createContext<KitchenOrdersContextValue | null>(null)
 
+// Placing a table round writes one `orders` row plus one `order_items` row
+// per line, all inside a single transaction -- Realtime delivers those as N+1
+// separate change events milliseconds apart, which used to mean N+1 full
+// board refetches. 300ms is far longer than that burst and short enough that
+// a single staff tick still feels immediate on the board.
+const KDS_REFETCH_DELAY_MS = 300
+
 export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
   const [supabase] = useState(() => createClient())
   const [orders, setOrders] = useState<KdsOrderRow[]>([])
@@ -75,22 +83,19 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
   const [completedCount, setCompletedCount] = useState(0)
   const [completedDurations, setCompletedDurations] = useState<number[]>([])
 
-  async function refetch() {
+  async function load({ isStale }: LoadContext) {
     const [active, pending] = await Promise.all([getKitchenOrders(supabase), getPendingPaymentOrders(supabase)])
+    // A straggling older response must never overwrite a newer one that
+    // already landed -- overlapping fetches don't resolve in call order.
+    if (isStale()) return
     setOrders(active)
     setPendingPaymentOrders(pending)
   }
 
+  const { trigger, run } = useLatestRefetch(load, KDS_REFETCH_DELAY_MS)
+
   useEffect(() => {
-    let cancelled = false
-
-    refetch().finally(() => {
-      if (!cancelled) setIsLoading(false)
-    })
-
-    return () => {
-      cancelled = true
-    }
+    run().finally(() => setIsLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase])
 
@@ -99,13 +104,16 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
   // simple -- the board is small enough this is cheap. order_items is
   // also watched now: an item tick that doesn't flip the parent order's
   // own status (e.g. one of four drinks going ready) only ever shows up
-  // as an order_items change, never an orders change.
+  // as an order_items change, never an orders change. The subscription
+  // stays deliberately unfiltered (this project's Realtime convention --
+  // a server-side `filter` doesn't reliably combine with RLS-gated
+  // Realtime); the coalescing lives in the refetch, not the subscription.
   useRealtimeChannel(
     supabase,
     "kitchen-orders-changes",
     [
-      { table: "orders", event: "*", onChange: () => refetch() },
-      { table: "order_items", event: "*", onChange: () => refetch() },
+      { table: "orders", event: "*", onChange: () => trigger() },
+      { table: "order_items", event: "*", onChange: () => trigger() },
     ],
     { onStatusChange: (status) => setIsRealtimeConnected(status === "SUBSCRIBED") }
   )

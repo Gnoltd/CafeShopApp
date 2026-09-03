@@ -24,6 +24,7 @@ describe("getTableSession", () => {
     })
     const result = await getTableSession(supabase, "qr-token-1")
     expect(result).toEqual({
+      sessionId: null,
       hasSession: false,
       paymentPending: false,
       checkoutPromoCode: null,
@@ -45,6 +46,7 @@ describe("getTableSession", () => {
       error: null,
     })
     const result = await getTableSession(supabase, "qr-token-1")
+    expect(result.sessionId).toBe("session-1")
     expect(result.hasSession).toBe(true)
     expect(result.paymentPending).toBe(true)
     expect(result.checkoutPromoCode).toBe("SAVE10")
