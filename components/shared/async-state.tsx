@@ -4,6 +4,7 @@ import type { ReactNode } from "react"
 import { AlertTriangle, RefreshCw } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 
 /**
  * The states any client-fetched view can be in. Kept generic over the data
@@ -144,15 +145,15 @@ export function AsyncRetryError({
       <p className={cn("text-destructive", compact ? "text-xs" : "text-sm font-medium")}>
         {message ?? t("genericErrorMessage")}
       </p>
-      <button
-        type="button"
+      <Button
+        variant="neubrutal"
+        size={compact ? "xs" : "sm"}
         onClick={onRetry}
         disabled={isRetrying}
-        className="nb-border-sm nb-press-sm inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-primary-foreground disabled:opacity-50"
       >
         <RefreshCw className={cn("h-3.5 w-3.5", isRetrying && "animate-spin")} />
         {isRetrying ? t("retryingButton") : t("retryButton")}
-      </button>
+      </Button>
     </div>
   )
 }
