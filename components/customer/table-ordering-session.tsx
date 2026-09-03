@@ -20,7 +20,7 @@ import { useTableSession } from "@/hooks/useTableSession"
 import type { TableRecord } from "@/hooks/useTables"
 import type { MenuCategory, MenuItem } from "@/lib/supabase/menu-data"
 import type { AddToCartInput } from "@/hooks/useCart"
-import { AsyncRetryError, AsyncSkeleton } from "@/components/shared/async-state"
+import { AsyncRetryError, AsyncSkeleton, StaleNotice } from "@/components/shared/async-state"
 
 export function TableOrderingSession({
   table,
@@ -87,6 +87,12 @@ export function TableOrderingSession({
 
   return (
     <div className="mx-auto w-full max-w-2xl md:max-w-6xl">
+      {session.hasStaleData && (
+        <div className="px-4 pt-4 sm:px-6">
+          <StaleNotice onRetry={session.refetch} />
+        </div>
+      )}
+
       <div className="px-4 pt-4 sm:px-6">
         <SegmentedControl
           layoutId="table-session-tab-pill"

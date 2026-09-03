@@ -10,6 +10,7 @@ import { useOrders, type OrderForTracking, type OrderStatus } from "@/hooks/useO
 import { useCart } from "@/hooks/useCart"
 import { SegmentedControl } from "@/components/motion/segmented-control"
 import { StaggerList, StaggerItem } from "@/components/motion/stagger-list"
+import { AsyncRetryError, StaleNotice } from "@/components/shared/async-state"
 
 const STATUS_STYLES: Record<OrderStatus, string> = {
   pending_payment: "bg-muted text-muted-foreground",
@@ -60,7 +61,7 @@ export function OrderHistory() {
   const locale = useLocale()
   const t = useTranslations("OrderHistory")
   const router = useRouter()
-  const { myOrders, isLoadingMyOrders } = useOrders()
+  const { myOrders, isLoadingMyOrders, myOrdersError, myOrdersStale, retryMyOrders } = useOrders()
   const { addItem } = useCart()
   const [filter, setFilter] = useState<Filter>("all")
   const [reorderedId, setReorderedId] = useState<string | null>(null)
@@ -99,10 +100,16 @@ export function OrderHistory() {
 
       {isLoadingMyOrders ? (
         <p className="py-16 text-center text-muted-foreground">{t("loading")}</p>
+      ) : myOrdersError ? (
+        // A failed fetch, not a genuinely empty history -- must never
+        // render as the same "you have no orders" empty state below.
+        <AsyncRetryError onRetry={retryMyOrders} message={t("loadError")} className="my-8" />
       ) : filtered.length === 0 ? (
         <p className="py-16 text-center text-muted-foreground">{t("empty")}</p>
       ) : (
-        <StaggerList staggerKey={filter} className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4">
+        <>
+          {myOrdersStale && <StaleNotice onRetry={retryMyOrders} className="mb-3" />}
+          <StaggerList staggerKey={filter} className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4">
           {filtered.map((order) => {
             const itemsLabel = order.items
               .map((item) => (locale === "vi" ? item.nameVi : item.nameEn))
@@ -154,7 +161,8 @@ export function OrderHistory() {
               </StaggerItem>
             )
           })}
-        </StaggerList>
+          </StaggerList>
+        </>
       )}
     </div>
   )

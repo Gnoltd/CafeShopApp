@@ -1,8 +1,9 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRealtimeChannel } from "@/hooks/useRealtimeChannel"
+import { nextAsyncLoadFlags } from "@/lib/async-refetch-flags"
 import { getMyOrders, getOrderForTracking, type OrderForTracking } from "@/lib/supabase/orders-data"
 
 export type { OrderForTracking }
@@ -11,6 +12,16 @@ export type OrderStatus = OrderForTracking["status"]
 type OrdersContextValue = {
   myOrders: OrderForTracking[]
   isLoadingMyOrders: boolean
+  /** True only when the list has never loaded successfully and its most
+   * recent attempt failed -- nothing safe to show, distinct from a
+   * genuinely empty "no orders yet" result. */
+  myOrdersError: boolean
+  /** True when the list HAS loaded successfully at least once but the most
+   * recent Realtime-triggered refetch failed. `myOrders` still holds the
+   * last-good rows -- never cleared on a refetch failure -- this only
+   * flags them as possibly outdated. */
+  myOrdersStale: boolean
+  retryMyOrders: () => void
   getOrder: (orderId: string) => Promise<OrderForTracking | null>
 }
 
@@ -20,26 +31,41 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
   const [supabase] = useState(() => createClient())
   const [myOrders, setMyOrders] = useState<OrderForTracking[]>([])
   const [isLoadingMyOrders, setIsLoadingMyOrders] = useState(true)
+  const [myOrdersError, setMyOrdersError] = useState(false)
+  const [myOrdersStale, setMyOrdersStale] = useState(false)
+  const hasLoadedMyOrdersOnceRef = useRef(false)
 
-  useEffect(() => {
-    let cancelled = false
-
-    getMyOrders(supabase)
-      .then((rows) => {
-        if (!cancelled) setMyOrders(rows)
-      })
-      .catch(() => {
-        // Order History is gated to logged-in customers already; an
-        // error here (e.g. no session) just leaves the list empty.
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoadingMyOrders(false)
-      })
-
-    return () => {
-      cancelled = true
+  const loadMyOrders = useCallback(async () => {
+    try {
+      const rows = await getMyOrders(supabase)
+      setMyOrders(rows)
+      hasLoadedMyOrdersOnceRef.current = true
+      setMyOrdersError(false)
+      setMyOrdersStale(false)
+    } catch {
+      // Order History is gated to logged-in customers already, so a
+      // failure here is a real fetch error (network/RPC), not "no
+      // session" -- must never be shown as a false "you have no orders"
+      // empty state. First failure ever: nothing safe to show yet
+      // (blocking). Failure after a prior success: keep showing the
+      // last-good `myOrders` (untouched above) and just flag it stale.
+      const flags = nextAsyncLoadFlags(hasLoadedMyOrdersOnceRef.current, "failure")
+      setMyOrdersError(flags.hasBlockingError)
+      setMyOrdersStale(flags.hasStaleData)
     }
   }, [supabase])
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void loadMyOrders().finally(() => setIsLoadingMyOrders(false))
+    }, 0)
+    return () => window.clearTimeout(timeoutId)
+  }, [loadMyOrders])
+
+  const retryMyOrders = useCallback(() => {
+    setIsLoadingMyOrders(true)
+    void loadMyOrders().finally(() => setIsLoadingMyOrders(false))
+  }, [loadMyOrders])
 
   // Realtime confirms *that* a row visible to this session changed;
   // re-fetching the small "my orders" list is simpler and cheap enough
@@ -50,7 +76,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       table: "orders",
       event: "*",
       onChange: () => {
-        getMyOrders(supabase).then(setMyOrders)
+        void loadMyOrders()
       },
     },
   ])
@@ -60,7 +86,11 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <OrdersContext.Provider value={{ myOrders, isLoadingMyOrders, getOrder }}>{children}</OrdersContext.Provider>
+    <OrdersContext.Provider
+      value={{ myOrders, isLoadingMyOrders, myOrdersError, myOrdersStale, retryMyOrders, getOrder }}
+    >
+      {children}
+    </OrdersContext.Provider>
   )
 }
 

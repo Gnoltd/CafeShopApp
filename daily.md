@@ -110,7 +110,7 @@
 - Mutations expose per-entity pending state and a translated, screen-reader-announced error.
 
 - [ ] Show skeleton/progress and retry instead of returning `null` for order tracking, QR resolution, table-session load, and review lookup.
-- [ ] Catch guest polling and Realtime refetch failures; retain last-good order/table data and label it stale until recovery.
+- [x] Catch guest polling and Realtime refetch failures; retain last-good order/table data and label it stale until recovery.
 - [ ] Put promo Apply in `try/catch/finally` so rejection never leaves the button permanently disabled.
 - [ ] Stop turning order, loyalty, dashboard, and address-book failures into genuine-looking empty/zero states.
 - [ ] Await table-cart, stock-adjust, dashboard-restock, cash-confirm, serving, and per-item KDS mutations; disable only the affected control and show success/failure.

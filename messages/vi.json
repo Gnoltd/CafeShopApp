@@ -307,6 +307,7 @@
     "statusCancelled": "Đã Hủy",
     "empty": "Không có đơn hàng nào.",
     "loading": "Đang tải đơn hàng của bạn…",
+    "loadError": "Không thể tải đơn hàng của bạn — vui lòng thử lại.",
     "reorder": "Đặt Lại",
     "reorderAdded": "Đã thêm vào giỏ hàng",
     "historicOption": "Vui lòng kiểm tra lại tuỳ chọn trước khi đặt"

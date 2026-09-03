@@ -1,0 +1,12 @@
+[mcp_servers.stitch-mcp]
+command = "npx"
+args = [
+    "@_davideast/stitch-mcp",
+    "proxy",
+    "--transport",
+    "stdio",
+]
+env_vars = ["STITCH_API_KEY"]
+
+[mcp_servers.supabase]
+url = "https://mcp.supabase.com/mcp?project_ref=qhiypdqnrnzndxdwqxbx&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching%2Cstorage"

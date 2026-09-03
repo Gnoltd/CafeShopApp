@@ -84,7 +84,7 @@ create policy "order_items_update_staff" on public.order_items for update
   using (public.current_user_role() in ('staff', 'manager', 'admin'))
   with check (public.current_user_role() in ('staff', 'manager', 'admin'));
 
-revoke update on public.order_items from authenticated;
+revoke update on public.order_items from anon, authenticated;
 grant update (status) on public.order_items to authenticated;
 ```
 

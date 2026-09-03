@@ -5,6 +5,7 @@ import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import { useRealtimeChannel } from "@/hooks/useRealtimeChannel"
 import { useLatestRefetch, type LoadContext } from "@/hooks/useLatestRefetch"
+import { nextAsyncLoadFlags } from "@/lib/async-refetch-flags"
 import {
   isRelevantTableSessionChange,
   EMPTY_KNOWN_TABLE_SESSION,
@@ -46,11 +47,16 @@ type TableSessionState = {
   paymentPending: boolean
   isLoading: boolean
   /** True only when the session has never loaded successfully and its most
-   * recent load attempt failed -- distinct from a background
-   * Realtime/poll-refetch failure once real data is already showing (that
-   * "retain last-good data, mark stale" behavior is a separate, later fix;
-   * see daily.md Task 3's second checklist item). */
+   * recent load attempt failed -- distinct from `hasStaleData` below, which
+   * covers a background Realtime/poll-refetch failure once real data is
+   * already showing. */
   hasLoadError: boolean
+  /** True when the session HAS loaded successfully at least once, but the
+   * most recent background refetch (Realtime trigger or the guest poll)
+   * failed. `cartItems`/`rounds`/etc. still hold the last-good data --
+   * never cleared on a refetch failure -- this only flags it as possibly
+   * outdated until the next successful refetch clears it. */
+  hasStaleData: boolean
   showIdlePrompt: boolean
   addItem: (input: AddCartItemInput) => Promise<void>
   updateQuantity: (cartItemId: string, quantity: number) => Promise<void>
@@ -74,6 +80,7 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
   const [paymentPending, setPaymentPending] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [hasLoadError, setHasLoadError] = useState(false)
+  const [hasStaleData, setHasStaleData] = useState(false)
   const hasLoadedOnceRef = useRef(false)
   const [showIdlePrompt, setShowIdlePrompt] = useState(false)
   const [stillHereNonce, setStillHereNonce] = useState(0)
@@ -106,16 +113,18 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
         setPaymentPending(session.paymentPending)
         hasLoadedOnceRef.current = true
         setHasLoadError(false)
+        setHasStaleData(false)
       } catch (error) {
         if (isStale()) return
-        // Only surface a blocking error state for the FIRST load -- a
-        // background refetch (Realtime trigger, the guest poll) failing
-        // once real data is already on screen should keep showing that
-        // data rather than yanking it away; retaining it and marking it
-        // stale is a separate, later fix (daily.md Task 3's second
-        // checklist item). This dispatch only fixes the initial blank
-        // screen with no way to recover.
-        if (!hasLoadedOnceRef.current) setHasLoadError(true)
+        // First load (never succeeded yet): blocking error, nothing safe to
+        // show. Background refetch failing (Realtime trigger, the guest
+        // poll) once real data is already on screen: leave cartItems/
+        // rounds/etc. exactly as they are (no setState above ran) and just
+        // flag them as possibly outdated instead of yanking the screen back
+        // to an error/blank state.
+        const flags = nextAsyncLoadFlags(hasLoadedOnceRef.current, "failure")
+        setHasLoadError(flags.hasBlockingError)
+        setHasStaleData(flags.hasStaleData)
         throw error
       }
     },
@@ -131,6 +140,7 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
     hasLoadedOnceRef.current = false
     setIsLoading(true)
     setHasLoadError(false)
+    setHasStaleData(false)
     // A load still in flight for the previous qrToken must not apply to the
     // table we just switched to.
     invalidate()
@@ -271,6 +281,7 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
     paymentPending,
     isLoading,
     hasLoadError,
+    hasStaleData,
     showIdlePrompt,
     addItem,
     updateQuantity,

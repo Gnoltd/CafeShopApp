@@ -8,7 +8,6 @@ import {
 } from "lucide-react"
 import { useLocale, useTranslations } from "next-intl"
 import { formatOrderId, formatVND } from "@/lib/format"
-import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { payExistingOrder, changeOrderPaymentMethod, type RealPaymentMethod } from "@/lib/supabase/orders-data"
@@ -17,7 +16,7 @@ import { useOrders, type OrderForTracking, type OrderStatus } from "@/hooks/useO
 import { StepProgress } from "@/components/motion/step-progress"
 import { PressFeedback } from "@/components/motion/press-feedback"
 import { ReviewForm } from "@/components/customer/review-form"
-import { AsyncRetryError, AsyncSkeleton } from "@/components/shared/async-state"
+import { AsyncRetryError, AsyncSkeleton, StaleNotice } from "@/components/shared/async-state"
 
 const GUEST_POLL_INTERVAL_MS = 10000
 
@@ -67,6 +66,11 @@ export function OrderTracking({ orderId, table }: { orderId: string; table?: str
 
   const [order, setOrder] = useState<OrderForTracking | null | undefined>(undefined)
   const [loadError, setLoadError] = useState(false)
+  // True once the FIRST load succeeded but the most recent guest-poll or
+  // Realtime-triggered refetch failed. `order` is left exactly as it was
+  // (never cleared) on that failure -- this only flags it as possibly
+  // outdated until the next successful refetch clears it.
+  const [isOrderStale, setIsOrderStale] = useState(false)
   const [loadRetryNonce, setLoadRetryNonce] = useState(0)
   const [isGuestPolling, setIsGuestPolling] = useState(false)
   const [isPaying, setIsPaying] = useState(false)
@@ -137,8 +141,26 @@ export function OrderTracking({ orderId, table }: { orderId: string; table?: str
     let pollInterval: ReturnType<typeof setInterval> | undefined
     let channel: ReturnType<typeof supabase.channel> | undefined
 
+    // Used by both the guest poll and the Realtime handler below -- both
+    // only ever run AFTER the first load already succeeded (see `load`
+    // below), so a failure here must never blank/replace the good `order`
+    // already on screen -- just flag it as possibly outdated until the
+    // next successful refetch clears the flag.
+    async function refetchOrder() {
+      try {
+        const refreshed = await getOrder(orderId)
+        if (cancelled) return
+        setOrder(refreshed)
+        setIsOrderStale(false)
+      } catch {
+        if (cancelled) return
+        setIsOrderStale(true)
+      }
+    }
+
     async function load() {
       setLoadError(false)
+      setIsOrderStale(false)
       let found: OrderForTracking | null
       try {
         found = await getOrder(orderId)
@@ -163,10 +185,7 @@ export function OrderTracking({ orderId, table }: { orderId: string; table?: str
         // guest never satisfies, so there is no live-push option here —
         // poll instead.
         setIsGuestPolling(true)
-        pollInterval = setInterval(async () => {
-          const refreshed = await getOrder(orderId)
-          if (!cancelled) setOrder(refreshed)
-        }, GUEST_POLL_INTERVAL_MS)
+        pollInterval = setInterval(refetchOrder, GUEST_POLL_INTERVAL_MS)
         return
       }
 
@@ -186,8 +205,7 @@ export function OrderTracking({ orderId, table }: { orderId: string; table?: str
           { event: "UPDATE", schema: "public", table: "orders" },
           async (payload) => {
             if ((payload.new as { id?: string })?.id !== orderId) return
-            const refreshed = await getOrder(orderId)
-            if (!cancelled) setOrder(refreshed)
+            await refetchOrder()
           }
         )
         .subscribe((status) => {
@@ -208,6 +226,11 @@ export function OrderTracking({ orderId, table }: { orderId: string; table?: str
 
   function handleRetryLoad() {
     setOrder(undefined)
+    setIsOrderStale(false)
+    setLoadRetryNonce((n) => n + 1)
+  }
+
+  function handleRetryStale() {
     setLoadRetryNonce((n) => n + 1)
   }
 
@@ -238,6 +261,7 @@ export function OrderTracking({ orderId, table }: { orderId: string; table?: str
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pb-28 pt-4 sm:px-6 md:max-w-5xl md:px-8 md:pb-8">
+      {isOrderStale && <StaleNotice onRetry={handleRetryStale} className="mb-4" />}
       <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-10">
         {/* Left Column: Progress status */}
         <div className="flex-1 min-w-0 md:flex-[3]">

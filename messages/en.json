@@ -307,6 +307,7 @@
     "statusCancelled": "Cancelled",
     "empty": "No orders yet.",
     "loading": "Loading your orders…",
+    "loadError": "Couldn't load your orders — please try again.",
     "reorder": "Reorder",
     "reorderAdded": "Added to cart",
     "historicOption": "Review options before ordering"
