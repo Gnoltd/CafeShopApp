@@ -133,7 +133,10 @@ begin
 end;
 $$;
 revoke all on function public.record_table_checkout_session(text, uuid, text) from public;
-grant execute on function public.record_table_checkout_session(text, uuid, text) to anon, authenticated;
+-- This is an internal persistence hook. The Edge Function uses the service
+-- role, so exposing it to guests would let callers poison a pending table's
+-- stored redirect URL with an arbitrary destination.
+grant execute on function public.record_table_checkout_session(text, uuid, text) to service_role;
 
 -- Include the optimistic version in the guest-visible cart snapshot. The
 -- client needs this token to reject stale edits instead of overwriting a
