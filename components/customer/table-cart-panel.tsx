@@ -21,6 +21,7 @@ export function TableCartPanel({
   paymentPending,
   isPlacingRound,
   placeOrderError,
+  pendingCartItemIds,
   onUpdateQuantity,
   onRemoveItem,
   onPlaceOrder,
@@ -32,6 +33,7 @@ export function TableCartPanel({
   paymentPending: boolean
   isPlacingRound: boolean
   placeOrderError: string | null
+  pendingCartItemIds: Set<string>
   onUpdateQuantity: (cartItemId: string, quantity: number) => void
   onRemoveItem: (cartItemId: string) => void
   onPlaceOrder: () => void
@@ -56,44 +58,54 @@ export function TableCartPanel({
           <p className="text-sm text-muted-foreground">{t("emptyDraftCart")}</p>
         ) : (
           <div className="flex flex-col gap-2">
-            {cartItems.map((item) => (
-              <div key={item.id} className="nb-border-sm flex items-center justify-between gap-3 rounded-xl bg-card p-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-card-foreground">
-                    {locale === "vi" ? item.nameVi : item.nameEn}
-                  </p>
-                  {item.note && <p className="truncate text-xs italic text-muted-foreground">{item.note}</p>}
-                  <span className="text-xs font-bold text-price">{formatVND(item.unitPrice * item.quantity)}</span>
-                </div>
-                <div className="flex shrink-0 items-center gap-1 rounded-full bg-muted px-1 py-1">
-                  <button
-                    type="button"
-                    onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
-                    className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-background"
-                    aria-label={t("decreaseQuantityLabel")}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </button>
-                  <span className="w-5 text-center text-sm font-bold">{item.quantity}</span>
-                  <button
-                    type="button"
-                    onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-                    className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-background"
-                    aria-label={t("increaseQuantityLabel")}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onRemoveItem(item.id)}
-                  className="shrink-0 text-muted-foreground hover:text-destructive"
-                  aria-label={t("removeItemLabel")}
+            {cartItems.map((item) => {
+              const isPending = pendingCartItemIds.has(item.id)
+              return (
+                <div
+                  key={item.id}
+                  className="nb-border-sm flex items-center justify-between gap-3 rounded-xl bg-card p-3 aria-busy:opacity-60"
+                  aria-busy={isPending}
                 >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-card-foreground">
+                      {locale === "vi" ? item.nameVi : item.nameEn}
+                    </p>
+                    {item.note && <p className="truncate text-xs italic text-muted-foreground">{item.note}</p>}
+                    <span className="text-xs font-bold text-price">{formatVND(item.unitPrice * item.quantity)}</span>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1 rounded-full bg-muted px-1 py-1">
+                    <button
+                      type="button"
+                      onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+                      disabled={isPending}
+                      className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-background disabled:pointer-events-none"
+                      aria-label={t("decreaseQuantityLabel")}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </button>
+                    <span className="w-5 text-center text-sm font-bold">{item.quantity}</span>
+                    <button
+                      type="button"
+                      onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                      disabled={isPending}
+                      className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-background disabled:pointer-events-none"
+                      aria-label={t("increaseQuantityLabel")}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onRemoveItem(item.id)}
+                    disabled={isPending}
+                    className="shrink-0 text-muted-foreground hover:text-destructive disabled:pointer-events-none"
+                    aria-label={t("removeItemLabel")}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              )
+            })}
           </div>
         )}
         {placeOrderError && <p className="text-xs text-destructive">{placeOrderError}</p>}

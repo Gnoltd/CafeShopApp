@@ -1,10 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useTranslations } from "next-intl"
 import { MapPin, Star, Pencil, Trash2, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
+import { AsyncRetryError } from "@/components/shared/async-state"
+import { nextAsyncLoadFlags } from "@/lib/async-refetch-flags"
 import {
   getAddresses,
   addAddress,
@@ -23,6 +25,11 @@ export function AddressBookView() {
   const [userId, setUserId] = useState<string | null>(null)
   const [addresses, setAddresses] = useState<Address[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Distinct from `error` above (a banner over an already-loaded list):
+  // true only when the list has never loaded successfully, so the view
+  // doesn't get stuck showing "Loading…" forever with no way to recover.
+  const [initialLoadFailed, setInitialLoadFailed] = useState(false)
+  const hasLoadedOnceRef = useRef(false)
 
   const [editingId, setEditingId] = useState<string | "new" | null>(null)
   const [form, setForm] = useState<AddressInput>(EMPTY_FORM)
@@ -30,8 +37,16 @@ export function AddressBookView() {
 
   function refetch(uid: string) {
     getAddresses(supabase, uid)
-      .then(setAddresses)
-      .catch(() => setError(t("loadError")))
+      .then((rows) => {
+        setAddresses(rows)
+        hasLoadedOnceRef.current = true
+        setInitialLoadFailed(false)
+      })
+      .catch(() => {
+        const flags = nextAsyncLoadFlags(hasLoadedOnceRef.current, "failure")
+        setInitialLoadFailed(flags.hasBlockingError)
+        if (flags.hasStaleData) setError(t("loadError"))
+      })
   }
 
   useEffect(() => {
@@ -170,7 +185,15 @@ export function AddressBookView() {
       )}
 
       {addresses === null ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">{t("loading")}</p>
+        initialLoadFailed ? (
+          <AsyncRetryError
+            onRetry={() => userId && refetch(userId)}
+            message={t("loadError")}
+            className="my-8"
+          />
+        ) : (
+          <p className="py-8 text-center text-sm text-muted-foreground">{t("loading")}</p>
+        )
       ) : addresses.length === 0 && editingId === null ? (
         <p className="py-8 text-center text-sm text-muted-foreground">{t("empty")}</p>
       ) : (

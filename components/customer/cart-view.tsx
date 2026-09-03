@@ -118,19 +118,27 @@ export function CartView() {
     useCart()
   const [promoInput, setPromoInput] = useState("")
   const [promoErrorReason, setPromoErrorReason] = useState<
-    "not_found" | "inactive" | "not_started" | "expired" | "limit_reached" | "below_minimum" | null
+    "not_found" | "inactive" | "not_started" | "expired" | "limit_reached" | "below_minimum" | "check_failed" | null
   >(null)
   const [isApplyingPromo, setIsApplyingPromo] = useState(false)
 
   async function handleApplyPromo() {
     setIsApplyingPromo(true)
-    const result = await applyPromoCode(promoInput)
-    setIsApplyingPromo(false)
-    if (result.valid) {
-      setPromoInput("")
-      setPromoErrorReason(null)
-    } else {
-      setPromoErrorReason(result.reason)
+    try {
+      const result = await applyPromoCode(promoInput)
+      if (result.valid) {
+        setPromoInput("")
+        setPromoErrorReason(null)
+      } else {
+        setPromoErrorReason(result.reason)
+      }
+    } catch {
+      // A thrown network/RPC error, not a validation rejection -- must
+      // still release the button below, or a transient failure leaves
+      // Apply permanently disabled with no way to retry.
+      setPromoErrorReason("check_failed")
+    } finally {
+      setIsApplyingPromo(false)
     }
   }
 
@@ -141,6 +149,7 @@ export function CartView() {
     expired: "promoExpired",
     limit_reached: "promoLimitReached",
     below_minimum: "promoBelowMinimum",
+    check_failed: "promoCheckError",
   } as const
 
   const total = Math.max(subtotal - promoDiscount, 0)

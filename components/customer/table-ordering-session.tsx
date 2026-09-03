@@ -42,6 +42,22 @@ export function TableOrderingSession({
   const [placeOrderError, setPlaceOrderError] = useState<string | null>(null)
   const [addItemError, setAddItemError] = useState<string | null>(null)
   const [isCheckBillOpen, setIsCheckBillOpen] = useState(false)
+  // A cart-item id is a member while its own quantity/remove mutation is in
+  // flight -- disables only that row's controls, so a double-tap can't fire
+  // two concurrent RPCs for the same line, without freezing the rest of the
+  // cart or the Place Order button.
+  const [pendingCartItemIds, setPendingCartItemIds] = useState<Set<string>>(new Set())
+
+  function withPendingCartItem(cartItemId: string, action: () => Promise<void>): Promise<void> {
+    setPendingCartItemIds((prev) => new Set(prev).add(cartItemId))
+    return action().finally(() => {
+      setPendingCartItemIds((prev) => {
+        const next = new Set(prev)
+        next.delete(cartItemId)
+        return next
+      })
+    })
+  }
 
   function handleAddItem(item: AddToCartInput) {
     setAddItemError(null)
@@ -56,10 +72,23 @@ export function TableOrderingSession({
   }
 
   function handleUpdateQuantity(cartItemId: string, quantity: number) {
-    session.updateQuantity(cartItemId, quantity).catch((error: unknown) => {
-      setAddItemError(error instanceof Error && error.message === "stale_cart_item" ? t("cartChangedRetry") : t("cartUpdateError"))
-      session.refetch().catch(() => {})
-    })
+    setAddItemError(null)
+    void withPendingCartItem(cartItemId, () =>
+      session.updateQuantity(cartItemId, quantity).catch((error: unknown) => {
+        setAddItemError(error instanceof Error && error.message === "stale_cart_item" ? t("cartChangedRetry") : t("cartUpdateError"))
+        session.refetch().catch(() => {})
+      })
+    )
+  }
+
+  function handleRemoveItem(cartItemId: string) {
+    setAddItemError(null)
+    void withPendingCartItem(cartItemId, () =>
+      session.removeItem(cartItemId).catch(() => {
+        setAddItemError(t("cartUpdateError"))
+        session.refetch().catch(() => {})
+      })
+    )
   }
 
   async function handlePlaceOrder() {
@@ -125,8 +154,9 @@ export function TableOrderingSession({
           paymentPending={session.paymentPending}
           isPlacingRound={isPlacingRound}
           placeOrderError={placeOrderError}
+          pendingCartItemIds={pendingCartItemIds}
           onUpdateQuantity={handleUpdateQuantity}
-          onRemoveItem={session.removeItem}
+          onRemoveItem={handleRemoveItem}
           onPlaceOrder={handlePlaceOrder}
           onOpenCheckBill={() => setIsCheckBillOpen(true)}
         />

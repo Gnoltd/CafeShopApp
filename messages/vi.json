@@ -242,6 +242,7 @@
     "promoExpired": "Mã khuyến mãi đã hết hạn.",
     "promoLimitReached": "Mã khuyến mãi đã đạt giới hạn sử dụng.",
     "promoBelowMinimum": "Đơn hàng chưa đạt mức tối thiểu cho mã này.",
+    "promoCheckError": "Không thể kiểm tra mã khuyến mãi — vui lòng thử lại.",
     "promoApplied": "Đã áp dụng mã",
     "removePromo": "Xóa mã giảm giá",
     "configurationWarning": "Vui lòng kiểm tra lại kích cỡ và món thêm trước khi đặt."

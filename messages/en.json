@@ -242,6 +242,7 @@
     "promoExpired": "That promo code has expired.",
     "promoLimitReached": "That promo code has reached its usage limit.",
     "promoBelowMinimum": "Your order doesn't meet the minimum for that code.",
+    "promoCheckError": "Couldn't check that promo code — please try again.",
     "promoApplied": "Code applied",
     "removePromo": "Remove promo code",
     "configurationWarning": "Please review this item's size and extras before ordering."
