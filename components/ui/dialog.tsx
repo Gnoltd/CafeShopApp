@@ -329,12 +329,6 @@ function ConfirmDialog({
   const [isPending, setIsPending] = React.useState(false)
   const [hasError, setHasError] = React.useState(false)
 
-  // Reset any stale error from a previous attempt whenever the dialog is
-  // (re-)opened for a new confirmation.
-  React.useEffect(() => {
-    if (open) setHasError(false)
-  }, [open])
-
   async function handleConfirm() {
     setIsPending(true)
     setHasError(false)
@@ -357,6 +351,7 @@ function ConfirmDialog({
         // Never let a dismissal (Escape, backdrop press, close button) drop
         // the dialog while the confirmed action is still in flight.
         if (isPending && !nextOpen) return
+        if (!nextOpen) setHasError(false)
         onOpenChange(nextOpen)
       }}
     >

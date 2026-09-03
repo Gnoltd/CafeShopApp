@@ -55,7 +55,7 @@ export function BestSellersMarquee({ items }: { items: MenuItem[] }) {
             return (
               <Link
                 key={`${item.id}-${idx}`}
-                href={`/menu/${item.id}` as any}
+                href={`/menu/${item.id}`}
                 className={`group relative flex shrink-0 flex-col items-center justify-end rounded-2xl bg-[#18120e] p-4 text-center transition-all duration-300 hover:scale-105 hover:bg-[#241b15] hover:shadow-2xl hover:shadow-primary/20 ${
                   isTall
                     ? "h-[225px] w-[155px] sm:h-[260px] sm:w-[180px] md:h-[320px] md:w-[220px]"

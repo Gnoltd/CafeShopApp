@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import Image from "next/image"
 import { useLocale, useTranslations } from "next-intl"
 import { Coffee, CupSoda, Cookie, Milk, Search, Plus, Pencil, Trash2 } from "lucide-react"
@@ -74,12 +74,9 @@ export function MenuManagement({
     })
   }, [items, selectedCategory, searchQuery])
 
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [selectedCategory, searchQuery])
-
   const totalPages = Math.max(1, Math.ceil(visibleItems.length / PAGE_SIZE))
-  const pageStart = (currentPage - 1) * PAGE_SIZE
+  const visiblePage = Math.min(currentPage, totalPages)
+  const pageStart = (visiblePage - 1) * PAGE_SIZE
   const pagedItems = visibleItems.slice(pageStart, pageStart + PAGE_SIZE)
 
   async function toggleAvailability(item: MenuItem) {
@@ -190,7 +187,10 @@ export function MenuManagement({
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              setCurrentPage(1)
+            }}
             placeholder={t("searchPlaceholder")}
             className="nb-border-sm h-10 rounded-lg bg-card pl-9"
           />
@@ -198,7 +198,10 @@ export function MenuManagement({
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => setSelectedCategory(null)}
+            onClick={() => {
+              setSelectedCategory(null)
+              setCurrentPage(1)
+            }}
             className={cn(
               "nb-border-sm nb-shadow-sm nb-press-sm rounded-lg px-3 py-1.5 text-sm font-extrabold",
               selectedCategory === null
@@ -212,7 +215,10 @@ export function MenuManagement({
             <button
               key={category.id}
               type="button"
-              onClick={() => setSelectedCategory(category.id)}
+              onClick={() => {
+                setSelectedCategory(category.id)
+                setCurrentPage(1)
+              }}
               className={cn(
                 "nb-border-sm nb-shadow-sm nb-press-sm rounded-lg px-3 py-1.5 text-sm font-extrabold",
                 selectedCategory === category.id
@@ -316,7 +322,7 @@ export function MenuManagement({
             <button
               type="button"
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
+              disabled={visiblePage === 1}
               className="nb-border-sm nb-press-sm rounded-lg bg-card px-3 py-1 text-xs font-extrabold text-muted-foreground disabled:pointer-events-none disabled:opacity-40"
             >
               {t("previous")}
@@ -328,7 +334,7 @@ export function MenuManagement({
                 onClick={() => setCurrentPage(page)}
                 className={cn(
                   "nb-border-sm nb-press-sm rounded-lg px-3 py-1 text-xs font-extrabold",
-                  page === currentPage
+                  page === visiblePage
                     ? "bg-primary text-primary-foreground"
                     : "bg-card text-muted-foreground"
                 )}
@@ -339,7 +345,7 @@ export function MenuManagement({
             <button
               type="button"
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
+              disabled={visiblePage === totalPages}
               className="nb-border-sm nb-press-sm rounded-lg bg-card px-3 py-1 text-xs font-extrabold text-muted-foreground disabled:pointer-events-none disabled:opacity-40"
             >
               {t("next")}
@@ -455,7 +461,7 @@ export function MenuManagement({
             <button
               type="button"
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
+              disabled={visiblePage === 1}
               className="nb-border-sm nb-press-sm rounded-lg bg-card px-3 py-1 text-xs font-extrabold text-muted-foreground disabled:pointer-events-none disabled:opacity-40"
             >
               {t("previous")}
@@ -467,7 +473,7 @@ export function MenuManagement({
                 onClick={() => setCurrentPage(page)}
                 className={cn(
                   "nb-border-sm nb-press-sm rounded-lg px-3 py-1 text-xs font-extrabold",
-                  page === currentPage
+                  page === visiblePage
                     ? "bg-primary text-primary-foreground"
                     : "bg-card text-muted-foreground"
                 )}
@@ -478,7 +484,7 @@ export function MenuManagement({
             <button
               type="button"
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
+              disabled={visiblePage === totalPages}
               className="nb-border-sm nb-press-sm rounded-lg bg-card px-3 py-1 text-xs font-extrabold text-muted-foreground disabled:pointer-events-none disabled:opacity-40"
             >
               {t("next")}

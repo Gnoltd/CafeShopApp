@@ -38,7 +38,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>("light")
 
   useEffect(() => {
-    setTheme(readInitialTheme())
+    queueMicrotask(() => setTheme(readInitialTheme()))
   }, [])
 
   function toggleTheme() {

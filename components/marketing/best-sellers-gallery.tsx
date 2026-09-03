@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import Image from "next/image"
-import { motion, useScroll, useTransform, useMotionValueEvent } from "framer-motion"
+import { motion, useScroll, useTransform, useMotionValueEvent, type MotionValue } from "framer-motion"
 import { useLocale, useTranslations } from "next-intl"
-import { Sparkles, ArrowRight, ChevronRight } from "lucide-react"
+import { Sparkles, ArrowRight } from "lucide-react"
 import { Link } from "@/i18n/navigation"
 import { ItemImage } from "@/components/customer/item-image"
 import { formatVND } from "@/lib/format"
@@ -29,7 +29,7 @@ function ArcItem({
   item: MenuItem
   index: number
   total: number
-  scrollYProgress: any
+  scrollYProgress: MotionValue<number>
 }) {
   const locale = useLocale()
   const t = useTranslations("Landing")
@@ -94,7 +94,7 @@ function ArcItem({
       }}
     >
       <Link
-        href={`/menu/${item.id}` as any}
+        href={`/menu/${item.id}`}
         className="group relative flex w-[78vw] max-w-[360px] flex-col overflow-hidden rounded-2xl bg-[#160f0b] p-3.5 shadow-[0_20px_50px_rgba(0,0,0,0.85)] border border-white/10 transition-all duration-300 hover:border-primary/50 hover:shadow-primary/30 sm:w-[74vw] sm:max-w-[415px] sm:p-3.5 md:max-w-[468px] md:p-4 lg:max-w-[520px] lg:p-5"
       >
         <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-muted">
@@ -137,7 +137,7 @@ function ArcPromotionItem({
   scrollYProgress,
 }: {
   total: number
-  scrollYProgress: any
+  scrollYProgress: MotionValue<number>
 }) {
   const locale = useLocale()
   const t = useTranslations("Landing")
@@ -247,20 +247,9 @@ const PRELOAD_BUFFER = 2
 const PRELOAD_RADIUS = WINDOW_RADIUS + PRELOAD_BUFFER
 
 export function BestSellersGallery({ items }: { items: MenuItem[] }) {
-  const locale = useLocale()
   const t = useTranslations("Landing")
   const containerRef = useRef<HTMLDivElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
-  const [isMobileView, setIsMobileView] = useState(false)
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobileView(window.innerWidth < 768)
-    }
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-    return () => window.removeEventListener("resize", checkMobile)
-  }, [])
 
   const { scrollYProgress } = useScroll({
     target: containerRef,

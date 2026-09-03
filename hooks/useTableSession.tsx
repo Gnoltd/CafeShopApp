@@ -138,13 +138,21 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
   useEffect(() => {
     knownRef.current = EMPTY_KNOWN_TABLE_SESSION
     hasLoadedOnceRef.current = false
-    setIsLoading(true)
-    setHasLoadError(false)
-    setHasStaleData(false)
     // A load still in flight for the previous qrToken must not apply to the
     // table we just switched to.
     invalidate()
-    run().finally(() => setIsLoading(false))
+    let cancelled = false
+    queueMicrotask(async () => {
+      if (cancelled) return
+      setIsLoading(true)
+      setHasLoadError(false)
+      setHasStaleData(false)
+      await run()
+      if (!cancelled) setIsLoading(false)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [run, invalidate, qrToken])
 
   const retryLoad = useCallback(() => {
@@ -199,7 +207,7 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
 
   async function dismissAndAbandon() {
     if (!qrToken) return
-    setShowIdlePrompt(false)
+    queueMicrotask(() => setShowIdlePrompt(false))
     await abandonTableSessionQuery(supabase, qrToken)
   }
 
@@ -217,7 +225,7 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
   useEffect(() => {
     clearTimeout(idleTimer.current)
     clearTimeout(promptTimer.current)
-    setShowIdlePrompt(false)
+    queueMicrotask(() => setShowIdlePrompt(false))
 
     if (!hasSession || rounds.length > 0) return
 

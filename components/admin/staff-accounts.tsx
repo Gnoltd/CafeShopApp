@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslations } from "next-intl"
 import { User, Lock, LockOpen, Plus, Pencil, Users, UserCheck, UserX } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { getStaffMembers, updateStaffMember, createStaffAccount, type StaffMember, type StaffRole } from "@/lib/supabase/staff-data"
 import { StaffMemberForm } from "@/components/admin/staff-member-form"
+import { useLatestRefetch, type LoadContext } from "@/hooks/useLatestRefetch"
 
 const ROLE_STYLES: Record<StaffRole, string> = {
   admin: "bg-primary/10 text-primary",
@@ -30,10 +31,18 @@ export function StaffAccounts() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [createdPassword, setCreatedPassword] = useState<string | null>(null)
 
-  async function refetch() {
-    const rows = await getStaffMembers(supabase)
-    setStaff(rows)
-  }
+  const loadStaff = useCallback(async ({ isStale }: LoadContext) => {
+    try {
+      const rows = await getStaffMembers(supabase)
+      if (isStale()) return
+      setStaff(rows)
+      setError(null)
+    } catch (loadError) {
+      if (!isStale()) setError(t("loadError"))
+      throw loadError
+    }
+  }, [supabase, t])
+  const { run: refetch } = useLatestRefetch(loadStaff, 0)
 
   useEffect(() => {
     let cancelled = false
@@ -42,18 +51,16 @@ export function StaffAccounts() {
       if (!cancelled) setCurrentUserId(user?.id ?? null)
     })
 
-    refetch()
-      .catch(() => {
-        if (!cancelled) setError(t("loadError"))
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false)
-      })
+    async function loadInitialStaff() {
+      await refetch()
+      if (!cancelled) setIsLoading(false)
+    }
+    void loadInitialStaff()
 
     const channel = supabase
       .channel("staff-accounts-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
-        if (!cancelled) refetch()
+        if (!cancelled) void refetch()
       })
       .subscribe((status) => {
         if (status !== "SUBSCRIBED" && status !== "CLOSED") {
@@ -65,15 +72,11 @@ export function StaffAccounts() {
       cancelled = true
       supabase.removeChannel(channel)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [staff.length])
+  }, [refetch, supabase])
 
   const totalPages = Math.max(1, Math.ceil(staff.length / PAGE_SIZE))
-  const pageStart = (currentPage - 1) * PAGE_SIZE
+  const visiblePage = Math.min(currentPage, totalPages)
+  const pageStart = (visiblePage - 1) * PAGE_SIZE
   const pagedStaff = useMemo(() => staff.slice(pageStart, pageStart + PAGE_SIZE), [staff, pageStart])
 
   const activeCount = staff.filter((member) => member.isActive).length
@@ -281,7 +284,7 @@ export function StaffAccounts() {
             <button
               type="button"
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
+              disabled={visiblePage === 1}
               className="nb-border-sm nb-press-sm rounded-lg bg-card px-3 py-1 text-xs font-extrabold text-muted-foreground disabled:pointer-events-none disabled:opacity-40"
             >
               {t("previous")}
@@ -293,7 +296,7 @@ export function StaffAccounts() {
                 onClick={() => setCurrentPage(page)}
                 className={cn(
                   "nb-border-sm nb-press-sm rounded-lg px-3 py-1 text-xs font-extrabold",
-                  page === currentPage
+                  page === visiblePage
                     ? "bg-primary text-primary-foreground"
                     : "bg-card text-muted-foreground"
                 )}
@@ -304,7 +307,7 @@ export function StaffAccounts() {
             <button
               type="button"
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
+              disabled={visiblePage === totalPages}
               className="nb-border-sm nb-press-sm rounded-lg bg-card px-3 py-1 text-xs font-extrabold text-muted-foreground disabled:pointer-events-none disabled:opacity-40"
             >
               {t("next")}

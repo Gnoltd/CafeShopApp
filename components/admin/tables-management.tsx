@@ -44,7 +44,6 @@ export function TablesManagement() {
 
   const totalScans = tables.reduce((sum, table) => sum + table.scanCount, 0)
   const availableCount = tables.filter((table) => table.status === "available").length
-  const occupiedCount = tables.filter((table) => table.status === "occupied").length
   const cleaningCount = tables.filter((table) => table.status === "cleaning").length
 
   useEffect(() => {

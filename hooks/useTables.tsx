@@ -54,13 +54,20 @@ export function TablesProvider({ children }: { children: ReactNode }) {
   // rewritten — it must survive a VI/EN locale switch, which remounts
   // this whole provider (see the design spec's Section 3).
   useEffect(() => {
-    try {
-      const storedActive = window.localStorage.getItem(ACTIVE_TABLE_STORAGE_KEY)
-      if (storedActive) setActiveTable(JSON.parse(storedActive))
-    } catch {
-      // ignore malformed/unavailable storage
-    } finally {
-      setHydrated(true)
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled) return
+      try {
+        const storedActive = window.localStorage.getItem(ACTIVE_TABLE_STORAGE_KEY)
+        if (storedActive) setActiveTable(JSON.parse(storedActive))
+      } catch {
+        // ignore malformed/unavailable storage
+      } finally {
+        setHydrated(true)
+      }
+    })
+    return () => {
+      cancelled = true
     }
   }, [])
 

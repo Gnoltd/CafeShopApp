@@ -23,7 +23,6 @@ import type { AddToCartInput } from "@/hooks/useCart"
 import { AsyncRetryError, AsyncSkeleton, StaleNotice } from "@/components/shared/async-state"
 
 export function TableOrderingSession({
-  table,
   qrToken,
   categories,
   items,

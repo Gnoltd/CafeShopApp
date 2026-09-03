@@ -14,9 +14,12 @@ export function KitchenDisplay() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    setNow(Date.now())
+    const immediate = setTimeout(() => setNow(Date.now()), 0)
     const interval = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(interval)
+    return () => {
+      clearTimeout(immediate)
+      clearInterval(interval)
+    }
   }, [])
 
   // Stable references so KitchenPendingPayment/KitchenTablesColumn (memoized

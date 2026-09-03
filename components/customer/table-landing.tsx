@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { AlertCircle, Sparkles } from "lucide-react"
@@ -18,6 +18,7 @@ import { createClient } from "@/lib/supabase/client"
 import { importTableCart } from "@/lib/supabase/table-session-data"
 import type { MenuCategory, MenuItem } from "@/lib/supabase/menu-data"
 import { AsyncRetryError, AsyncSkeleton } from "@/components/shared/async-state"
+import { useLatestRefetch, type LoadContext } from "@/hooks/useLatestRefetch"
 
 export function TableLanding({
   qrToken,
@@ -37,7 +38,6 @@ export function TableLanding({
   const { consumeTransfer } = useCart()
   const [resolvedTable, setResolvedTable] = useState<TableRecord | null | undefined>(undefined)
   const [resolveError, setResolveError] = useState(false)
-  const [resolveRetryNonce, setResolveRetryNonce] = useState(0)
   const [notified, setNotified] = useState(false)
   const [transferSnapshot] = useState<TableCartTransferItem[] | null>(() => {
     if (!transferId || typeof window === "undefined") return null
@@ -48,32 +48,31 @@ export function TableLanding({
   )
   const [retryNonce, setRetryNonce] = useState(0)
 
-  useEffect(() => {
-    let cancelled = false
-    setResolveError(false)
-    setActiveTableByToken(qrToken)
-      .then((table) => {
-        if (!cancelled) setResolvedTable(table)
-      })
-      .catch(() => {
+  const resolveTable = useCallback(async ({ isStale }: LoadContext) => {
+    try {
+      const table = await setActiveTableByToken(qrToken)
+      if (isStale()) return
+      setResolvedTable(table)
+      setResolveError(false)
+    } catch {
         // getTableByToken throws on any RPC/network error (a genuinely
         // invalid/unknown token instead resolves to `null`) -- without
         // this catch `resolvedTable` stayed `undefined` forever, a
         // permanent blank screen on the very page a scanned QR code
         // lands a guest on.
-        if (!cancelled) setResolveError(true)
-      })
-    return () => {
-      cancelled = true
+        if (!isStale()) setResolveError(true)
     }
-    // Runs once per token (and once more on Retry); setActiveTableByToken is
-    // stable within a TablesProvider lifetime.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qrToken, resolveRetryNonce])
+  }, [qrToken, setActiveTableByToken])
+  const { run: runTableResolve } = useLatestRefetch(resolveTable, 0)
+
+  useEffect(() => {
+    void runTableResolve()
+  }, [qrToken, runTableResolve])
 
   function handleRetryResolve() {
     setResolvedTable(undefined)
-    setResolveRetryNonce((n) => n + 1)
+    setResolveError(false)
+    void runTableResolve()
   }
 
   useEffect(() => {

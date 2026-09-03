@@ -21,11 +21,8 @@ function KitchenTablesColumnComponent({ active }: { active: boolean }) {
   const {
     orders,
     serveTable,
-    confirmCashPayment,
     confirmTableCashPayment,
     markTableCashPayment,
-    markCashPayment,
-    undoCashPayment,
   } = useKitchenOrders()
   const [error, setError] = useState<string | null>(null)
   // Same reasoning as the pending-payment strip: confirming cash settles the
@@ -88,7 +85,6 @@ function KitchenTablesColumnComponent({ active }: { active: boolean }) {
           // guest never taps it, this badge is the only signal staff
           // have that money is owed on this table at all.
           const awaitingPaymentOrders = tableOrders.filter((o) => o.paymentStatus === "pending")
-          const awaitingPaymentTotal = awaitingPaymentOrders.reduce((sum, o) => sum + o.total, 0)
           const awaitingPaymentMethod = awaitingPaymentOrders[0]?.paymentMethod ?? null
 
           return (

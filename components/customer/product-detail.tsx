@@ -35,6 +35,7 @@ export function ProductDetail({ item }: { item: MenuItem }) {
   const [reviews, setReviews] = useState<MenuItemReview[]>([])
   const [avgRating, setAvgRating] = useState(0)
   const [reviewCount, setReviewCount] = useState(0)
+  const [reviewsLoadedAt, setReviewsLoadedAt] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -43,6 +44,7 @@ export function ProductDetail({ item }: { item: MenuItem }) {
       setReviews(result.reviews)
       setAvgRating(result.avgRating)
       setReviewCount(result.reviewCount)
+      setReviewsLoadedAt(Date.now())
     })
     return () => {
       cancelled = true
@@ -275,7 +277,7 @@ export function ProductDetail({ item }: { item: MenuItem }) {
                           </span>
                           <span className="shrink-0 text-xs text-muted-foreground">
                             {tProduct("daysAgo", {
-                              days: Math.max(0, Math.floor((Date.now() - review.createdAt) / 86400000)),
+                              days: Math.max(0, Math.floor((reviewsLoadedAt - review.createdAt) / 86400000)),
                             })}
                           </span>
                         </div>

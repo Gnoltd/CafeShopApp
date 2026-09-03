@@ -17,11 +17,7 @@ export function HeaderActionsStack({ role }: { role: string | null }) {
   const [hiddenByHero, setHiddenByHero] = useState(isLanding)
 
   useEffect(() => {
-    if (!isLanding) {
-      setHiddenByHero(false)
-      return
-    }
-    setHiddenByHero(true)
+    if (!isLanding) return
     const hero = document.getElementById("coffee-cup-hero")
     if (!hero) return
 
@@ -37,7 +33,7 @@ export function HeaderActionsStack({ role }: { role: string | null }) {
       id="header-actions-stack"
       className={cn(
         "fixed top-2 right-2 z-50 flex items-center gap-2 transition-opacity duration-300",
-        hiddenByHero ? "pointer-events-none opacity-0" : "opacity-100"
+        isLanding && hiddenByHero ? "pointer-events-none opacity-0" : "opacity-100"
       )}
     >
       <RoleBadge role={role} />

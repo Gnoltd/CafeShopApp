@@ -31,7 +31,6 @@ function isWebGLAvailable(): boolean {
 export function CoffeeCupHero({
   onScanQr,
   baseImages,
-  revealImage,
 }: {
   onScanQr: () => void
   baseImages: string[]
@@ -48,7 +47,10 @@ export function CoffeeCupHero({
   const [renderMode, setRenderMode] = useState<RenderMode>("checking")
 
   useEffect(() => {
-    setRenderMode(isWebGLAvailable() ? "model" : "fallback")
+    const frame = requestAnimationFrame(() => {
+      setRenderMode(isWebGLAvailable() ? "model" : "fallback")
+    })
+    return () => cancelAnimationFrame(frame)
   }, [])
 
   return (

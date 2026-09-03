@@ -34,7 +34,10 @@ export function CoffeeCupCanvas({ onError }: { onError: () => void }) {
   // rebuilding the whole THREE scene whenever the parent passes a new
   // (inline) onError reference on an unrelated re-render.
   const onErrorRef = useRef(onError)
-  onErrorRef.current = onError
+
+  useEffect(() => {
+    onErrorRef.current = onError
+  }, [onError])
 
   useEffect(() => {
     const canvas = canvasRef.current

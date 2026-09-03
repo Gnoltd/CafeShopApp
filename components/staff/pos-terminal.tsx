@@ -64,13 +64,8 @@ export function PosTerminal({ categories, items }: { categories: MenuCategory[];
   const [taxRatePercent, setTaxRatePercent] = useState(0)
   const orderItemCount = order.reduce((n, line) => n + line.quantity, 0)
 
-  const selectedTable = tables.find((tbl) => tbl.id === selectedTableId) ?? tables[0]
-
-  useEffect(() => {
-    if (!selectedTableId && tables.length > 0) {
-      setSelectedTableId(tables[0].id)
-    }
-  }, [tables, selectedTableId])
+  const effectiveTableId = selectedTableId || tables[0]?.id || ""
+  const selectedTable = tables.find((tbl) => tbl.id === effectiveTableId) ?? tables[0]
 
   useEffect(() => {
     getShopSettings(supabase)
@@ -248,7 +243,7 @@ export function PosTerminal({ categories, items }: { categories: MenuCategory[];
           orderType={orderType}
           setOrderType={setOrderType}
           tables={tables}
-          selectedTableId={selectedTableId}
+          selectedTableId={effectiveTableId}
           setSelectedTableId={setSelectedTableId}
           paymentMethod={paymentMethod}
           setPaymentMethod={setPaymentMethod}
@@ -291,7 +286,7 @@ export function PosTerminal({ categories, items }: { categories: MenuCategory[];
               orderType={orderType}
               setOrderType={setOrderType}
               tables={tables}
-              selectedTableId={selectedTableId}
+              selectedTableId={effectiveTableId}
               setSelectedTableId={setSelectedTableId}
               paymentMethod={paymentMethod}
               setPaymentMethod={setPaymentMethod}

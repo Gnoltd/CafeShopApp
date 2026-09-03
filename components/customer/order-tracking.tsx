@@ -75,19 +75,15 @@ export function OrderTracking({ orderId, table }: { orderId: string; table?: str
   const [isGuestPolling, setIsGuestPolling] = useState(false)
   const [isPaying, setIsPaying] = useState(false)
   const [paymentAttemptId] = useState(() => crypto.randomUUID())
-  const [paymentNotice, setPaymentNotice] = useState(false)
+  const searchParams = useSearchParams()
+  const [paymentNotice, setPaymentNotice] = useState(
+    () => searchParams.get("paymentFailed") === "1" || searchParams.get("stripeCanceled") === "1"
+  )
   const [cashConfirmed, setCashConfirmed] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [openReviewIndex, setOpenReviewIndex] = useState<number | null>(null)
   const [shopPhone, setShopPhone] = useState("")
   const [shopAddress, setShopAddress] = useState("")
-  const searchParams = useSearchParams()
-
-  useEffect(() => {
-    const failed = searchParams.get("paymentFailed") === "1" || searchParams.get("stripeCanceled") === "1"
-    if (failed) setPaymentNotice(true)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   useEffect(() => {
     getShopSettings(supabase)

@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { StarRating } from "@/components/customer/star-rating"
 import { getMyReviewForItem, submitReview } from "@/lib/supabase/reviews-data"
 import { AsyncRetryError, AsyncSkeleton } from "@/components/shared/async-state"
+import { useLatestRefetch, type LoadContext } from "@/hooks/useLatestRefetch"
 
 export function ReviewForm({ itemId, onDone }: { itemId: string; onDone: () => void }) {
   const t = useTranslations("OrderTracking")
@@ -15,39 +16,38 @@ export function ReviewForm({ itemId, onDone }: { itemId: string; onDone: () => v
   const [comment, setComment] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
-  const [loadRetryNonce, setLoadRetryNonce] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    let cancelled = false
-    setIsLoading(true)
-    setLoadError(false)
-    getMyReviewForItem(supabase, itemId)
-      .then((existing) => {
-        if (cancelled) return
-        if (existing) {
-          setRating(existing.rating)
-          setComment(existing.comment)
-        }
-        setIsLoading(false)
-      })
-      .catch(() => {
+  const loadReview = useCallback(async ({ isStale }: LoadContext) => {
+    try {
+      const existing = await getMyReviewForItem(supabase, itemId)
+      if (isStale()) return
+      if (existing) {
+        setRating(existing.rating)
+        setComment(existing.comment)
+      }
+      setLoadError(false)
+      setIsLoading(false)
+    } catch {
         // getMyReviewForItem throws on any RPC/network error -- without
         // this catch `isLoading` stayed true forever, a permanently blank
         // review slot with no way to recover short of a page reload.
-        if (cancelled) return
+        if (isStale()) return
         setLoadError(true)
         setIsLoading(false)
-      })
-    return () => {
-      cancelled = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemId, loadRetryNonce])
+  }, [itemId, supabase])
+  const { run: runReviewLoad } = useLatestRefetch(loadReview, 0)
+
+  useEffect(() => {
+    void runReviewLoad()
+  }, [itemId, runReviewLoad])
 
   function handleRetryLoad() {
-    setLoadRetryNonce((n) => n + 1)
+    setIsLoading(true)
+    setLoadError(false)
+    void runReviewLoad()
   }
 
   async function handleSubmit() {

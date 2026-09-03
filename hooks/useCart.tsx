@@ -4,7 +4,6 @@ import {
   createContext,
   useContext,
   useEffect,
-  useMemo,
   useState,
   type ReactNode,
 } from "react"
@@ -74,13 +73,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false)
 
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY)
-      if (stored) setItems(JSON.parse(stored))
-    } catch {
-      // ignore malformed/unavailable storage
-    } finally {
-      setHydrated(true)
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled) return
+      try {
+        const stored = window.localStorage.getItem(STORAGE_KEY)
+        if (stored) setItems(JSON.parse(stored))
+      } catch {
+        // ignore malformed/unavailable storage
+      } finally {
+        setHydrated(true)
+      }
+    })
+    return () => {
+      cancelled = true
     }
   }, [])
 
@@ -141,15 +147,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setPromoRule(null)
   }
 
-  const subtotal = useMemo(
-    () => items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0),
-    [items]
-  )
-  const itemCount = useMemo(
-    () => items.reduce((sum, item) => sum + item.quantity, 0),
-    [items]
-  )
-  const promoDiscount = useMemo(() => resolvePromoDiscount(subtotal, promoRule), [subtotal, promoRule])
+  const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
+  const promoDiscount = resolvePromoDiscount(subtotal, promoRule)
 
   return (
     <CartContext.Provider

@@ -52,7 +52,9 @@ export function CheckoutView() {
   const [submissionId, setSubmissionId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const searchParams = useSearchParams()
-  const [canceledNotice, setCanceledNotice] = useState(false)
+  const [canceledNotice, setCanceledNotice] = useState(
+    () => searchParams.get("paymentFailed") === "1" || searchParams.has("stripeCanceled")
+  )
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   // Optimistic true so the form doesn't flash "closed" while the first
   // check is in flight — place_order's own no_open_shift rejection is
@@ -125,7 +127,6 @@ export function CheckoutView() {
 
   useEffect(() => {
     if (searchParams.get("paymentFailed") !== "1") return
-    setCanceledNotice(true)
     router.replace("/checkout")
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
