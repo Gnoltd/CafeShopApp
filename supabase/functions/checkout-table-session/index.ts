@@ -55,13 +55,17 @@ async function releaseCheckoutAttempt(
   attemptId: string
 ): Promise<void> {
   try {
-    await serviceClient.rpc("release_table_checkout", {
+    const { error } = await serviceClient.rpc("release_table_checkout", {
       p_qr_token: qrToken,
       p_attempt_id: attemptId,
     })
-  } catch {
+    if (error) {
+      console.error("Table checkout recovery failed", { attemptId, error })
+    }
+  } catch (error) {
     // Preserve the gateway/configuration error that caused recovery.
     // The attempt remains locked if the recovery RPC itself is unavailable.
+    console.error("Table checkout recovery failed", { attemptId, error })
   }
 }
 

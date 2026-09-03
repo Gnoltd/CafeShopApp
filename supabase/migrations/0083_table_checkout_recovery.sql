@@ -1,14 +1,16 @@
 -- 0083_table_checkout_recovery.sql
 -- A gateway checkout locks a table session before the Edge Function can
--- contact Stripe or construct a VNPay URL. Persist a unique attempt id with
--- that lock so a pre-redirect failure can release only its own unfinished
--- attempt. A stale failure cannot unlock a newer attempt, and a completed
--- payment cannot be released because payment_pending is already false (or
--- the table session has closed).
+-- contact Stripe or construct a VNPay URL. Persist a unique attempt id and
+-- the covered orders' prior payment methods with that lock so a pre-redirect
+-- failure can release only its own unfinished attempt without erasing an
+-- earlier cash selection. A stale failure cannot unlock a newer attempt, and
+-- a completed payment cannot be released because payment_pending is already
+-- false (or the table session has closed).
 
 alter table public.table_sessions
   add column if not exists checkout_attempt_id uuid,
-  add column if not exists checkout_started_at timestamptz;
+  add column if not exists checkout_started_at timestamptz,
+  add column if not exists checkout_previous_payment_methods jsonb not null default '{}'::jsonb;
 
 create or replace function public.checkout_table_session(
   p_qr_token text,
@@ -30,6 +32,7 @@ declare
   v_discount integer := 0;
   v_charge_total integer;
   v_attempt_id uuid;
+  v_previous_payment_methods jsonb := '{}'::jsonb;
 begin
   select id into v_table_id
     from public.tables
@@ -101,6 +104,10 @@ begin
   v_charge_total := greatest(v_aggregate_total - v_discount, 0);
   if p_method in ('stripe', 'vnpay') then
     v_attempt_id := gen_random_uuid();
+    select coalesce(jsonb_object_agg(id::text, payment_method), '{}'::jsonb)
+      into v_previous_payment_methods
+      from public.orders
+      where id = any(v_order_ids);
   end if;
 
   update public.orders
@@ -112,7 +119,11 @@ begin
         checkout_discount_amount = v_discount,
         payment_pending = (v_attempt_id is not null),
         checkout_attempt_id = v_attempt_id,
-        checkout_started_at = case when v_attempt_id is not null then now() else null end
+        checkout_started_at = case when v_attempt_id is not null then now() else null end,
+        checkout_previous_payment_methods = case
+          when v_attempt_id is not null then v_previous_payment_methods
+          else '{}'::jsonb
+        end
     where id = v_session.id;
 
   return jsonb_build_object(
@@ -168,17 +179,24 @@ begin
       where code = v_session.checkout_promo_code;
   end if;
 
-  update public.orders
-    set payment_method = null
-    where table_session_id = v_session.id
-      and payment_status = 'pending';
+  -- Restore exactly the methods captured before this attempt. This keeps a
+  -- prior cash selection intact while restoring originally-null methods to
+  -- null, and it cannot affect orders outside the attempt snapshot.
+  update public.orders as o
+    set payment_method = (
+      v_session.checkout_previous_payment_methods ->> o.id::text
+    )::public.payment_method
+    where o.table_session_id = v_session.id
+      and o.payment_status = 'pending'
+      and (v_session.checkout_previous_payment_methods ? o.id::text);
 
   update public.table_sessions
     set payment_pending = false,
         checkout_promo_code = null,
         checkout_discount_amount = 0,
         checkout_attempt_id = null,
-        checkout_started_at = null
+        checkout_started_at = null,
+        checkout_previous_payment_methods = '{}'::jsonb
     where id = v_session.id
       and payment_pending
       and checkout_attempt_id = p_attempt_id;

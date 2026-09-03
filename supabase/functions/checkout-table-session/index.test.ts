@@ -111,6 +111,29 @@ describe("checkout-table-session recovery", () => {
     })
   })
 
+  it("logs a resolved recovery RPC error without exposing it in the response", async () => {
+    const recoveryError = { message: "database detail that must stay internal" }
+    const rpc = vi.fn()
+      .mockResolvedValueOnce(checkoutResult())
+      .mockResolvedValueOnce({ data: null, error: recoveryError })
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    mocks.createClient.mockReturnValue({ rpc })
+
+    const response = await handler(request("stripe"))
+    const body = await response.json()
+
+    expect(consoleError).toHaveBeenCalledWith(
+      "Table checkout recovery failed",
+      expect.objectContaining({
+        attemptId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        error: recoveryError,
+      })
+    )
+    expect(body).toEqual({ error: "Unexpected error checking the bill" })
+    expect(JSON.stringify(body)).not.toContain(recoveryError.message)
+    consoleError.mockRestore()
+  })
+
   it.each([
     ["missing secrets", undefined, undefined],
     ["gateway failure", "vnpay-code", "vnpay-secret"],

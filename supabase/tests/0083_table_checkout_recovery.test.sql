@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(7);
+select plan(9);
 
 insert into public.tables (id, table_number, qr_code_token)
 values (
@@ -123,6 +123,49 @@ select ok(
     null
   )->>'checkoutAttemptId')::uuid is not null,
   'gateway checkout returns a persisted attempt identifier'
+);
+
+reset role;
+
+update public.table_sessions
+  set payment_pending = false,
+      checkout_attempt_id = null,
+      checkout_started_at = null
+  where id = '83000000-0000-4000-8000-000000000002';
+
+update public.orders
+  set payment_method = 'cash'
+  where id = '83000000-0000-4000-8000-000000000006';
+
+set local role anon;
+
+select is(
+  (
+    with checkout as (
+      select public.checkout_table_session(
+        'task-1-recovery-token',
+        'stripe',
+        null
+      ) as result
+    )
+    select public.release_table_checkout(
+      'task-1-recovery-token',
+      (result->>'checkoutAttemptId')::uuid
+    )
+    from checkout
+  ),
+  true,
+  'a failed gateway checkout releases after a prior cash selection'
+);
+
+select is(
+  (
+    select payment_method
+    from public.orders
+    where id = '83000000-0000-4000-8000-000000000006'
+  ),
+  'cash'::public.payment_method,
+  'failed gateway recovery restores the prior cash selection'
 );
 
 select * from finish();
