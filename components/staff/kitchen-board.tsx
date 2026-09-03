@@ -55,10 +55,12 @@ export function KitchenBoard({
   orders,
   now,
   onAdvanceItem,
+  isItemPending,
 }: {
   orders: KdsOrder[]
   now: number
   onAdvanceItem: (orderId: string, itemId: string) => void
+  isItemPending: (orderId: string, itemId: string) => boolean
 }) {
   const locale = useLocale()
   const t = useTranslations("KitchenDisplay")
@@ -179,8 +181,9 @@ export function KitchenBoard({
                             <button
                               type="button"
                               onClick={() => onAdvanceItem(order.id, item.id)}
+                              disabled={isItemPending(order.id, item.id)}
                               className={cn(
-                                "nb-press-sm nb-border-sm nb-shadow-sm ml-auto flex h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-extrabold text-white",
+                                "nb-press-sm nb-border-sm nb-shadow-sm ml-auto flex h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-extrabold text-white disabled:pointer-events-none disabled:opacity-40",
                                 item.status === "preparing" && "bg-amber-600",
                                 item.status === "ready" && "bg-green-600"
                               )}

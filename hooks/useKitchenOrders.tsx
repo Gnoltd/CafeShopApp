@@ -94,6 +94,61 @@ export async function advanceItemOptimistically(
   }
 }
 
+// Composite key -- orderId + itemId -- rather than the bare item id: item
+// ids are order_items primary keys (globally unique in practice), but the
+// key shouldn't quietly assume that forever, and pairing with orderId
+// costs nothing.
+export function itemPendingKey(orderId: string, itemId: string): string {
+  return `${orderId}:${itemId}`
+}
+
+// Round-2 fix for the regression the optimistic update above introduced:
+// without in-flight tracking, a staff member could tap the SAME item
+// through two overlapping transitions (e.g. Mark Ready then, before RPC1
+// resolves, Mark Served -- the optimistic update already flipped the
+// button's label/action) before either RPC settled. If RPC1 later
+// rejected, its unconditional rollback to the pre-RPC1 status could
+// clobber RPC2's already-succeeded result, and a stray re-tap in that
+// window could fire a real UPDATE that regresses the server's actual
+// status. Structural fix: mark the item "pending" BEFORE the optimistic
+// update even runs (so a UI reading the flag can disable the button
+// before any flicker), clear it in `finally` regardless of outcome, and
+// no-op a call that arrives while the item is already pending -- so two
+// RPCs can never be in flight for the same item at once. The UI disabling
+// the button is the primary defense; this is the structural backstop.
+//
+// Kept standalone (state passed as explicit get/set, like
+// advanceItemOptimistically above) so it's unit-testable without a React
+// render harness -- this project's Vitest setup has no DOM/render
+// environment.
+export async function advanceItemGuarded(
+  pendingKeys: Set<string>,
+  setPendingKeys: (updater: (current: Set<string>) => Set<string>) => void,
+  orders: KdsOrderRow[],
+  orderId: string,
+  itemId: string,
+  nextStatus: OrderItemStatus,
+  setOrders: (updater: (current: KdsOrderRow[]) => KdsOrderRow[]) => void,
+  advance: (itemId: string, newStatus: OrderItemStatus) => Promise<void>
+): Promise<void> {
+  const key = itemPendingKey(orderId, itemId)
+  if (pendingKeys.has(key)) return
+  setPendingKeys((current) => {
+    const next = new Set(current)
+    next.add(key)
+    return next
+  })
+  try {
+    await advanceItemOptimistically(orders, orderId, itemId, nextStatus, setOrders, advance)
+  } finally {
+    setPendingKeys((current) => {
+      const next = new Set(current)
+      next.delete(key)
+      return next
+    })
+  }
+}
+
 function formatDuration(ms: number): string {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000))
   const minutes = Math.floor(totalSeconds / 60)
@@ -107,6 +162,7 @@ type KitchenOrdersContextValue = {
   isLoading: boolean
   isRealtimeConnected: boolean
   advanceItem: (orderId: string, itemId: string) => Promise<void>
+  isItemPending: (orderId: string, itemId: string) => boolean
   serveTable: (orderIds: string[]) => Promise<void>
   confirmCashPayment: (orderId: string) => Promise<void>
   confirmTableCashPayment: (tableId: string) => Promise<void>
@@ -134,6 +190,13 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false)
   const [completedCount, setCompletedCount] = useState(0)
   const [completedDurations, setCompletedDurations] = useState<number[]>([])
+  // Item ids currently mid-flight through advanceItem -- see
+  // advanceItemGuarded above for why this exists.
+  const [pendingItemKeys, setPendingItemKeys] = useState<Set<string>>(new Set())
+
+  function isItemPending(orderId: string, itemId: string): boolean {
+    return pendingItemKeys.has(itemPendingKey(orderId, itemId))
+  }
 
   async function load({ isStale }: LoadContext) {
     const [active, pending] = await Promise.all([getKitchenOrders(supabase), getPendingPaymentOrders(supabase)])
@@ -177,11 +240,17 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
     if (!item) return
     const next = NEXT_ITEM_STATUS[item.status]
     if (!next) return
+    // Belt-and-suspenders: the UI disables the tick button while
+    // isItemPending is true, so this shouldn't normally be reachable --
+    // but checking here too (ahead of the completedCount side effect)
+    // keeps that side effect from firing on a call that's about to be a
+    // structural no-op inside advanceItemGuarded.
+    if (isItemPending(orderId, itemId)) return
     if (next === "served" && willCompleteOrderOnAdvance(order, itemId)) {
       setCompletedCount((count) => count + 1)
       setCompletedDurations((durations) => [...durations, Date.now() - order.createdAt])
     }
-    await advanceItemOptimistically(orders, orderId, itemId, next, setOrders, (id, status) =>
+    await advanceItemGuarded(pendingItemKeys, setPendingItemKeys, orders, orderId, itemId, next, setOrders, (id, status) =>
       advanceOrderItemStatus(supabase, id, status)
     )
   }
@@ -236,6 +305,7 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
         isLoading,
         isRealtimeConnected,
         advanceItem,
+        isItemPending,
         serveTable,
         confirmCashPayment,
         confirmTableCashPayment,
