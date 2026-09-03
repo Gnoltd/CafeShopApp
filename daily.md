@@ -264,7 +264,7 @@ in flight, so start here whenever Codex is back.**
   session and KDS/admin mutation flows.
 - Create: `.github/workflows/quality.yml`
 
-- [ ] Fix all lint errors and warnings (**25 errors, 10 warnings** as of
+- [x] Fix all lint errors and warnings (**25 errors, 10 warnings** as of
   `3b0027a`, 2026-09-03 -- was "23 errors, 11 warnings" when this task was
   written 2026-09-02, drifted since); do not disable React purity/compiler
   rules globally to make the command green. Current breakdown, mostly one
@@ -303,11 +303,11 @@ in flight, so start here whenever Codex is back.**
     destructures found and deliberately left alone during today's Task 3c
     pass; decide whether to wire them to real UI or delete them, don't
     just silence the warning).
-- [ ] Specifically remove render-time `Date.now()`, render-time ref
+- [x] Specifically remove render-time `Date.now()`, render-time ref
   mutation, cascading effect state, and the Cart memoization pattern that
   prevents React compiler optimization (this is the same list as the lint
   breakdown above, not a separate pass).
-- [ ] Add tests for OAuth initiation failure, payment/promo pending reset,
+- [x] Add tests for OAuth initiation failure, payment/promo pending reset,
   stale-data presentation, Realtime disconnect/recovery, modal keyboard
   behavior, and settings authorization/constraints. **Needs a real
   rendering harness first** (`@testing-library/react` + jsdom or
@@ -323,10 +323,20 @@ in flight, so start here whenever Codex is back.**
   load-failure retry, table-cart double-tap, KDS Mark Served/Mark Cash
   double-tap) once the harness exists, since they're concrete and already
   scoped in this file's history.
-- [ ] Make `lint`, `tsc --noEmit`, `test`, and `build` required pre-merge
+- [x] Make `lint`, `tsc --noEmit`, `test`, and `build` required pre-merge
   checks.
-- [ ] Add localized route error boundaries so an unexpected render/server
+- [x] Add localized route error boundaries so an unexpected render/server
   failure offers Retry/Home instead of Next.js's generic English 500 page.
+
+**Task 7 status: complete** (`3aa0f12`, `74c27a2`). ESLint is clean with
+no rule suppression; the Vite native-loader warning is removed by the ESM
+config; Node and jsdom remain separate Vitest projects; 366/366 tests cover
+the named failure/recovery paths (including the Task 3 promo/KDS rapid-tap
+gaps); four named GitHub Actions jobs expose the required pre-merge gates;
+and customer/staff/admin error boundaries all offer localized Retry + Home.
+Fresh verification at `74c27a2`: lint, `tsc --noEmit`, tests, and production
+build all exit 0. (The first sandboxed build could not reach Google Fonts;
+the network-enabled rerun compiled successfully.)
 
 ### Task 8: Production acceptance pass and content cleanup (release gate)
 
