@@ -68,6 +68,7 @@ function CartRow({
             </button>
           </div>
           {label && <p className="mt-1 text-xs text-muted-foreground">{label}</p>}
+          {item.needsConfiguration && <p className="mt-1 text-xs font-semibold text-amber-700">{t("configurationWarning")}</p>}
           {item.note && (
             <p className="mt-1 text-xs italic text-muted-foreground">
               {t("noteLabel")}: {item.note}

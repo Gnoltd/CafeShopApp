@@ -133,6 +133,54 @@ $$;
 revoke all on function public.record_table_checkout_session(text, uuid, text) from public;
 grant execute on function public.record_table_checkout_session(text, uuid, text) to anon, authenticated;
 
+-- Include the optimistic version in the guest-visible cart snapshot. The
+-- client needs this token to reject stale edits instead of overwriting a
+-- quantity changed by another device.
+create or replace function public.get_table_session(p_qr_token text)
+returns jsonb language plpgsql security definer set search_path = public
+as $$
+declare v_table_id uuid; v_session record; v_result jsonb;
+begin
+  select id into v_table_id from public.tables where qr_code_token = p_qr_token;
+  if v_table_id is null then raise exception 'table_not_found'; end if;
+  select * into v_session from public.table_sessions where table_id = v_table_id and status = 'active';
+  if v_session.id is null then
+    return jsonb_build_object('session', null, 'cartItems', '[]'::jsonb, 'rounds', '[]'::jsonb, 'unpaidTotal', 0);
+  end if;
+  select jsonb_build_object(
+    'session', jsonb_build_object(
+      'id', v_session.id, 'paymentPending', v_session.payment_pending,
+      'checkoutPromoCode', v_session.checkout_promo_code,
+      'checkoutDiscountAmount', v_session.checkout_discount_amount
+    ),
+    'cartItems', coalesce((select jsonb_agg(jsonb_build_object(
+      'id', ci.id, 'menuItemId', ci.menu_item_id, 'nameVi', mi.name_vi,
+      'nameEn', mi.name_en, 'sizeId', ci.size_id,
+      'modifierIds', to_jsonb(ci.modifier_ids), 'note', ci.note,
+      'unitPrice', ci.unit_price, 'quantity', ci.quantity, 'version', ci.version
+    ) order by ci.updated_at) from public.table_cart_items ci
+      join public.menu_items mi on mi.id = ci.menu_item_id
+      where ci.table_session_id = v_session.id), '[]'::jsonb),
+    'rounds', coalesce((select jsonb_agg(jsonb_build_object(
+      'id', o.id, 'createdAt', extract(epoch from o.created_at) * 1000,
+      'status', o.status, 'paymentStatus', o.payment_status,
+      'paymentMethod', o.payment_method, 'subtotal', o.subtotal,
+      'taxAmount', o.tax_amount, 'total', o.total,
+      'items', (select coalesce(jsonb_agg(jsonb_build_object(
+        'nameVi', mi2.name_vi, 'nameEn', mi2.name_en,
+        'quantity', oi.quantity, 'unitPrice', oi.unit_price, 'note', oi.note,
+        'sizeId', oi.size_id,
+        'modifierIds', coalesce((select jsonb_agg(oim.modifier_id) from public.order_item_modifiers oim where oim.order_item_id = oi.id), '[]'::jsonb)
+      )), '[]'::jsonb) from public.order_items oi join public.menu_items mi2 on mi2.id = oi.menu_item_id where oi.order_id = o.id)
+    ) order by o.created_at) from public.orders o where o.table_session_id = v_session.id), '[]'::jsonb),
+    'unpaidTotal', coalesce((select sum(total) from public.orders where table_session_id = v_session.id and payment_status = 'pending'), 0)
+  ) into v_result;
+  return v_result;
+end;
+$$;
+revoke all on function public.get_table_session(text) from public;
+grant execute on function public.get_table_session(text) to anon, authenticated;
+
 -- Lock the table row before the legacy function resolves/creates its active
 -- session. The unique active-session index remains a final backstop, while
 -- this lock makes simultaneous first adds deterministic and cheap.

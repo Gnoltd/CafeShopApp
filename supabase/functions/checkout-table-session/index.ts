@@ -29,6 +29,7 @@ const corsHeaders = {
 }
 
 const VALID_LOCALES = ["vi", "en"]
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const RATE_LIMIT_MAX_REQUESTS = 10
 const RATE_LIMIT_WINDOW_SECONDS = 60
 
@@ -83,6 +84,9 @@ Deno.serve(async (req) => {
     const method = payload.method as string | undefined
     const promoCode = (payload.promoCode as string | null | undefined) ?? null
     const attemptId = (payload.attemptId as string | undefined) ?? crypto.randomUUID()
+    if (payload.attemptId !== undefined && (typeof payload.attemptId !== "string" || !UUID_RE.test(payload.attemptId))) {
+      return new Response(JSON.stringify({ error: "attemptId must be a UUID" }), { status: 400, headers: corsHeaders })
+    }
     const locale = VALID_LOCALES.includes(payload.locale) ? payload.locale : "vi"
     if (!qrToken) {
       return new Response(JSON.stringify({ error: "qrToken is required" }), { status: 400, headers: corsHeaders })

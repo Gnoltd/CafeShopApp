@@ -10,7 +10,7 @@ export type TableSessionCartItem = {
   note: string | null
   unitPrice: number
   quantity: number
-  version?: number
+  version: number
 }
 
 export type TableSessionRoundItem = { nameVi: string; nameEn: string; quantity: number; unitPrice: number; note: string | null }
@@ -50,7 +50,7 @@ type GetTableSessionJson = {
   cartItems: {
     id: string; menuItemId: string; nameVi: string; nameEn: string
     sizeId: string | null; modifierIds: string[]; note: string | null
-    unitPrice: number; quantity: number
+    unitPrice: number; quantity: number; version?: number
   }[]
   rounds: {
     id: string; createdAt: number; status: string; paymentStatus: string
@@ -70,7 +70,7 @@ export async function getTableSession(supabase: SupabaseClient, qrToken: string)
     paymentPending: json.session?.paymentPending ?? false,
     checkoutPromoCode: json.session?.checkoutPromoCode ?? null,
     checkoutDiscountAmount: json.session?.checkoutDiscountAmount ?? 0,
-    cartItems: json.cartItems,
+    cartItems: json.cartItems.map((item) => ({ ...item, version: item.version ?? 0 })),
     rounds: json.rounds,
     unpaidTotal: json.unpaidTotal,
   }

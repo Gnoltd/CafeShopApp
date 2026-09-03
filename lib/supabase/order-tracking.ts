@@ -32,7 +32,7 @@ export type PlaceOrderInput = {
   submissionId?: string
 }
 
-type TrackingJsonItem = { menuItemId: string; nameVi: string; nameEn: string; quantity: number; unitPrice: number; note: string | null }
+type TrackingJsonItem = { menuItemId: string; nameVi: string; nameEn: string; quantity: number; unitPrice: number; note: string | null; sizeId?: string | null; modifierIds?: string[] }
 
 type TrackingJson = {
   id: string
@@ -55,7 +55,7 @@ function mapTrackingJson(json: TrackingJson): OrderForTracking {
     createdAt: json.createdAt,
     orderType: fromRealOrderType(json.orderType),
     table: json.table ?? undefined,
-    items: json.items.map((item) => ({ ...item, note: item.note ?? undefined })),
+    items: json.items.map((item) => ({ ...item, note: item.note ?? undefined, ...(item.sizeId !== undefined ? { sizeId: item.sizeId, modifierIds: item.modifierIds ?? [] } : {}) })),
     subtotal: json.subtotal,
     discount: json.discount,
     taxAmount: json.taxAmount ?? 0,

@@ -54,6 +54,13 @@ export function TableOrderingSession({
       .catch(() => setAddItemError(t("addItemError")))
   }
 
+  function handleUpdateQuantity(cartItemId: string, quantity: number) {
+    session.updateQuantity(cartItemId, quantity).catch((error: unknown) => {
+      setAddItemError(error instanceof Error && error.message === "stale_cart_item" ? t("cartChangedRetry") : t("cartUpdateError"))
+      session.refetch().catch(() => {})
+    })
+  }
+
   async function handlePlaceOrder() {
     setPlaceOrderError(null)
     setIsPlacingRound(true)
@@ -103,7 +110,7 @@ export function TableOrderingSession({
           paymentPending={session.paymentPending}
           isPlacingRound={isPlacingRound}
           placeOrderError={placeOrderError}
-          onUpdateQuantity={session.updateQuantity}
+          onUpdateQuantity={handleUpdateQuantity}
           onRemoveItem={session.removeItem}
           onPlaceOrder={handlePlaceOrder}
           onOpenCheckBill={() => setIsCheckBillOpen(true)}

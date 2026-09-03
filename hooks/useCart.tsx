@@ -31,6 +31,7 @@ export type CartItem = {
   note?: string
   unitPrice: number
   quantity: number
+  needsConfiguration?: boolean
 }
 
 export type AddToCartInput = Omit<CartItem, "cartItemId" | "quantity">

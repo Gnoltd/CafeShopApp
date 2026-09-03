@@ -228,7 +228,8 @@
     "promoLimitReached": "That promo code has reached its usage limit.",
     "promoBelowMinimum": "Your order doesn't meet the minimum for that code.",
     "promoApplied": "Code applied",
-    "removePromo": "Remove promo code"
+    "removePromo": "Remove promo code",
+    "configurationWarning": "Please review this item's size and extras before ordering."
   },
   "Checkout": {
     "noteLabel": "Note",
@@ -292,7 +293,8 @@
     "empty": "No orders yet.",
     "loading": "Loading your orders…",
     "reorder": "Reorder",
-    "reorderAdded": "Added to cart"
+    "reorderAdded": "Added to cart",
+    "historicOption": "Review options before ordering"
   },
   "OrderTracking": {
     "orderId": "Order ID",
@@ -398,6 +400,8 @@
     "checkBillClose": "Close",
     "checkBillNothingToPay": "Nothing to pay right now.",
     "addItemError": "Couldn't add that item — please try again.",
+    "cartUpdateError": "Couldn't update the shared cart — please try again.",
+    "cartChangedRetry": "Someone else changed this item. The cart was refreshed; please try again.",
     "placeOrderFailed": "Couldn't place your order — please try again.",
     "decreaseQuantityLabel": "Decrease quantity",
     "increaseQuantityLabel": "Increase quantity",

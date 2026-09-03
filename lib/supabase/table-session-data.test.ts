@@ -52,6 +52,12 @@ describe("getTableSession", () => {
     expect(result.unpaidTotal).toBe(60000)
   })
 
+  it("preserves the server cart version for optimistic mutations", async () => {
+    const { supabase } = mockRpc({ data: { session: null, cartItems: [{ id: "ci-1", menuItemId: "mi-1", nameVi: "x", nameEn: "x", sizeId: null, modifierIds: [], note: null, unitPrice: 1, quantity: 2, version: 7 }], rounds: [], unpaidTotal: 0 }, error: null })
+    const result = await getTableSession(supabase, "qr-token-1")
+    expect(result.cartItems[0].version).toBe(7)
+  })
+
   it("calls the RPC with p_qr_token", async () => {
     const { rpc, supabase } = mockRpc({
       data: { session: null, cartItems: [], rounds: [], unpaidTotal: 0 },

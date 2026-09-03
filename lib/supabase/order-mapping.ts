@@ -4,7 +4,10 @@ export type OrderType = "pickup" | "dine-in"
 export type RealPaymentMethod = "stripe" | "cash" | "vnpay"
 export type RealOrderItemStatus = "preparing" | "ready" | "served"
 
-export type OrderForTrackingItem = { menuItemId: string; nameVi: string; nameEn: string; quantity: number; unitPrice: number; note?: string }
+export type OrderForTrackingItem = {
+  menuItemId: string; nameVi: string; nameEn: string; quantity: number; unitPrice: number; note?: string
+  sizeId?: string | null; modifierIds?: string[]
+}
 
 export type OrderForTracking = {
   id: string
@@ -50,6 +53,8 @@ export type OrderRow = {
     unit_price: number
     note: string | null
     status: RealOrderItemStatus
+    size_id?: string | null
+    order_item_modifiers?: { modifier_id: string }[] | null
   }[]
 }
 
@@ -57,7 +62,7 @@ export const ORDER_SELECT = `
   id, created_at, order_type, status, subtotal, discount_amount, tax_amount, total,
   table_id, payment_status, payment_method,
   tables ( table_number ),
-  order_items ( id, menu_item_id, quantity, unit_price, note, status, menu_items ( name_vi, name_en ) )
+  order_items ( id, menu_item_id, size_id, quantity, unit_price, note, status, order_item_modifiers ( modifier_id ), menu_items ( name_vi, name_en ) )
 `
 
 export function mapOrderRow(row: OrderRow): OrderForTracking {
@@ -73,6 +78,7 @@ export function mapOrderRow(row: OrderRow): OrderForTracking {
       quantity: oi.quantity,
       unitPrice: oi.unit_price,
       note: oi.note ?? undefined,
+      ...(oi.size_id !== undefined ? { sizeId: oi.size_id, modifierIds: (oi.order_item_modifiers ?? []).map((modifier) => modifier.modifier_id) } : {}),
     })),
     subtotal: row.subtotal,
     discount: row.discount_amount,

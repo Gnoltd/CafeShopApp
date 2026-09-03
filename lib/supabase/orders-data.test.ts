@@ -54,6 +54,16 @@ describe("getOrderForTracking", () => {
 })
 
 describe("placeOrder", () => {
+  it("reuses the caller's submission id across a retry", async () => {
+    const rpcSpy = vi.fn(() => Promise.resolve({ data: { orderId: "ord-retry", total: 1 }, error: null }))
+    const supabase = { rpc: rpcSpy } as unknown as SupabaseClient
+    const input = { orderType: "pickup" as const, paymentMethod: "cash" as const, items: [], submissionId: "11111111-1111-4111-8111-111111111111" }
+    await placeOrder(supabase, input)
+    await placeOrder(supabase, input)
+    const calls = rpcSpy.mock.calls as unknown as [string, unknown][]
+    expect(calls[0][1]).toEqual(expect.objectContaining({ p_payload: expect.objectContaining({ submissionId: input.submissionId }) }))
+    expect(calls[1][1]).toEqual(calls[0][1])
+  })
   it("maps camelCase input to the RPC's payload shape, translating order type", async () => {
     const rpcSpy = vi.fn(() => Promise.resolve({ data: { orderId: "ord-new", total: 29000 }, error: null }))
     const supabase = { rpc: rpcSpy } as unknown as SupabaseClient
@@ -87,6 +97,16 @@ describe("placeOrder", () => {
 })
 
 describe("getMyOrders", () => {
+  it("preserves sized and modified metadata for reorder flows", async () => {
+    const row = {
+      id: "ord-options", created_at: "2026-07-10T10:00:00Z", order_type: "pickup", status: "completed",
+      subtotal: 1, discount_amount: 0, tax_amount: 0, total: 1, table_id: null, payment_status: "paid", payment_method: "cash", tables: null,
+      order_items: [{ menu_item_id: "item-1", size_id: "size-xl", quantity: 1, unit_price: 1, note: "no ice", status: "ready", order_item_modifiers: [{ modifier_id: "mod-1" }], menu_items: { name_vi: "x", name_en: "x" } }],
+    }
+    const supabase = { from: () => ({ select: () => ({ order: () => Promise.resolve({ data: [row], error: null }) }) }) } as unknown as SupabaseClient
+    const [item] = (await getMyOrders(supabase))[0].items
+    expect(item).toMatchObject({ sizeId: "size-xl", modifierIds: ["mod-1"], note: "no ice" })
+  })
   it("maps nested rows, translating order_type back to hyphenated form", async () => {
     const row = {
       id: "ord-1",

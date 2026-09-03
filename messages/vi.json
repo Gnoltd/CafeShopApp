@@ -228,7 +228,8 @@
     "promoLimitReached": "Mã khuyến mãi đã đạt giới hạn sử dụng.",
     "promoBelowMinimum": "Đơn hàng chưa đạt mức tối thiểu cho mã này.",
     "promoApplied": "Đã áp dụng mã",
-    "removePromo": "Xóa mã giảm giá"
+    "removePromo": "Xóa mã giảm giá",
+    "configurationWarning": "Vui lòng kiểm tra lại kích cỡ và món thêm trước khi đặt."
   },
   "Checkout": {
     "noteLabel": "Ghi chú",
@@ -292,7 +293,8 @@
     "empty": "Không có đơn hàng nào.",
     "loading": "Đang tải đơn hàng của bạn…",
     "reorder": "Đặt Lại",
-    "reorderAdded": "Đã thêm vào giỏ hàng"
+    "reorderAdded": "Đã thêm vào giỏ hàng",
+    "historicOption": "Vui lòng kiểm tra lại tuỳ chọn trước khi đặt"
   },
   "OrderTracking": {
     "orderId": "Mã Đơn Hàng",
@@ -398,6 +400,8 @@
     "checkBillClose": "Đóng",
     "checkBillNothingToPay": "Hiện chưa có gì cần thanh toán.",
     "addItemError": "Không thể thêm món này — vui lòng thử lại.",
+    "cartUpdateError": "Không thể cập nhật giỏ chung — vui lòng thử lại.",
+    "cartChangedRetry": "Một thiết bị khác vừa thay đổi món này. Giỏ đã được tải lại, vui lòng thử lại.",
     "placeOrderFailed": "Không thể đặt món — vui lòng thử lại.",
     "decreaseQuantityLabel": "Giảm số lượng",
     "increaseQuantityLabel": "Tăng số lượng",

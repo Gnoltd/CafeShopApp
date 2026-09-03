@@ -72,8 +72,10 @@ export function OrderHistory() {
           menuItemId: item.menuItemId,
           nameVi: item.nameVi,
           nameEn: item.nameEn,
-          modifiers: [],
+          modifiers: (item.modifierIds ?? []).map((id) => ({ groupId: "historic", optionId: id, labelVi: t("historicOption"), labelEn: t("historicOption"), priceDelta: 0 })),
           unitPrice: item.unitPrice,
+          ...(item.sizeId ? { size: { id: item.sizeId, label: t("historicOption"), priceDelta: 0 } } : {}),
+          ...(item.sizeId || (item.modifierIds?.length ?? 0) > 0 ? { needsConfiguration: true } : {}),
         },
         item.quantity
       )

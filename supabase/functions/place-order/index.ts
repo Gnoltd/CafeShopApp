@@ -68,6 +68,7 @@ function isJwtShaped(token: string): boolean {
 }
 
 const VALID_LOCALES = ["vi", "en"]
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 // place_order raises a mix of machine-readable snake_case codes and
 // plain-English sentences/dynamic-interpolated text (e.g. "menu item %
@@ -100,6 +101,9 @@ Deno.serve(async (req) => {
 
   try {
     const payload = await req.json()
+    if (payload.submissionId !== undefined && (typeof payload.submissionId !== "string" || !UUID_RE.test(payload.submissionId))) {
+      return new Response(JSON.stringify({ error: "submissionId must be a UUID" }), { status: 400, headers: corsHeaders })
+    }
     const authHeader = req.headers.get("Authorization")
     const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice("Bearer ".length) : null
     const forwardedAuthHeader = bearerToken && isJwtShaped(bearerToken) ? authHeader : null
