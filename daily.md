@@ -133,12 +133,16 @@ staff/admin-facing so neither track edits a file the other is touching:**
   and show success/failure. (`c5749cf`; also fixed `onRemoveItem` having no
   `.catch()` at all — was an unhandled promise rejection with zero user
   feedback on failure.)
-- [ ] Add retry/failure tests (rapid double taps, recovery after a transient
-  error) for all of the above. **Blocked**: needs a component-rendering
-  harness (`@testing-library/react` + jsdom) this project doesn't have —
-  `vitest.config.ts` is `environment: "node"` and no component test exists
-  anywhere in the repo yet. Same class of gap as Task 6's axe/keyboard pass
-  and Task 7's own test-coverage item; not specific to 3b.
+- [x] Add retry/failure tests (rapid double taps, recovery after a transient
+  error) for all of the above. Was **Blocked** on a missing component-
+  rendering harness; unblocked once Codex's Task 7 added
+  `@testing-library/react` + jsdom as a second Vitest project
+  (`vitest.config.mts`, `*.component.test.tsx`). Coverage landed as part of
+  Task 7's own test item (`74c27a2`):
+  `components/customer/cart-view.component.test.tsx` (promo Apply
+  duplicate-tap + retry-unlock) and
+  `components/customer/table-ordering-session.component.test.tsx`
+  (initial-load retry instead of a false empty cart).
 
 **3c reassigned to Claude (2026-09-03, evening): Codex couldn't log in this
 session, so Claude did 3c too instead of leaving it blocked.**
@@ -165,14 +169,21 @@ session, so Claude did 3c too instead of leaving it blocked.**
   work. Looks like a missing-UI/dead-code gap, not an "await this mutation"
   one — flagged for whoever picks up Task 7's lint pass or the "Undo"
   button gap AGENTS.md's feature-area notes already mention.)
-- [ ] Add retry/failure tests (rapid double taps, recovery after a transient
-  error) for all of the above. **Blocked**: same rendering-harness gap as
-  3b's identical item — not specific to 3c.
+- [x] Add retry/failure tests (rapid double taps, recovery after a transient
+  error) for all of the above. Same unblock as 3b's identical item (Task
+  7's new component-test harness, `74c27a2`):
+  `components/staff/kitchen-tables-column.component.test.tsx` (Mark Served
+  double-tap guard) and `components/admin/stock-adjust-form.component.test.tsx`
+  (Add-stock failure keeps the form open, preserves the amount, unlocks
+  retry). Dashboard/loyalty load-failure retry itself isn't independently
+  component-tested, but `components/shared/async-state.component.test.tsx`
+  covers the shared `AsyncStateView`/`StaleNotice` machinery both views are
+  built on.
 
-**Task 3 status: 4/6 items done (both halves' await/false-empty-state work
-complete), 2 test-coverage items blocked on a missing rendering harness.
-tsc/vitest (355/355)/build/eslint all clean at every commit
-(`117e9af`/`0d7e886`/`5adedb9`/`c5749cf`/`8411361`).**
+**Task 3 status: complete.** All 6 items done, including the two
+test-coverage items that were blocked on a missing rendering harness until
+Task 7 added one. tsc/vitest (366/366)/build/eslint all clean at every
+commit (`117e9af`/`0d7e886`/`5adedb9`/`c5749cf`/`8411361`/`74c27a2`).
 
 ### Task 4: Stop unnecessary requests and Realtime amplification (P1)
 
