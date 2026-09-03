@@ -7,9 +7,6 @@ import { Be_Vietnam_Pro, Playfair_Display } from "next/font/google";
 import { routing } from "@/i18n/routing";
 import { HeaderActionsStack } from "@/components/shared/header-actions-stack";
 import { ThemeProvider } from "@/hooks/useTheme";
-import { TablesProvider } from "@/hooks/useTables";
-import { CartProvider } from "@/hooks/useCart";
-import { OrdersProvider } from "@/hooks/useOrders";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentRole } from "@/lib/get-current-role";
 import "../globals.css";
@@ -96,14 +93,8 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
           <NextIntlClientProvider locale={locale} messages={messages}>
-            <TablesProvider>
-              <CartProvider>
-                <OrdersProvider>
-                  <HeaderActionsStack role={role} />
-                  {children}
-                </OrdersProvider>
-              </CartProvider>
-            </TablesProvider>
+            <HeaderActionsStack role={role} />
+            {children}
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>

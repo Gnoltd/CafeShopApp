@@ -152,16 +152,64 @@ type InventoryLogJoinRow = InventoryLogRow & {
   ingredients: { name_vi: string; name_en: string } | null
 }
 
-export async function getInventoryLogs(supabase: SupabaseClient): Promise<InventoryLog[]> {
+export const INVENTORY_LOGS_PAGE_SIZE = 50
+
+export type InventoryLogsPage = {
+  logs: InventoryLog[]
+  // Opaque `created_at|id` keyset cursor for the next page, or null once
+  // the last page has been reached. Never a plain OFFSET -- an OFFSET
+  // page shifts under concurrent inserts, a keyset cursor doesn't.
+  nextCursor: string | null
+}
+
+const LOGS_SELECT = "id, ingredient_id, change_quantity, reason, created_at, ingredients ( name_vi, name_en )"
+
+// Cursor-paginated replacement for the old `.limit(200)` fetch-everything
+// query (silently truncated any shop with more than 200 lifetime log rows,
+// and was fetched eagerly on every InventoryProvider mount even when the
+// Logs tab was never opened). Ordered `created_at desc, id desc` so a
+// cursor stays well-defined even if two rows share a timestamp.
+export async function getInventoryLogsPage(
+  supabase: SupabaseClient,
+  cursor: string | null = null
+): Promise<InventoryLogsPage> {
+  let query = supabase
+    .from("inventory_logs")
+    .select(LOGS_SELECT)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(INVENTORY_LOGS_PAGE_SIZE + 1)
+
+  if (cursor) {
+    const separatorIndex = cursor.indexOf("|")
+    const cursorCreatedAt = separatorIndex === -1 ? cursor : cursor.slice(0, separatorIndex)
+    const cursorId = separatorIndex === -1 ? "" : cursor.slice(separatorIndex + 1)
+    query = query.or(`created_at.lt.${cursorCreatedAt},and(created_at.eq.${cursorCreatedAt},id.lt.${cursorId})`)
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  const rows = (data ?? []) as unknown as InventoryLogJoinRow[]
+  const hasMore = rows.length > INVENTORY_LOGS_PAGE_SIZE
+  const pageRows = hasMore ? rows.slice(0, INVENTORY_LOGS_PAGE_SIZE) : rows
+  const logs = pageRows.map((row) => mapInventoryLogRow(row, row.ingredients?.name_vi ?? "", row.ingredients?.name_en ?? ""))
+  const lastRow = pageRows[pageRows.length - 1]
+  const nextCursor = hasMore && lastRow ? `${lastRow.created_at}|${lastRow.id}` : null
+  return { logs, nextCursor }
+}
+
+// Cheap single-row fetch backing the Inventory page's "Last Updated" stat
+// card, which needs to show *something* before the Logs tab (and its full
+// paginated fetch) has ever been opened.
+export async function getLatestInventoryLogTimestamp(supabase: SupabaseClient): Promise<number | null> {
   const { data, error } = await supabase
     .from("inventory_logs")
-    .select("id, ingredient_id, change_quantity, reason, created_at, ingredients ( name_vi, name_en )")
+    .select("created_at")
     .order("created_at", { ascending: false })
-    .limit(200)
+    .limit(1)
+    .maybeSingle()
   if (error) throw error
-  return ((data ?? []) as unknown as InventoryLogJoinRow[]).map((row) =>
-    mapInventoryLogRow(row, row.ingredients?.name_vi ?? "", row.ingredients?.name_en ?? "")
-  )
+  return data ? new Date((data as { created_at: string }).created_at).getTime() : null
 }
 
 type RecipeRow = { ingredient_id: string; quantity_used: number }

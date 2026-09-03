@@ -2,8 +2,6 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentRole } from "@/lib/get-current-role"
 import { ROLE_HOME } from "@/lib/roles"
-import { KitchenOrdersProvider } from "@/hooks/useKitchenOrders"
-import { ShiftProvider } from "@/hooks/useShift"
 
 const ALLOWED_ROLES = ["staff", "manager", "admin"]
 
@@ -28,11 +26,10 @@ export default async function StaffLayout({
     redirect(`/${locale}${role ? (ROLE_HOME[role] ?? "/menu") : "/login"}`)
   }
 
-  return (
-    <div className="h-dvh overflow-hidden">
-      <ShiftProvider>
-        <KitchenOrdersProvider>{children}</KitchenOrdersProvider>
-      </ShiftProvider>
-    </div>
-  )
+  // Shift/KitchenOrders data is only needed on /staff/orders/* (live board,
+  // history, shift-history all share the top bar's shift/realtime status)
+  // and /staff/pos (cash-confirm banner + shift gate) -- each mounts its
+  // own provider so /staff/rewards doesn't pay for either fetch/Realtime
+  // subscription. See daily.md Task 4.
+  return <div className="h-dvh overflow-hidden">{children}</div>
 }

@@ -4,7 +4,9 @@ import {
   getIngredients,
   createIngredient,
   adjustStock,
-  getInventoryLogs,
+  getInventoryLogsPage,
+  getLatestInventoryLogTimestamp,
+  INVENTORY_LOGS_PAGE_SIZE,
   setMenuItemIngredients,
   setModifierIngredients,
 } from "./inventory-data"
@@ -116,39 +118,61 @@ describe("adjustStock", () => {
   })
 })
 
-describe("getInventoryLogs", () => {
+// Mimics the real supabase-js query builder just enough for
+// getInventoryLogsPage: every chain method (select/order/limit/or) returns
+// the same thenable builder, so both `await query` (no cursor) and
+// `await query.or(...)` (with a cursor) resolve to `result`.
+function makeLogsQueryBuilder(result: { data: unknown[] | null; error: unknown }) {
+  const builder = {
+    select: () => builder,
+    order: () => builder,
+    limit: (...args: unknown[]) => {
+      limitSpy(...args)
+      return builder
+    },
+    or: (...args: unknown[]) => {
+      orSpy(...args)
+      return builder
+    },
+    then: (resolve: (value: typeof result) => unknown) => resolve(result),
+  }
+  return builder
+}
+let limitSpy: (...args: unknown[]) => void = () => {}
+let orSpy: (...args: unknown[]) => void = () => {}
+
+function logRow(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    id: "log-1",
+    ingredient_id: "ing-1",
+    change_quantity: -2,
+    reason: "waste",
+    created_at: "2026-07-06T10:00:00.000Z",
+    ingredients: { name_vi: "Đường", name_en: "Sugar" },
+    ...overrides,
+  }
+}
+
+describe("getInventoryLogsPage", () => {
   it("maps joined rows, falling back to empty names when the ingredient join is null", async () => {
+    limitSpy = vi.fn()
+    orSpy = vi.fn()
     const rows = [
-      {
-        id: "log-1",
-        ingredient_id: "ing-1",
-        change_quantity: -2,
-        reason: "waste",
-        created_at: "2026-07-06T10:00:00.000Z",
-        ingredients: { name_vi: "Đường", name_en: "Sugar" },
-      },
-      {
+      logRow(),
+      logRow({
         id: "log-2",
         ingredient_id: "ing-deleted",
         change_quantity: 3,
         reason: "restock",
         created_at: "2026-07-06T09:00:00.000Z",
         ingredients: null,
-      },
-    ]
-    const supabase = {
-      from: () => ({
-        select: () => ({
-          order: () => ({
-            limit: () => Promise.resolve({ data: rows, error: null }),
-          }),
-        }),
       }),
-    } as unknown as SupabaseClient
+    ]
+    const supabase = { from: () => makeLogsQueryBuilder({ data: rows, error: null }) } as unknown as SupabaseClient
 
-    const result = await getInventoryLogs(supabase)
+    const result = await getInventoryLogsPage(supabase)
 
-    expect(result[0]).toEqual({
+    expect(result.logs[0]).toEqual({
       id: "log-1",
       ingredientId: "ing-1",
       ingredientNameVi: "Đường",
@@ -157,8 +181,85 @@ describe("getInventoryLogs", () => {
       reason: "waste",
       timestamp: new Date("2026-07-06T10:00:00.000Z").getTime(),
     })
-    expect(result[1].ingredientNameVi).toBe("")
-    expect(result[1].ingredientNameEn).toBe("")
+    expect(result.logs[1].ingredientNameVi).toBe("")
+    expect(result.logs[1].ingredientNameEn).toBe("")
+    expect(orSpy).not.toHaveBeenCalled()
+  })
+
+  it("requests one extra row, strips it, and returns a cursor when more rows remain", async () => {
+    limitSpy = vi.fn()
+    orSpy = vi.fn()
+    const rows = Array.from({ length: INVENTORY_LOGS_PAGE_SIZE + 1 }, (_, i) =>
+      logRow({ id: `log-${i}`, created_at: `2026-07-0${(i % 6) + 1}T10:00:00.000Z` })
+    )
+    const supabase = { from: () => makeLogsQueryBuilder({ data: rows, error: null }) } as unknown as SupabaseClient
+
+    const result = await getInventoryLogsPage(supabase)
+
+    expect(limitSpy).toHaveBeenCalledWith(INVENTORY_LOGS_PAGE_SIZE + 1)
+    expect(result.logs).toHaveLength(INVENTORY_LOGS_PAGE_SIZE)
+    expect(result.nextCursor).toBe(`${rows[INVENTORY_LOGS_PAGE_SIZE - 1].created_at}|${rows[INVENTORY_LOGS_PAGE_SIZE - 1].id}`)
+  })
+
+  it("returns a null cursor once the last page is reached", async () => {
+    limitSpy = vi.fn()
+    orSpy = vi.fn()
+    const rows = [logRow()]
+    const supabase = { from: () => makeLogsQueryBuilder({ data: rows, error: null }) } as unknown as SupabaseClient
+
+    const result = await getInventoryLogsPage(supabase)
+
+    expect(result.nextCursor).toBeNull()
+  })
+
+  it("applies a keyset filter derived from the cursor instead of an OFFSET", async () => {
+    limitSpy = vi.fn()
+    orSpy = vi.fn()
+    const supabase = { from: () => makeLogsQueryBuilder({ data: [], error: null }) } as unknown as SupabaseClient
+
+    await getInventoryLogsPage(supabase, "2026-07-06T10:00:00.000Z|log-1")
+
+    expect(orSpy).toHaveBeenCalledWith(
+      "created_at.lt.2026-07-06T10:00:00.000Z,and(created_at.eq.2026-07-06T10:00:00.000Z,id.lt.log-1)"
+    )
+  })
+})
+
+describe("getLatestInventoryLogTimestamp", () => {
+  it("returns the mapped timestamp of the most recent log row", async () => {
+    const supabase = {
+      from: () => ({
+        select: () => ({
+          order: () => ({
+            limit: () => ({
+              maybeSingle: () => Promise.resolve({ data: { created_at: "2026-07-06T10:00:00.000Z" }, error: null }),
+            }),
+          }),
+        }),
+      }),
+    } as unknown as SupabaseClient
+
+    const result = await getLatestInventoryLogTimestamp(supabase)
+
+    expect(result).toBe(new Date("2026-07-06T10:00:00.000Z").getTime())
+  })
+
+  it("returns null when there are no logs yet", async () => {
+    const supabase = {
+      from: () => ({
+        select: () => ({
+          order: () => ({
+            limit: () => ({
+              maybeSingle: () => Promise.resolve({ data: null, error: null }),
+            }),
+          }),
+        }),
+      }),
+    } as unknown as SupabaseClient
+
+    const result = await getLatestInventoryLogTimestamp(supabase)
+
+    expect(result).toBeNull()
   })
 })
 

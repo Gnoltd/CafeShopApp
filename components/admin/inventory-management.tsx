@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
 import { Coffee, Droplet, Wheat, Candy, Boxes, TriangleAlert, History, Plus, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -37,15 +37,44 @@ type Tab = "ingredients" | "logs"
 
 export function InventoryManagement({ locale }: { locale: string }) {
   const t = useTranslations("AdminInventory")
-  const { ingredients, logs, isLoading, error, adjustStock, setOutOfStock, addIngredient, updateIngredientDetails } =
-    useInventory()
+  const {
+    ingredients,
+    isLoading,
+    error,
+    adjustStock,
+    setOutOfStock,
+    addIngredient,
+    updateIngredientDetails,
+    lastLogTimestamp,
+    logs,
+    logsHasMore,
+    isLogsLoading,
+    logsError,
+    loadLogs,
+    loadMoreLogs,
+  } = useInventory()
   const [tab, setTab] = useState<Tab>("ingredients")
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formMode, setFormMode] = useState<{ type: "add" } | { type: "edit"; ingredient: Ingredient } | null>(null)
+  const [isLoadingMoreLogs, setIsLoadingMoreLogs] = useState(false)
 
   const lowStockCount = ingredients.filter((i) => i.stock < i.threshold).length
-  const lastUpdated = logs[0]?.timestamp
   const editingIngredient = ingredients.find((i) => i.id === editingId) ?? null
+
+  // Fetch the full paginated log list only once the Logs tab is actually
+  // opened -- loadLogs() is a no-op on repeat calls (see useInventory.tsx).
+  useEffect(() => {
+    if (tab === "logs") loadLogs()
+  }, [tab, loadLogs])
+
+  async function handleLoadMoreLogs() {
+    setIsLoadingMoreLogs(true)
+    try {
+      await loadMoreLogs()
+    } finally {
+      setIsLoadingMoreLogs(false)
+    }
+  }
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4">
@@ -85,7 +114,7 @@ export function InventoryManagement({ locale }: { locale: string }) {
           <div>
             <p className="text-xs text-muted-foreground">{t("lastUpdated")}</p>
             <p className="text-lg font-semibold text-card-foreground">
-              {lastUpdated ? formatLogTime(lastUpdated, locale) : t("neverUpdated")}
+              {lastLogTimestamp ? formatLogTime(lastLogTimestamp, locale) : t("neverUpdated")}
             </p>
           </div>
         </div>
@@ -202,43 +231,62 @@ export function InventoryManagement({ locale }: { locale: string }) {
         </div>
       ) : (
         <div className="nb-border-sm nb-shadow-sm overflow-x-auto rounded-xl bg-card">
-          {logs.length === 0 ? (
+          {logsError && (
+            <p className="px-4 pt-4 text-sm text-destructive">{t("logsLoadError")}</p>
+          )}
+          {isLogsLoading && logs.length === 0 ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">{t("loadingLogs")}</p>
+          ) : logs.length === 0 ? (
             <p className="py-10 text-center text-sm text-muted-foreground">{t("logsEmpty")}</p>
           ) : (
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="border-b text-left text-muted-foreground">
-                  <th className="px-4 py-3 font-medium">{t("logDate")}</th>
-                  <th className="px-4 py-3 font-medium">{t("logIngredient")}</th>
-                  <th className="px-4 py-3 font-medium">{t("logChange")}</th>
-                  <th className="px-4 py-3 font-medium">{t("logReason")}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {logs.map((log) => (
-                  <tr key={log.id}>
-                    <td className="px-4 py-3 text-muted-foreground">{formatLogTime(log.timestamp, locale)}</td>
-                    <td className="px-4 py-3 font-medium text-card-foreground">
-                      {locale === "vi" ? log.ingredientNameVi : log.ingredientNameEn}
-                    </td>
-                    <td
-                      className={cn(
-                        "px-4 py-3 font-bold",
-                        log.change >= 0 ? "text-green-600" : "text-destructive"
-                      )}
-                    >
-                      {log.change >= 0 ? "+" : ""}
-                      {log.change}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                        {t(REASON_LABEL_KEYS[log.reason])}
-                      </span>
-                    </td>
+            <>
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b text-left text-muted-foreground">
+                    <th className="px-4 py-3 font-medium">{t("logDate")}</th>
+                    <th className="px-4 py-3 font-medium">{t("logIngredient")}</th>
+                    <th className="px-4 py-3 font-medium">{t("logChange")}</th>
+                    <th className="px-4 py-3 font-medium">{t("logReason")}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y">
+                  {logs.map((log) => (
+                    <tr key={log.id}>
+                      <td className="px-4 py-3 text-muted-foreground">{formatLogTime(log.timestamp, locale)}</td>
+                      <td className="px-4 py-3 font-medium text-card-foreground">
+                        {locale === "vi" ? log.ingredientNameVi : log.ingredientNameEn}
+                      </td>
+                      <td
+                        className={cn(
+                          "px-4 py-3 font-bold",
+                          log.change >= 0 ? "text-green-600" : "text-destructive"
+                        )}
+                      >
+                        {log.change >= 0 ? "+" : ""}
+                        {log.change}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                          {t(REASON_LABEL_KEYS[log.reason])}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {logsHasMore && (
+                <div className="flex justify-center p-4">
+                  <Button
+                    variant="neubrutal"
+                    size="sm"
+                    onClick={handleLoadMoreLogs}
+                    disabled={isLoadingMoreLogs}
+                  >
+                    {isLoadingMoreLogs ? t("loadingLogs") : t("loadMoreLogs")}
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
