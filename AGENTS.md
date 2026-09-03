@@ -22,8 +22,25 @@ indexes — the P0 payment/order-correctness and DB track).
 
 **Claude owns, in this order: Task 6 -> Task 4 -> Task 3** (hydration/
 accessibility/bilingual UX, provider scoping + Realtime amplification,
-async-state/loading-empty-error-stale handling). Task 6 is already
-in progress as of this note.
+async-state/loading-empty-error-stale handling). Task 6 and Task 4 are
+done; Task 3 is in progress.
+
+**Task 3 update (2026-09-03): split between Claude and Codex once both
+Task 6/4 (Claude) and Task 1/2/5 (Codex) landed**, since Task 3's own
+6 items span both customer-facing and staff/admin-facing surfaces with
+no natural single owner. Items 1-2 (skeleton/retry, stale-data
+retention) are done. The remainder is split in `daily.md` as **3b
+(Claude)** — promo Apply try/catch/finally, order/address-book
+false-empty states, and table-cart mutation-awaiting, all in files
+Claude already has fresh context in from today's Task 3a/Task 4 work
+— and **3c (Codex)** — loyalty/dashboard false-empty states,
+stock-adjust/dashboard-restock mutation-awaiting, and cash-confirm/
+serving/per-item-KDS mutation-awaiting. Same file-collision logic as
+the original split: 3b and 3c touch disjoint files, except 3c's KDS
+files (`useKitchenOrders.tsx`, `kitchen-board.tsx`) which Claude
+edited today for the optimistic-update/race fix (`d7f3b6d`,
+`1bcde6d`) — Codex should pull `main` before starting 3c so that work
+isn't built against a stale version of those files.
 
 **Task 7 (lint/tests/CI) and Task 8 (acceptance pass) are unclaimed**
 — pick up after Tasks 1-6 land, split by area or done jointly.

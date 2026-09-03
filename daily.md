@@ -109,12 +109,45 @@
 - Async views distinguish `loading | data | empty | error | stale`; refresh failure retains last-good data.
 - Mutations expose per-entity pending state and a translated, screen-reader-announced error.
 
-- [ ] Show skeleton/progress and retry instead of returning `null` for order tracking, QR resolution, table-session load, and review lookup.
-- [x] Catch guest polling and Realtime refetch failures; retain last-good order/table data and label it stale until recovery.
-- [ ] Put promo Apply in `try/catch/finally` so rejection never leaves the button permanently disabled.
-- [ ] Stop turning order, loyalty, dashboard, and address-book failures into genuine-looking empty/zero states.
-- [ ] Await table-cart, stock-adjust, dashboard-restock, cash-confirm, serving, and per-item KDS mutations; disable only the affected control and show success/failure.
-- [ ] Add retry/failure tests for every state above, including rapid double taps and recovery after a transient error.
+- [x] Show skeleton/progress and retry instead of returning `null` for order tracking, QR resolution, table-session load, and review lookup. (`117e9af`, review fix `0d7e886`)
+- [x] Catch guest polling and Realtime refetch failures; retain last-good order/table data and label it stale until recovery. (`5adedb9`)
+
+**Task 3 remainder split between Claude and Codex (2026-09-03), customer-facing vs.
+staff/admin-facing so neither track edits a file the other is touching:**
+
+**Claude owns 3b (customer-facing, continues today's `order-tracking.tsx`/
+`useOrders.tsx`/`useTableSession.tsx`/`table-ordering-session.tsx` context):**
+- [ ] Put promo Apply (`components/customer/cart-view.tsx`,
+  `components/customer/checkout-view.tsx`) in `try/catch/finally` so rejection
+  never leaves the button permanently disabled.
+- [ ] Stop turning order and address-book failures into genuine-looking
+  empty/zero states (`components/customer/order-history.tsx`,
+  `components/customer/address-book-view.tsx`, `hooks/useOrders.tsx`) —
+  loyalty's false-empty-state is Codex's, see 3c.
+- [ ] Await table-cart add/remove/quantity mutations
+  (`components/customer/table-ordering-session.tsx`,
+  `components/customer/table-cart-panel.tsx`, `hooks/useTableSession.tsx`);
+  disable only the tapped row and show success/failure.
+- [ ] Add retry/failure tests (rapid double taps, recovery after a transient
+  error) for all of the above.
+
+**Codex owns 3c (staff/admin-facing, zero file overlap with 3b):**
+- [ ] Stop turning loyalty and dashboard failures into genuine-looking
+  empty/zero states (`components/customer/loyalty-view.tsx`,
+  `hooks/useDashboardStats.tsx`, `components/admin/dashboard-view.tsx`).
+- [ ] Await stock-adjust and dashboard-restock mutations
+  (`components/admin/stock-adjust-form.tsx`,
+  `components/admin/inventory-management.tsx`,
+  `components/admin/dashboard-view.tsx`).
+- [ ] Await cash-confirm, serving, and per-item KDS mutations
+  (`components/staff/kitchen-tables-column.tsx`,
+  `components/staff/kitchen-board.tsx`, `components/staff/kitchen-display.tsx`,
+  `components/staff/pos-terminal.tsx`, `hooks/useKitchenOrders.tsx`) — **pull
+  latest `main` first**: Claude's optimistic-update/race fixes (`d7f3b6d`,
+  `1bcde6d`) landed in `useKitchenOrders.tsx`/`kitchen-board.tsx` today, this
+  sub-task must build on top of those, not before them.
+- [ ] Add retry/failure tests (rapid double taps, recovery after a transient
+  error) for all of the above.
 
 ### Task 4: Stop unnecessary requests and Realtime amplification (P1)
 
