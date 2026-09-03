@@ -31,6 +31,7 @@ revoke all on public.table_round_submissions from anon, authenticated;
 -- "both callers check, then both insert" race before the unique index is
 -- reached, so promotions/loyalty are never evaluated twice.
 alter function public.place_order(jsonb) rename to place_order_legacy;
+revoke execute on function public.place_order_legacy(jsonb) from public, anon, authenticated;
 create or replace function public.place_order(p_payload jsonb)
 returns jsonb
 language plpgsql
@@ -70,6 +71,7 @@ grant execute on function public.place_order(jsonb) to anon, authenticated;
 -- still holding the session lock.
 alter function public.checkout_table_session(text, public.payment_method, text)
   rename to checkout_table_session_legacy;
+revoke execute on function public.checkout_table_session_legacy(text, public.payment_method, text) from public, anon, authenticated;
 create or replace function public.checkout_table_session(
   p_qr_token text, p_method public.payment_method, p_promo_code text, p_attempt_id uuid
 )
@@ -186,6 +188,7 @@ grant execute on function public.get_table_session(text) to anon, authenticated;
 -- this lock makes simultaneous first adds deterministic and cheap.
 alter function public.add_cart_item(text, uuid, uuid, uuid[], text, integer)
   rename to add_cart_item_legacy;
+revoke execute on function public.add_cart_item_legacy(text, uuid, uuid, uuid[], text, integer) from public, anon, authenticated;
 create or replace function public.add_cart_item(
   p_qr_token text, p_menu_item_id uuid, p_size_id uuid,
   p_modifier_ids uuid[], p_note text, p_quantity integer
@@ -243,6 +246,7 @@ grant execute on function public.update_cart_item_quantity_delta(text, uuid, int
 -- legacy function consumes the draft cart, so a response timeout followed by
 -- a retry returns the original order instead of placing another round.
 alter function public.place_table_round(text) rename to place_table_round_legacy;
+revoke execute on function public.place_table_round_legacy(text) from public, anon, authenticated;
 create or replace function public.place_table_round(p_qr_token text, p_submission_id uuid default null)
 returns jsonb
 language plpgsql security definer set search_path = public

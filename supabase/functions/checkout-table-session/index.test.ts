@@ -52,6 +52,12 @@ function checkoutResult(attemptId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa") {
   }
 }
 
+function checkoutResultWithUrl() {
+  const result = checkoutResult()
+  result.data.checkoutSessionUrl = "https://checkout.stripe.example/existing"
+  return result
+}
+
 describe("checkout-table-session recovery", () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -156,7 +162,9 @@ describe("checkout-table-session recovery", () => {
   })
 
   it("does not release a successful Stripe checkout attempt", async () => {
-    const rpc = vi.fn().mockResolvedValueOnce(checkoutResult())
+    const rpc = vi.fn()
+      .mockResolvedValueOnce(checkoutResult())
+      .mockResolvedValueOnce({ data: true, error: null })
     mocks.createClient.mockReturnValue({ rpc })
     mocks.createStripeCheckoutSessionForTableSession.mockResolvedValue({ url: "https://checkout.stripe.example/session" })
     env.set("STRIPE_SECRET_KEY", "stripe-secret")
@@ -164,6 +172,36 @@ describe("checkout-table-session recovery", () => {
     const response = await handler(request("stripe"))
 
     expect(response.status).toBe(200)
-    expect(rpc).toHaveBeenCalledTimes(1)
+    expect(rpc).toHaveBeenCalledTimes(2)
+  })
+
+  it("releases the attempt when checkout URL persistence fails", async () => {
+    const rpc = vi.fn()
+      .mockResolvedValueOnce(checkoutResult())
+      .mockResolvedValueOnce({ data: false, error: null })
+      .mockResolvedValueOnce({ data: true, error: null })
+    mocks.createClient.mockReturnValue({ rpc })
+    mocks.createStripeCheckoutSessionForTableSession.mockResolvedValue({ url: "https://checkout.stripe.example/session" })
+    env.set("STRIPE_SECRET_KEY", "stripe-secret")
+
+    const response = await handler(request("stripe"))
+
+    expect(response.status).toBe(500)
+    expect(rpc).toHaveBeenLastCalledWith("release_table_checkout", {
+      p_qr_token: "table-secret",
+      p_attempt_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    })
+  })
+
+  it("reuses a persisted hosted URL without creating another gateway session", async () => {
+    const rpc = vi.fn().mockResolvedValueOnce(checkoutResultWithUrl())
+    mocks.createClient.mockReturnValue({ rpc })
+    env.set("STRIPE_SECRET_KEY", "stripe-secret")
+
+    const response = await handler(request("stripe"))
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ checkoutUrl: "https://checkout.stripe.example/existing" })
+    expect(mocks.createStripeCheckoutSessionForTableSession).not.toHaveBeenCalled()
   })
 })

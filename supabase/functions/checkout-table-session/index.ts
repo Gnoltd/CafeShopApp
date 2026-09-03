@@ -70,6 +70,20 @@ async function releaseCheckoutAttempt(
   }
 }
 
+async function persistCheckoutUrl(
+  serviceClient: ReturnType<typeof createClient>,
+  qrToken: string,
+  attemptId: string,
+  checkoutUrl: string
+): Promise<boolean> {
+  const { data, error } = await serviceClient.rpc("record_table_checkout_session", {
+    p_qr_token: qrToken,
+    p_attempt_id: attemptId,
+    p_checkout_url: checkoutUrl,
+  })
+  return !error && data === true
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
@@ -141,14 +155,14 @@ Deno.serve(async (req) => {
     }
 
     if (method === "stripe") {
-      const attemptId = result.checkoutAttemptId
+      const gatewayAttemptId = result.checkoutAttemptId
       const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY")
       const siteUrl = Deno.env.get("SITE_URL")
-      if (!attemptId) {
+      if (!gatewayAttemptId) {
         return new Response(JSON.stringify({ error: "Unexpected error checking the bill" }), { status: 500, headers: corsHeaders })
       }
       if (!stripeSecret || !siteUrl) {
-        await releaseCheckoutAttempt(serviceClient, qrToken, attemptId)
+        await releaseCheckoutAttempt(serviceClient, qrToken, gatewayAttemptId)
         return new Response(JSON.stringify({ error: "Unexpected error checking the bill" }), { status: 500, headers: corsHeaders })
       }
 
@@ -157,35 +171,34 @@ Deno.serve(async (req) => {
         const session = await createStripeCheckoutSessionForTableSession({
           tableSessionId: result.tableSessionId,
           total: result.chargeTotal,
-          idempotencyKey: `table-checkout:${result.tableSessionId}:${attemptId}`,
+          idempotencyKey: `table-checkout:${result.tableSessionId}:${gatewayAttemptId}`,
           successUrl: tableUrl,
           cancelUrl: `${tableUrl}?stripeCanceled=1`,
         })
         if ("error" in session) {
-          await releaseCheckoutAttempt(serviceClient, qrToken, attemptId)
+          await releaseCheckoutAttempt(serviceClient, qrToken, gatewayAttemptId)
           return new Response(JSON.stringify({ error: session.error }), { status: 400, headers: corsHeaders })
         }
-        await serviceClient.rpc("record_table_checkout_session", {
-          p_qr_token: qrToken,
-          p_attempt_id: attemptId,
-          p_checkout_url: session.url,
-        })
+        if (!(await persistCheckoutUrl(serviceClient, qrToken, gatewayAttemptId, session.url))) {
+          await releaseCheckoutAttempt(serviceClient, qrToken, gatewayAttemptId)
+          return new Response(JSON.stringify({ error: "Unexpected error checking the bill" }), { status: 500, headers: corsHeaders })
+        }
         return new Response(JSON.stringify({ checkoutUrl: session.url }), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         })
       } catch {
-        await releaseCheckoutAttempt(serviceClient, qrToken, attemptId)
+        await releaseCheckoutAttempt(serviceClient, qrToken, gatewayAttemptId)
         return new Response(JSON.stringify({ error: "Unexpected error checking the bill" }), { status: 500, headers: corsHeaders })
       }
     }
 
-    const attemptId = result.checkoutAttemptId
-    if (!attemptId) {
+    const gatewayAttemptId = result.checkoutAttemptId
+    if (!gatewayAttemptId) {
       return new Response(JSON.stringify({ error: "Unexpected error checking the bill" }), { status: 500, headers: corsHeaders })
     }
     if (!Deno.env.get("VNPAY_TMN_CODE") || !Deno.env.get("VNPAY_HASH_SECRET")) {
-      await releaseCheckoutAttempt(serviceClient, qrToken, attemptId)
+      await releaseCheckoutAttempt(serviceClient, qrToken, gatewayAttemptId)
       return new Response(JSON.stringify({ error: "Unexpected error checking the bill" }), { status: 500, headers: corsHeaders })
     }
     try {
@@ -196,17 +209,16 @@ Deno.serve(async (req) => {
         locale,
         returnUrl: buildVnpayReturnUrlForTableSession(locale),
       })
-      await serviceClient.rpc("record_table_checkout_session", {
-        p_qr_token: qrToken,
-        p_attempt_id: attemptId,
-        p_checkout_url: checkoutUrl,
-      })
+      if (!(await persistCheckoutUrl(serviceClient, qrToken, gatewayAttemptId, checkoutUrl))) {
+        await releaseCheckoutAttempt(serviceClient, qrToken, gatewayAttemptId)
+        return new Response(JSON.stringify({ error: "Unexpected error checking the bill" }), { status: 500, headers: corsHeaders })
+      }
       return new Response(JSON.stringify({ checkoutUrl }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
     } catch {
-      await releaseCheckoutAttempt(serviceClient, qrToken, attemptId)
+      await releaseCheckoutAttempt(serviceClient, qrToken, gatewayAttemptId)
       return new Response(JSON.stringify({ error: "Unexpected error checking the bill" }), { status: 500, headers: corsHeaders })
     }
   } catch {
