@@ -54,8 +54,22 @@ but never called in `kitchen-tables-column.tsx` — pre-existing dead
 code, not touched). If Codex's login gets fixed, there's nothing left
 in Task 3 for it to pick up; point it at Task 7 or 8 instead.
 
-**Task 7 (lint/tests/CI) and Task 8 (acceptance pass) are unclaimed**
-— pick up after Tasks 1-6 land, split by area or done jointly.
+**Task 7 assigned to Codex (2026-09-03, evening).** All of Task 1-6 are
+done (see each task's own status line above) and Task 3's remainder no
+longer needs Codex, so Task 7 (lint/tests/CI) is next and doesn't
+overlap with anything Claude has in flight. Task 8 (production
+acceptance) needs real iOS Safari/Android Chrome devices neither agent
+has, so it stays a manual/human task rather than being assigned to
+either agent. See `daily.md`'s Task 7 section for the full current
+lint breakdown (25 errors/10 warnings as of `3b0027a`, refreshed from
+the stale 23/11 count the task was originally written against) and the
+`react-hooks/set-state-in-effect` fix pattern already proven today in
+`loyalty-view.tsx`/`useDashboardStats.tsx` (route the load through
+`useLatestRefetch` so the linter can't trace a local `setState` call
+into the effect body). Task 7's missing-test-harness item is also what
+blocked Task 3b/3c's own "add retry/double-tap tests" checklist items
+(both marked Blocked in `daily.md`) — once the harness lands, loop back
+and add those specific tests too, they're already scoped there.
 
 Why this split and not some other one: nearly every task in the plan
 shares files with at least one other task (`checkout-table-session/

@@ -245,17 +245,88 @@ tsc/vitest (355/355)/build/eslint all clean at every commit
 
 ### Task 7: Restore quality gates and cover real failure behavior (P2)
 
+**Codex owns Task 7 (2026-09-03, evening): Task 3 is fully done (both 3b
+and 3c, the latter reassigned to Claude when Codex couldn't log in — see
+AGENTS.md), so there's nothing left for Codex there. Task 8 needs real
+iOS Safari/Android Chrome devices neither agent has, so it stays a manual/
+human task, not assigned. Task 7 is all code — lint fixes, tests, CI
+config, error boundaries — and doesn't overlap with anything Claude has
+in flight, so start here whenever Codex is back.**
+
 **Files:**
-- Modify the 20 files currently reported by ESLint.
-- Modify: `vitest.config.ts` or module format so the Vite native-loader warning is removed.
-- Create: component/hook tests for customer checkout/tracking/table session and KDS/admin mutation flows.
+- Modify the 20 files currently reported by ESLint (fresh count below,
+  supersedes the stale one this task was originally written against —
+  re-run `npx eslint .` before starting in case more drift has happened
+  since).
+- Modify: `vitest.config.ts` or module format so the Vite native-loader
+  warning is removed.
+- Create: component/hook tests for customer checkout/tracking/table
+  session and KDS/admin mutation flows.
 - Create: `.github/workflows/quality.yml`
 
-- [ ] Fix all 23 lint errors and 11 warnings; do not disable React purity/compiler rules globally to make the command green.
-- [ ] Specifically remove render-time `Date.now()`, render-time ref mutation, cascading effect state, and the Cart memoization pattern that prevents React compiler optimization.
-- [ ] Add tests for OAuth initiation failure, payment/promo pending reset, stale-data presentation, Realtime disconnect/recovery, modal keyboard behavior, and settings authorization/constraints.
-- [ ] Make `lint`, `tsc --noEmit`, `test`, and `build` required pre-merge checks.
-- [ ] Add localized route error boundaries so an unexpected render/server failure offers Retry/Home instead of Next.js’s generic English 500 page.
+- [ ] Fix all lint errors and warnings (**25 errors, 10 warnings** as of
+  `3b0027a`, 2026-09-03 -- was "23 errors, 11 warnings" when this task was
+  written 2026-09-02, drifted since); do not disable React purity/compiler
+  rules globally to make the command green. Current breakdown, mostly one
+  repeated pattern:
+  - **`react-hooks/set-state-in-effect` ("Calling setState synchronously
+    within an effect"), ~19 of the errors**, in: `menu-management.tsx`,
+    `staff-accounts.tsx` (x2), `checkout-view.tsx`, `order-tracking.tsx`,
+    `profile-settings-view.tsx`, `review-form.tsx`, `table-landing.tsx`,
+    `coffee-cup-hero.tsx`, `header-actions-stack.tsx`, `kitchen-display.tsx`,
+    `pos-terminal.tsx`, `dialog.tsx`, `useCart.tsx`, `useTableSession.tsx`
+    (x2), `useTables.tsx`, `useTheme.tsx`. This is a real, fixable pattern,
+    not a rule to suppress: `components/customer/loyalty-view.tsx` hit the
+    identical error today (`8411361`) and was fixed by routing the load
+    through `useLatestRefetch` (`hooks/useLatestRefetch.ts`) instead of
+    calling a local `useCallback` directly inside the effect body — the
+    linter can't trace into an imported hook's return value, so `run()`
+    from `useLatestRefetch` reads as opaque where a same-component
+    `useCallback` doesn't. `useDashboardStats.tsx` already uses this
+    shape too. Where a fetch/mutation doesn't fit `useLatestRefetch`'s
+    "coalesce + latest-wins" model, the alternative is moving the
+    `setState` to fire only after a real `await` inside an async function
+    the effect merely calls with `void`, not calling it and its
+    `.finally()`/`.then()` directly inline in the effect body (also
+    already load-bearing in the fixed file for the same reason).
+  - `product-detail.tsx:278` — "Cannot call impure function during render".
+  - `coffee-cup-canvas.tsx:37` — "Cannot access refs during render".
+  - `useCart.tsx:144` — "Compilation Skipped: Existing memoization could
+    not be preserved" (the Cart memoization pattern named in the next
+    item — same file, likely the same root cause).
+  - `no-explicit-any` (4x): `best-sellers-gallery.tsx` (x3),
+    `best-sellers-marquee.tsx`.
+  - `no-unused-vars` (10 warnings): `tables-management.tsx`,
+    `table-ordering-session.tsx`, `best-sellers-gallery.tsx` (x3),
+    `coffee-cup-hero.tsx`, `kitchen-tables-column.tsx` (x4 — 3 of these,
+    `confirmCashPayment`/`markCashPayment`/`undoCashPayment`, are dead
+    destructures found and deliberately left alone during today's Task 3c
+    pass; decide whether to wire them to real UI or delete them, don't
+    just silence the warning).
+- [ ] Specifically remove render-time `Date.now()`, render-time ref
+  mutation, cascading effect state, and the Cart memoization pattern that
+  prevents React compiler optimization (this is the same list as the lint
+  breakdown above, not a separate pass).
+- [ ] Add tests for OAuth initiation failure, payment/promo pending reset,
+  stale-data presentation, Realtime disconnect/recovery, modal keyboard
+  behavior, and settings authorization/constraints. **Needs a real
+  rendering harness first** (`@testing-library/react` + jsdom or
+  happy-dom) — none exists yet; `vitest.config.ts` is `environment: "node"`
+  project-wide and no component-level test exists anywhere in the repo.
+  Add it as a second Vitest project/config scoped to component tests
+  rather than flipping the existing `node` environment globally (today's
+  283 logic-only tests don't need or want a DOM). This same missing
+  harness is why Task 3b/3c's own "add retry/double-tap tests" items
+  (`daily.md`, both marked Blocked) couldn't be done today — picking this
+  up here unblocks those retroactively; consider looping back to add
+  those specific tests (promo Apply retry, address-book/loyalty/dashboard
+  load-failure retry, table-cart double-tap, KDS Mark Served/Mark Cash
+  double-tap) once the harness exists, since they're concrete and already
+  scoped in this file's history.
+- [ ] Make `lint`, `tsc --noEmit`, `test`, and `build` required pre-merge
+  checks.
+- [ ] Add localized route error boundaries so an unexpected render/server
+  failure offers Retry/Home instead of Next.js's generic English 500 page.
 
 ### Task 8: Production acceptance pass and content cleanup (release gate)
 
