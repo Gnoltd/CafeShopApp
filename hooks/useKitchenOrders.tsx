@@ -42,6 +42,58 @@ export function willCompleteOrderOnAdvance(order: KdsOrderRow, itemId: string): 
   return order.items.every((item) => item.id === itemId || item.status === "served")
 }
 
+// Pure so it's directly testable: returns a new `orders` array with one
+// item's status swapped. Used both to apply the optimistic guess the
+// instant a staff member taps an item, and to roll that guess back if the
+// RPC confirming it server-side turns out to have failed.
+export function withItemStatus(
+  orders: KdsOrderRow[],
+  orderId: string,
+  itemId: string,
+  status: OrderItemStatus
+): KdsOrderRow[] {
+  return orders.map((order) =>
+    order.id !== orderId
+      ? order
+      : { ...order, items: order.items.map((item) => (item.id === itemId ? { ...item, status } : item)) }
+  )
+}
+
+// The debounced Realtime refetch (useLatestRefetch, KDS_REFETCH_DELAY_MS
+// below) can take up to ~1.2s to confirm a tap on a busy board -- ticking
+// several items in quick succession is the NORMAL interaction pattern, not
+// an edge case, and each tick restarts that window. Without this, the
+// tapped item shows literally no feedback until the debounce finally
+// fires. So the item's local status is flipped immediately, ahead of the
+// RPC that makes it real; the later coalesced refetch just reconciles
+// (normally confirming what's already shown). If the RPC actually fails,
+// the optimistic guess is rolled back and the caller's error handling
+// still fires (`advance` rejecting propagates out of this function).
+//
+// Kept as a standalone function (state passed as explicit get/set) rather
+// than inlined in `advanceItem` so the rollback path is unit-testable
+// without a React render harness -- this project's Vitest setup has no
+// DOM/render environment.
+export async function advanceItemOptimistically(
+  orders: KdsOrderRow[],
+  orderId: string,
+  itemId: string,
+  nextStatus: OrderItemStatus,
+  setOrders: (updater: (current: KdsOrderRow[]) => KdsOrderRow[]) => void,
+  advance: (itemId: string, newStatus: OrderItemStatus) => Promise<void>
+): Promise<void> {
+  const previousStatus = orders.find((o) => o.id === orderId)?.items.find((i) => i.id === itemId)?.status
+  setOrders((current) => withItemStatus(current, orderId, itemId, nextStatus))
+  try {
+    await advance(itemId, nextStatus)
+  } catch (err) {
+    if (previousStatus) {
+      setOrders((current) => withItemStatus(current, orderId, itemId, previousStatus))
+    }
+    throw err
+  }
+}
+
 function formatDuration(ms: number): string {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000))
   const minutes = Math.floor(totalSeconds / 60)
@@ -129,7 +181,9 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
       setCompletedCount((count) => count + 1)
       setCompletedDurations((durations) => [...durations, Date.now() - order.createdAt])
     }
-    await advanceOrderItemStatus(supabase, itemId, next)
+    await advanceItemOptimistically(orders, orderId, itemId, next, setOrders, (id, status) =>
+      advanceOrderItemStatus(supabase, id, status)
+    )
   }
 
   async function serveTable(orderIds: string[]) {
