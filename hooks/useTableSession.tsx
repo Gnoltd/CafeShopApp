@@ -50,6 +50,7 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
   const [stillHereNonce, setStillHereNonce] = useState(0)
   const idleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const promptTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const roundSubmissionId = useRef(crypto.randomUUID())
 
   const refetch = useCallback(async () => {
     if (!qrToken) return
@@ -148,7 +149,9 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
 
   async function updateQuantity(cartItemId: string, quantity: number) {
     if (!qrToken) return
-    await updateCartItemQuantityQuery(supabase, qrToken, cartItemId, quantity)
+    const item = cartItems.find((candidate) => candidate.id === cartItemId)
+    if (!item) throw new Error("cart_item_not_found")
+    await updateCartItemQuantityQuery(supabase, qrToken, cartItemId, quantity - item.quantity, item.version)
   }
 
   async function removeItem(cartItemId: string) {
@@ -158,7 +161,9 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
 
   async function placeRound() {
     if (!qrToken) throw new Error("no qr token")
-    return placeTableRoundQuery(supabase, qrToken)
+    const result = await placeTableRoundQuery(supabase, qrToken, roundSubmissionId.current)
+    roundSubmissionId.current = crypto.randomUUID()
+    return result
   }
 
   function confirmStillHere() {

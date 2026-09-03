@@ -49,6 +49,7 @@ export function CheckoutView() {
   const [usableRedemptions, setUsableRedemptions] = useState<MyRedemption[]>([])
   const [selectedRedemptionIds, setSelectedRedemptionIds] = useState<string[]>([])
   const [isPlacing, setIsPlacing] = useState(false)
+  const [submissionId, setSubmissionId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const searchParams = useSearchParams()
   const [canceledNotice, setCanceledNotice] = useState(false)
@@ -160,8 +161,11 @@ export function CheckoutView() {
     setError(null)
     setIsPlacing(true)
     try {
+      const stableSubmissionId = submissionId ?? crypto.randomUUID()
+      setSubmissionId(stableSubmissionId)
       const { data, error: invokeError } = await supabase.functions.invoke("place-order", {
         body: {
+          submissionId: stableSubmissionId,
           orderType: "pickup",
           tableId: null,
           tableNumber: null,

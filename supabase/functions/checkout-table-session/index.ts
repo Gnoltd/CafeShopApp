@@ -82,6 +82,7 @@ Deno.serve(async (req) => {
     const qrToken = payload.qrToken as string | undefined
     const method = payload.method as string | undefined
     const promoCode = (payload.promoCode as string | null | undefined) ?? null
+    const attemptId = (payload.attemptId as string | undefined) ?? crypto.randomUUID()
     const locale = VALID_LOCALES.includes(payload.locale) ? payload.locale : "vi"
     if (!qrToken) {
       return new Response(JSON.stringify({ error: "qrToken is required" }), { status: 400, headers: corsHeaders })
@@ -106,6 +107,7 @@ Deno.serve(async (req) => {
       p_qr_token: qrToken,
       p_method: method,
       p_promo_code: promoCode,
+      p_attempt_id: attemptId,
     })
 
     if (error) {
@@ -117,10 +119,18 @@ Deno.serve(async (req) => {
       orderIds: string[]
       chargeTotal: number
       checkoutAttemptId: string | null
+      checkoutSessionUrl?: string | null
     }
 
     if (method === "cash") {
       return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      })
+    }
+
+    if (result.checkoutSessionUrl) {
+      return new Response(JSON.stringify({ checkoutUrl: result.checkoutSessionUrl }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
@@ -143,6 +153,7 @@ Deno.serve(async (req) => {
         const session = await createStripeCheckoutSessionForTableSession({
           tableSessionId: result.tableSessionId,
           total: result.chargeTotal,
+          idempotencyKey: `table-checkout:${result.tableSessionId}:${attemptId}`,
           successUrl: tableUrl,
           cancelUrl: `${tableUrl}?stripeCanceled=1`,
         })
@@ -150,6 +161,11 @@ Deno.serve(async (req) => {
           await releaseCheckoutAttempt(serviceClient, qrToken, attemptId)
           return new Response(JSON.stringify({ error: session.error }), { status: 400, headers: corsHeaders })
         }
+        await serviceClient.rpc("record_table_checkout_session", {
+          p_qr_token: qrToken,
+          p_attempt_id: attemptId,
+          p_checkout_url: session.url,
+        })
         return new Response(JSON.stringify({ checkoutUrl: session.url }), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -175,6 +191,11 @@ Deno.serve(async (req) => {
         ipAddr: clientIp,
         locale,
         returnUrl: buildVnpayReturnUrlForTableSession(locale),
+      })
+      await serviceClient.rpc("record_table_checkout_session", {
+        p_qr_token: qrToken,
+        p_attempt_id: attemptId,
+        p_checkout_url: checkoutUrl,
       })
       return new Response(JSON.stringify({ checkoutUrl }), {
         status: 200,

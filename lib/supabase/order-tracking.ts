@@ -29,6 +29,7 @@ export type PlaceOrderInput = {
   redeemLoyaltyPoints?: number
   paymentCollected?: boolean
   items: PlaceOrderItemInput[]
+  submissionId?: string
 }
 
 type TrackingJsonItem = { menuItemId: string; nameVi: string; nameEn: string; quantity: number; unitPrice: number; note: string | null }
@@ -72,6 +73,7 @@ export async function placeOrder(
   const { data, error } = await supabase.rpc("place_order", {
     p_payload: {
       orderType: toRealOrderType(input.orderType),
+      submissionId: input.submissionId ?? crypto.randomUUID(),
       tableId: input.tableId ?? null,
       pickupTime: input.pickupTime ?? null,
       paymentMethod: input.paymentMethod,
@@ -126,9 +128,10 @@ export async function payExistingOrder(
   supabase: SupabaseClient,
   orderId: string,
   locale: string,
-  paymentMethod: RealPaymentMethod
+  paymentMethod: RealPaymentMethod,
+  attemptId = crypto.randomUUID()
 ): Promise<{ checkoutUrl?: string }> {
-  const { data, error } = await supabase.functions.invoke("pay-order", { body: { orderId, locale, paymentMethod } })
+  const { data, error } = await supabase.functions.invoke("pay-order", { body: { orderId, locale, paymentMethod, attemptId } })
   if (error || data?.error) throw error ?? new Error(data.error)
   return data as { checkoutUrl?: string }
 }

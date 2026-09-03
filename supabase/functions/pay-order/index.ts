@@ -42,6 +42,7 @@ Deno.serve(async (req) => {
     const payload = await req.json()
     const orderId = payload.orderId as string | undefined
     const paymentMethod = payload.paymentMethod as string | undefined
+    const attemptId = (payload.attemptId as string | undefined) ?? orderId
     const locale = VALID_LOCALES.includes(payload.locale) ? payload.locale : "vi"
     if (!orderId) {
       return new Response(JSON.stringify({ error: "orderId is required" }), { status: 400, headers: corsHeaders })
@@ -130,6 +131,7 @@ Deno.serve(async (req) => {
       const session = await createStripeCheckoutSession({
         orderId: order.id,
         total: order.total,
+        idempotencyKey: `pay-order:${order.id}:${attemptId}`,
         successUrl: `${siteUrl}/${locale}/orders/${order.id}`,
         cancelUrl: `${siteUrl}/${locale}/orders/${order.id}?stripeCanceled=1`,
       })

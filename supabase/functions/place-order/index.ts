@@ -145,6 +145,7 @@ Deno.serve(async (req) => {
       const session = await createStripeCheckoutSession({
         orderId: data.orderId,
         total: data.total,
+        idempotencyKey: `place-order:${payload.submissionId ?? data.orderId}`,
         successUrl: `${siteUrl}/${locale}/orders/${data.orderId}${tableQuery}`,
         cancelUrl: `${siteUrl}/${locale}/checkout?stripeCanceled=${data.orderId}`,
       })

@@ -42,6 +42,7 @@ export function CheckBillSheet({
   const [supabase] = useState(() => createClient())
   const [method, setMethod] = useState<Method | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [attemptId] = useState(() => crypto.randomUUID())
   const [error, setError] = useState<string | null>(null)
 
   async function handleConfirm() {
@@ -49,7 +50,7 @@ export function CheckBillSheet({
     setError(null)
     setIsSubmitting(true)
     try {
-      const result = await checkoutTableSession(supabase, qrToken, method, locale, null)
+      const result = await checkoutTableSession(supabase, qrToken, method, locale, null, attemptId)
       if (result.checkoutUrl) {
         window.location.href = result.checkoutUrl
         return

@@ -151,10 +151,11 @@ describe("updateCartItemQuantity", () => {
   it("calls the RPC with qrToken, cartItemId and quantity", async () => {
     const { rpc, supabase } = mockRpc({ data: null, error: null })
     await updateCartItemQuantity(supabase, "qr-token-1", "ci-1", 3)
-    expect(rpc).toHaveBeenCalledWith("update_cart_item_quantity", {
+    expect(rpc).toHaveBeenCalledWith("update_cart_item_quantity_delta", {
       p_qr_token: "qr-token-1",
       p_cart_item_id: "ci-1",
-      p_quantity: 3,
+      p_delta: 3,
+      p_expected_version: null,
     })
   })
 })
@@ -176,8 +177,8 @@ describe("placeTableRound", () => {
 
   it("calls the RPC with p_qr_token", async () => {
     const { rpc, supabase } = mockRpc({ data: { orderId: "order-1", total: 90000 }, error: null })
-    await placeTableRound(supabase, "qr-token-1")
-    expect(rpc).toHaveBeenCalledWith("place_table_round", { p_qr_token: "qr-token-1" })
+    await placeTableRound(supabase, "qr-token-1", "submission-1")
+    expect(rpc).toHaveBeenCalledWith("place_table_round", { p_qr_token: "qr-token-1", p_submission_id: "submission-1" })
   })
 })
 
@@ -203,7 +204,7 @@ describe("checkoutTableSession", () => {
     const result = await checkoutTableSession(supabase, "qr-token-1", "vnpay", "vi", "SAVE10")
 
     expect(invoke).toHaveBeenCalledWith("checkout-table-session", {
-      body: { qrToken: "qr-token-1", method: "vnpay", locale: "vi", promoCode: "SAVE10" },
+      body: { qrToken: "qr-token-1", method: "vnpay", locale: "vi", promoCode: "SAVE10", attemptId: expect.any(String) },
     })
     expect(result.checkoutUrl).toBe("https://example.com/pay")
   })
@@ -215,7 +216,7 @@ describe("checkoutTableSession", () => {
     await checkoutTableSession(supabase, "qr-token-1", "cash", "en")
 
     expect(invoke).toHaveBeenCalledWith("checkout-table-session", {
-      body: { qrToken: "qr-token-1", method: "cash", locale: "en", promoCode: null },
+      body: { qrToken: "qr-token-1", method: "cash", locale: "en", promoCode: null, attemptId: expect.any(String) },
     })
   })
 

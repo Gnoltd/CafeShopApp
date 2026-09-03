@@ -67,6 +67,7 @@ export function OrderTracking({ orderId, table }: { orderId: string; table?: str
   const [order, setOrder] = useState<OrderForTracking | null | undefined>(undefined)
   const [isGuestPolling, setIsGuestPolling] = useState(false)
   const [isPaying, setIsPaying] = useState(false)
+  const [paymentAttemptId] = useState(() => crypto.randomUUID())
   const [paymentNotice, setPaymentNotice] = useState(false)
   const [cashConfirmed, setCashConfirmed] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -97,7 +98,7 @@ export function OrderTracking({ orderId, table }: { orderId: string; table?: str
   async function handlePayNow(method: RealPaymentMethod) {
     setIsPaying(true)
     try {
-      const { checkoutUrl } = await payExistingOrder(supabase, orderId, locale, method)
+      const { checkoutUrl } = await payExistingOrder(supabase, orderId, locale, method, paymentAttemptId)
       if (checkoutUrl) {
         window.location.href = checkoutUrl
         return

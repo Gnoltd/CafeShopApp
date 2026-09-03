@@ -71,6 +71,7 @@ describe("placeOrder", () => {
 
     expect(rpcSpy).toHaveBeenCalledWith("place_order", {
       p_payload: {
+        submissionId: expect.any(String),
         orderType: "dine_in",
         tableId: "tbl-1",
         pickupTime: null,
@@ -354,7 +355,7 @@ describe("payExistingOrder", () => {
     const result = await payExistingOrder(supabase, "order-1", "vi", "stripe")
 
     expect(invokeSpy).toHaveBeenCalledWith("pay-order", {
-      body: { orderId: "order-1", locale: "vi", paymentMethod: "stripe" },
+      body: { orderId: "order-1", locale: "vi", paymentMethod: "stripe", attemptId: expect.any(String) },
     })
     expect(result.checkoutUrl).toBe("https://example.com/pay")
   })

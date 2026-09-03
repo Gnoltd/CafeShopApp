@@ -25,6 +25,7 @@ export async function createStripeCheckoutSession(params: {
   total: number
   successUrl: string
   cancelUrl: string
+  idempotencyKey?: string
 }): Promise<{ url: string } | { error: string }> {
   const body: string[] = []
   flattenForStripe(
@@ -58,6 +59,7 @@ export async function createStripeCheckoutSession(params: {
     headers: {
       Authorization: `Bearer ${Deno.env.get("STRIPE_SECRET_KEY")!}`,
       "Content-Type": "application/x-www-form-urlencoded",
+      ...(params.idempotencyKey ? { "Idempotency-Key": params.idempotencyKey } : {}),
     },
     body: body.join("&"),
   })
@@ -80,6 +82,7 @@ export async function createStripeCheckoutSessionForTableSession(params: {
   total: number
   successUrl: string
   cancelUrl: string
+  idempotencyKey?: string
 }): Promise<{ url: string } | { error: string }> {
   const body: string[] = []
   flattenForStripe(
@@ -109,6 +112,7 @@ export async function createStripeCheckoutSessionForTableSession(params: {
     headers: {
       Authorization: `Bearer ${Deno.env.get("STRIPE_SECRET_KEY")!}`,
       "Content-Type": "application/x-www-form-urlencoded",
+      ...(params.idempotencyKey ? { "Idempotency-Key": params.idempotencyKey } : {}),
     },
     body: body.join("&"),
   })

@@ -10,6 +10,7 @@ export type TableSessionCartItem = {
   note: string | null
   unitPrice: number
   quantity: number
+  version?: number
 }
 
 export type TableSessionRoundItem = { nameVi: string; nameEn: string; quantity: number; unitPrice: number; note: string | null }
@@ -114,12 +115,14 @@ export async function updateCartItemQuantity(
   supabase: SupabaseClient,
   qrToken: string,
   cartItemId: string,
-  quantity: number
+  quantity: number,
+  expectedVersion?: number
 ): Promise<void> {
-  const { error } = await supabase.rpc("update_cart_item_quantity", {
+  const { error } = await supabase.rpc("update_cart_item_quantity_delta", {
     p_qr_token: qrToken,
     p_cart_item_id: cartItemId,
-    p_quantity: quantity,
+    p_delta: quantity,
+    p_expected_version: expectedVersion ?? null,
   })
   if (error) throw error
 }
@@ -129,8 +132,12 @@ export async function removeCartItem(supabase: SupabaseClient, qrToken: string, 
   if (error) throw error
 }
 
-export async function placeTableRound(supabase: SupabaseClient, qrToken: string): Promise<{ orderId: string; total: number }> {
-  const { data, error } = await supabase.rpc("place_table_round", { p_qr_token: qrToken })
+export async function placeTableRound(
+  supabase: SupabaseClient,
+  qrToken: string,
+  submissionId = crypto.randomUUID()
+): Promise<{ orderId: string; total: number }> {
+  const { data, error } = await supabase.rpc("place_table_round", { p_qr_token: qrToken, p_submission_id: submissionId })
   if (error) throw error
   return data as { orderId: string; total: number }
 }
@@ -146,10 +153,11 @@ export async function checkoutTableSession(
   qrToken: string,
   method: "cash" | "stripe" | "vnpay",
   locale: string,
-  promoCode?: string | null
+  promoCode?: string | null,
+  attemptId = crypto.randomUUID()
 ): Promise<{ checkoutUrl?: string }> {
   const { data, error } = await supabase.functions.invoke("checkout-table-session", {
-    body: { qrToken, method, locale, promoCode: promoCode ?? null },
+    body: { qrToken, method, locale, promoCode: promoCode ?? null, attemptId },
   })
   if (error || data?.error) throw error ?? new Error(data.error)
   return data as { checkoutUrl?: string }
