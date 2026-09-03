@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import { AnimatePresence } from "framer-motion"
 import { Star, Info, Gift, ArrowRight, CheckCircle2, Wallet, Sparkles, Ticket } from "lucide-react"
@@ -9,10 +9,13 @@ import { formatNumber, formatDateVN, formatOrderId } from "@/lib/format"
 import { createClient } from "@/lib/supabase/client"
 import { Link } from "@/i18n/navigation"
 import { getLoyaltyBalance, getLoyaltyTierProgress, getLoyaltyTransactions, type LoyaltyTierProgress, type LoyaltyTransaction, type LoyaltyTransactionType } from "@/lib/supabase/loyalty-data"
+import { nextAsyncLoadFlags } from "@/lib/async-refetch-flags"
+import { useLatestRefetch, type LoadContext } from "@/hooks/useLatestRefetch"
 import { AnimatedCounter } from "@/components/motion/animated-counter"
 import { ProgressRing } from "@/components/motion/progress-ring"
 import { StaggerList, StaggerItem } from "@/components/motion/stagger-list"
 import { RewardsCatalogModal } from "@/components/customer/rewards-catalog-modal"
+import { AsyncSkeleton, AsyncRetryError, StaleNotice } from "@/components/shared/async-state"
 
 const TRANSACTION_META: Record<
   LoyaltyTransactionType,
@@ -31,31 +34,88 @@ export function LoyaltyView() {
   const [transactions, setTransactions] = useState<LoyaltyTransaction[]>([])
   const [tier, setTier] = useState<LoyaltyTierProgress | null>(null)
   const [rewardsOpen, setRewardsOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  // hasLoadError: nothing has ever loaded, so balance/transactions/tier must
+  // not render as "0 points, no history yet" -- that's indistinguishable
+  // from an account that's genuinely brand new. hasStaleData: a later
+  // refetch failed but the last-good numbers above are still showing.
+  const [hasLoadError, setHasLoadError] = useState(false)
+  const [hasStaleData, setHasStaleData] = useState(false)
+  const hasLoadedOnceRef = useRef(false)
 
+  async function load({ isStale }: LoadContext) {
+    try {
+      const [{ data: { user } }, transactionsResult] = await Promise.all([
+        supabase.auth.getUser(),
+        getLoyaltyTransactions(supabase),
+      ])
+      const [balanceResult, tierResult] = user
+        ? await Promise.all([getLoyaltyBalance(supabase, user.id), getLoyaltyTierProgress(supabase)])
+        : [0, null]
+      if (isStale()) return
+      setBalance(balanceResult)
+      setTier(tierResult)
+      setTransactions(transactionsResult)
+      hasLoadedOnceRef.current = true
+      setHasLoadError(false)
+      setHasStaleData(false)
+    } catch (error) {
+      if (isStale()) return
+      const flags = nextAsyncLoadFlags(hasLoadedOnceRef.current, "failure")
+      setHasLoadError(flags.hasBlockingError)
+      setHasStaleData(flags.hasStaleData)
+      throw error
+    }
+  }
+
+  const { run } = useLatestRefetch(load, 300)
+
+  // Refresh after a reward redemption: balance/transactions only, matching
+  // this callback's original scope (a redemption never changes tier). Best-
+  // effort -- a failure here just leaves the pre-redemption numbers on
+  // screen a beat longer instead of surfacing a blocking error over an
+  // action that itself already succeeded.
   const refreshLoyalty = useCallback(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
-      getLoyaltyBalance(supabase, user.id).then(setBalance)
+      getLoyaltyBalance(supabase, user.id)
+        .then(setBalance)
+        .catch(() => {})
     })
-    getLoyaltyTransactions(supabase).then(setTransactions)
+    getLoyaltyTransactions(supabase)
+      .then(setTransactions)
+      .catch(() => {})
   }, [supabase])
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return
-      getLoyaltyBalance(supabase, user.id).then(setBalance)
-      getLoyaltyTierProgress(supabase).then(setTier)
-    })
-    getLoyaltyTransactions(supabase).then(setTransactions)
+    run().finally(() => setIsLoading(false))
+    // Runs once on mount; `supabase` is a stable client held in state and
+    // `run` is a stable runner handle.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const retryLoyalty = () => {
+    setIsLoading(true)
+    void run().finally(() => setIsLoading(false))
+  }
 
   const currentTierName = tier ? (locale === "vi" ? tier.currentTierNameVi : tier.currentTierNameEn) : ""
   const nextTierName = tier ? (locale === "vi" ? tier.nextTierNameVi : tier.nextTierNameEn) : null
   const progressPercent = tier?.progressPercent ?? 0
 
+  if (isLoading) return <AsyncSkeleton variant="page" />
+
+  if (hasLoadError) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] w-full max-w-md items-center justify-center px-6">
+        <AsyncRetryError onRetry={retryLoyalty} />
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pt-4 pb-28 md:max-w-5xl md:px-8 md:py-4">
+      {hasStaleData && <StaleNotice onRetry={retryLoyalty} className="mb-4" />}
       <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-10">
         {/* Left Column: Loyalty Balance & Tier details */}
         <div className="flex-1 min-w-0 md:flex-[2]">

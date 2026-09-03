@@ -664,6 +664,8 @@
     "action": "Hành Động",
     "critical": "Sắp Hết",
     "restock": "Nhập Kho",
+    "restocking": "Đang nhập kho…",
+    "restockError": "Không thể nhập kho món này — vui lòng thử lại.",
     "viewAllItems": "Xem Tất Cả Món",
     "noLowStock": "Không có món nào sắp hết hàng.",
     "loadingInventory": "Đang tải kho hàng…",
@@ -673,6 +675,7 @@
     "tableCleaning": "Đang Dọn",
     "tablesNeedCleaning": "{count} bàn cần được dọn dẹp",
     "loadingStats": "…",
+    "statsLoadError": "Không thể tải số liệu hôm nay — các con số bên dưới có thể chưa đầy đủ.",
     "exportExcel": "Xuất Excel"
   },
   "AdminShift": {
@@ -847,6 +850,8 @@
     "amountLabel": "Số Lượng",
     "addStock": "Nhập Thêm",
     "removeStock": "Xuất Bớt",
+    "adjustingStock": "Đang lưu…",
+    "adjustStockError": "Không thể cập nhật tồn kho — vui lòng thử lại.",
     "markOutOfStock": "Đánh Dấu Hết Hàng",
     "amountRequiredError": "Vui lòng nhập số lượng lớn hơn 0.",
     "close": "Đóng",

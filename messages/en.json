@@ -664,6 +664,8 @@
     "action": "Action",
     "critical": "Critical",
     "restock": "Restock",
+    "restocking": "Restocking…",
+    "restockError": "Couldn't restock this item — please try again.",
     "viewAllItems": "View All Items",
     "noLowStock": "No items are low on stock.",
     "loadingInventory": "Loading inventory…",
@@ -673,6 +675,7 @@
     "tableCleaning": "Cleaning",
     "tablesNeedCleaning": "{count} table(s) need cleaning attention",
     "loadingStats": "…",
+    "statsLoadError": "Couldn't load today's stats — the numbers below may be missing.",
     "exportExcel": "Export Excel"
   },
   "AdminShift": {
@@ -847,6 +850,8 @@
     "amountLabel": "Amount",
     "addStock": "Add Stock",
     "removeStock": "Remove Stock",
+    "adjustingStock": "Saving…",
+    "adjustStockError": "Couldn't update stock — please try again.",
     "markOutOfStock": "Mark as Out of Stock",
     "amountRequiredError": "Enter an amount greater than 0.",
     "close": "Close",

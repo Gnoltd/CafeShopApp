@@ -18,8 +18,8 @@ export function StockAdjustForm({
 }: {
   ingredient: Ingredient
   locale: string
-  onAdd: (amount: number) => void
-  onRemove: (amount: number) => void
+  onAdd: (amount: number) => Promise<void>
+  onRemove: (amount: number) => Promise<void>
   onMarkOutOfStock: () => void | Promise<void>
   onClose: () => void
 }) {
@@ -28,36 +28,55 @@ export function StockAdjustForm({
   const [error, setError] = useState<string | null>(null)
   const [isConfirmingOutOfStock, setIsConfirmingOutOfStock] = useState(false)
   const [isMarkingOutOfStock, setIsMarkingOutOfStock] = useState(false)
+  const [isAdjusting, setIsAdjusting] = useState(false)
 
   const name = locale === "vi" ? ingredient.nameVi : ingredient.nameEn
   const parsedAmount = Number(amount)
   const isValidAmount = amount.trim() !== "" && Number.isFinite(parsedAmount) && parsedAmount > 0
 
-  function handleAdd() {
+  async function handleAdd() {
     if (!isValidAmount) {
       setError(t("amountRequiredError"))
       return
     }
-    onAdd(parsedAmount)
-    onClose()
+    setError(null)
+    setIsAdjusting(true)
+    try {
+      await onAdd(parsedAmount)
+      onClose()
+    } catch {
+      // Never close on failure -- the amount stays in the input so the
+      // manager can just retry instead of re-entering it.
+      setError(t("adjustStockError"))
+    } finally {
+      setIsAdjusting(false)
+    }
   }
 
-  function handleRemove() {
+  async function handleRemove() {
     if (!isValidAmount) {
       setError(t("amountRequiredError"))
       return
     }
-    onRemove(parsedAmount)
-    onClose()
+    setError(null)
+    setIsAdjusting(true)
+    try {
+      await onRemove(parsedAmount)
+      onClose()
+    } catch {
+      setError(t("adjustStockError"))
+    } finally {
+      setIsAdjusting(false)
+    }
   }
 
   return (
     <FormDialog
       onClose={onClose}
       title={t("adjustStockTitle")}
-      isBusy={isMarkingOutOfStock}
+      isBusy={isMarkingOutOfStock || isAdjusting}
       footer={
-        <Button variant="neubrutal" className="bg-card text-foreground" onClick={onClose}>
+        <Button variant="neubrutal" className="bg-card text-foreground" onClick={onClose} disabled={isAdjusting}>
           {t("close")}
         </Button>
       }
@@ -89,15 +108,21 @@ export function StockAdjustForm({
           }}
           placeholder="0"
           className="h-10"
+          disabled={isAdjusting}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <Button variant="neubrutal" onClick={handleAdd} className="h-10">
-          {t("addStock")}
+        <Button variant="neubrutal" onClick={handleAdd} className="h-10" disabled={isAdjusting || isMarkingOutOfStock}>
+          {isAdjusting ? t("adjustingStock") : t("addStock")}
         </Button>
-        <Button variant="neubrutal" onClick={handleRemove} className="h-10 bg-card text-foreground">
-          {t("removeStock")}
+        <Button
+          variant="neubrutal"
+          onClick={handleRemove}
+          className="h-10 bg-card text-foreground"
+          disabled={isAdjusting || isMarkingOutOfStock}
+        >
+          {isAdjusting ? t("adjustingStock") : t("removeStock")}
         </Button>
       </div>
 
@@ -106,6 +131,7 @@ export function StockAdjustForm({
           onClick={() => setIsConfirmingOutOfStock(true)}
           variant="neubrutal"
           className="h-10 w-full gap-2 bg-card text-destructive"
+          disabled={isAdjusting || isMarkingOutOfStock}
         >
           <TriangleAlert className="h-4 w-4" />
           {t("markOutOfStock")}

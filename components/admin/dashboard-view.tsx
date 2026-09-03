@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useTranslations } from "next-intl"
 import {
   Banknote,
@@ -20,6 +21,7 @@ import { cn } from "@/lib/utils"
 import { useInventory, type IngredientIcon } from "@/hooks/useInventory"
 import { useTables } from "@/hooks/useTables"
 import { useDashboardStats } from "@/hooks/useDashboardStats"
+import { AsyncRetryError, StaleNotice } from "@/components/shared/async-state"
 
 const INGREDIENT_ICONS: Record<IngredientIcon, typeof Coffee> = {
   coffee: Coffee,
@@ -37,8 +39,28 @@ export function DashboardView({ locale }: { locale: string }) {
   const occupiedCount = tables.filter((tbl) => tbl.status === "occupied").length
   const cleaningCount = tables.filter((tbl) => tbl.status === "cleaning").length
   const needsCleaningAttention = tables.filter((tbl) => tbl.cleaningNotifiedAt !== null).length
-  const { stats, isLoading: isStatsLoading } = useDashboardStats()
+  const {
+    stats,
+    isLoading: isStatsLoading,
+    hasLoadError: hasStatsError,
+    hasStaleData: hasStaleStats,
+    retry: retryStats,
+  } = useDashboardStats()
   const maxRevenue = Math.max(...stats.sevenDayRevenue.map((d) => d.revenue), 1)
+  const [restockingId, setRestockingId] = useState<string | null>(null)
+  const [restockError, setRestockError] = useState<string | null>(null)
+
+  async function handleRestock(id: string) {
+    setRestockError(null)
+    setRestockingId(id)
+    try {
+      await restock(id)
+    } catch {
+      setRestockError(t("restockError"))
+    } finally {
+      setRestockingId(null)
+    }
+  }
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
@@ -65,6 +87,11 @@ export function DashboardView({ locale }: { locale: string }) {
         </Button>
       </div>
 
+      {hasStatsError && (
+        <AsyncRetryError onRetry={retryStats} message={t("statsLoadError")} compact />
+      )}
+      {hasStaleStats && !hasStatsError && <StaleNotice onRetry={retryStats} />}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link
           href="/admin/shift"
@@ -75,7 +102,9 @@ export function DashboardView({ locale }: { locale: string }) {
           </div>
           <p className="mb-1 text-sm text-muted-foreground">{t("todaysRevenue")}</p>
           <h3 className="text-xl font-bold text-card-foreground">
-            {isStatsLoading ? t("loadingStats") : formatVND(stats.todayRevenue)}
+            {/* A failed load must never render as a real $0 -- that's
+                indistinguishable from an actually-quiet day. */}
+            {isStatsLoading ? t("loadingStats") : hasStatsError ? "—" : formatVND(stats.todayRevenue)}
           </h3>
         </Link>
         <div className="nb-border-sm nb-shadow-sm rounded-xl bg-card p-5">
@@ -84,7 +113,7 @@ export function DashboardView({ locale }: { locale: string }) {
           </div>
           <p className="mb-1 text-sm text-muted-foreground">{t("ordersToday")}</p>
           <h3 className="text-xl font-bold text-card-foreground">
-            {isStatsLoading ? t("loadingStats") : stats.ordersToday}
+            {isStatsLoading ? t("loadingStats") : hasStatsError ? "—" : stats.ordersToday}
           </h3>
         </div>
         <div className="nb-border-sm nb-shadow-sm rounded-xl bg-card p-5">
@@ -93,7 +122,7 @@ export function DashboardView({ locale }: { locale: string }) {
           </div>
           <p className="mb-1 text-sm text-muted-foreground">{t("loyaltyIssued")}</p>
           <h3 className="text-xl font-bold text-card-foreground">
-            {isStatsLoading ? t("loadingStats") : stats.loyaltyIssuedToday}
+            {isStatsLoading ? t("loadingStats") : hasStatsError ? "—" : stats.loyaltyIssuedToday}
           </h3>
         </div>
         <div className="nb-border-sm nb-shadow-sm rounded-xl border-destructive bg-destructive/5 p-5">
@@ -172,6 +201,9 @@ export function DashboardView({ locale }: { locale: string }) {
             {t("itemsLowInStock", { count: lowStock.length })}
           </span>
         </div>
+        {restockError && (
+          <p className="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{restockError}</p>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
@@ -220,8 +252,13 @@ export function DashboardView({ locale }: { locale: string }) {
                         </span>
                       </td>
                       <td className="px-3 py-3 text-right">
-                        <Button size="sm" className="h-8" onClick={() => restock(item.id)}>
-                          {t("restock")}
+                        <Button
+                          size="sm"
+                          className="h-8"
+                          onClick={() => handleRestock(item.id)}
+                          disabled={restockingId === item.id}
+                        >
+                          {restockingId === item.id ? t("restocking") : t("restock")}
                         </Button>
                       </td>
                     </tr>

@@ -33,6 +33,26 @@ function KitchenTablesColumnComponent({ active }: { active: boolean }) {
   const [tablePendingCashConfirm, setTablePendingCashConfirm] = useState<{ id: string; number: string } | null>(
     null
   )
+  // Keyed "<tableId>:serve" / "<tableId>:cash" -- disables only the tapped
+  // table's own action button while its mutation is in flight, so a
+  // double-tap can't fire two concurrent RPCs for the same table.
+  const [pendingActionKeys, setPendingActionKeys] = useState<Set<string>>(new Set())
+
+  async function runTableAction(key: string, action: () => Promise<void>) {
+    setError(null)
+    setPendingActionKeys((prev) => new Set(prev).add(key))
+    try {
+      await action()
+    } catch {
+      setError(t("updateError"))
+    } finally {
+      setPendingActionKeys((prev) => {
+        const next = new Set(prev)
+        next.delete(key)
+        return next
+      })
+    }
+  }
 
   return (
     <section
@@ -131,11 +151,9 @@ function KitchenTablesColumnComponent({ active }: { active: boolean }) {
                 {readyOrderIds.length > 0 && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setError(null)
-                      serveTable(readyOrderIds).catch(() => setError(t("updateError")))
-                    }}
-                    className="nb-border-sm nb-shadow-sm nb-press-sm flex min-h-10 items-center gap-1 rounded-lg bg-primary px-3 py-2 text-xs font-extrabold text-primary-foreground"
+                    onClick={() => void runTableAction(`${table.id}:serve`, () => serveTable(readyOrderIds))}
+                    disabled={pendingActionKeys.has(`${table.id}:serve`)}
+                    className="nb-border-sm nb-shadow-sm nb-press-sm flex min-h-10 items-center gap-1 rounded-lg bg-primary px-3 py-2 text-xs font-extrabold text-primary-foreground disabled:opacity-60"
                   >
                     <Utensils className="h-3 w-3" />
                     {t("markServed")}
@@ -144,11 +162,9 @@ function KitchenTablesColumnComponent({ active }: { active: boolean }) {
                 {awaitingPaymentOrders.length > 0 && awaitingPaymentMethod === null && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setError(null)
-                      markTableCashPayment(table.id).catch(() => setError(t("updateError")))
-                    }}
-                    className="nb-border-sm nb-shadow-sm nb-press-sm min-h-10 rounded-lg bg-secondary px-3 py-2 text-xs font-extrabold text-secondary-foreground"
+                    onClick={() => void runTableAction(`${table.id}:cash`, () => markTableCashPayment(table.id))}
+                    disabled={pendingActionKeys.has(`${table.id}:cash`)}
+                    className="nb-border-sm nb-shadow-sm nb-press-sm min-h-10 rounded-lg bg-secondary px-3 py-2 text-xs font-extrabold text-secondary-foreground disabled:opacity-60"
                   >
                     {t("markCash")}
                   </button>
