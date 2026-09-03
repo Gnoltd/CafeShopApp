@@ -117,19 +117,28 @@ staff/admin-facing so neither track edits a file the other is touching:**
 
 **Claude owns 3b (customer-facing, continues today's `order-tracking.tsx`/
 `useOrders.tsx`/`useTableSession.tsx`/`table-ordering-session.tsx` context):**
-- [ ] Put promo Apply (`components/customer/cart-view.tsx`,
-  `components/customer/checkout-view.tsx`) in `try/catch/finally` so rejection
-  never leaves the button permanently disabled.
-- [ ] Stop turning order and address-book failures into genuine-looking
-  empty/zero states (`components/customer/order-history.tsx`,
-  `components/customer/address-book-view.tsx`, `hooks/useOrders.tsx`) —
-  loyalty's false-empty-state is Codex's, see 3c.
-- [ ] Await table-cart add/remove/quantity mutations
+- [x] Put promo Apply (`components/customer/cart-view.tsx`) in
+  `try/catch/finally` so rejection never leaves the button permanently
+  disabled. (`c5749cf`; `checkout-view.tsx` has no Apply button of its own —
+  it only reads the already-applied `promoCode`, nothing to fix there.)
+- [x] Stop turning order and address-book failures into genuine-looking
+  empty/zero states (`components/customer/order-history.tsx`, done earlier
+  in `5adedb9`; `components/customer/address-book-view.tsx` done in
+  `c5749cf` — reuses `nextAsyncLoadFlags` instead of hand-rolling the
+  never-loaded-vs-stale branch) — loyalty's false-empty-state is Codex's,
+  see 3c.
+- [x] Await table-cart add/remove/quantity mutations
   (`components/customer/table-ordering-session.tsx`,
-  `components/customer/table-cart-panel.tsx`, `hooks/useTableSession.tsx`);
-  disable only the tapped row and show success/failure.
+  `components/customer/table-cart-panel.tsx`); disable only the tapped row
+  and show success/failure. (`c5749cf`; also fixed `onRemoveItem` having no
+  `.catch()` at all — was an unhandled promise rejection with zero user
+  feedback on failure.)
 - [ ] Add retry/failure tests (rapid double taps, recovery after a transient
-  error) for all of the above.
+  error) for all of the above. **Blocked**: needs a component-rendering
+  harness (`@testing-library/react` + jsdom) this project doesn't have —
+  `vitest.config.ts` is `environment: "node"` and no component test exists
+  anywhere in the repo yet. Same class of gap as Task 6's axe/keyboard pass
+  and Task 7's own test-coverage item; not specific to 3b.
 
 **Codex owns 3c (staff/admin-facing, zero file overlap with 3b):**
 - [ ] Stop turning loyalty and dashboard failures into genuine-looking
