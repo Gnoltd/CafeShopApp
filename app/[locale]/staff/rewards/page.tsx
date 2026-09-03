@@ -1,13 +1,14 @@
 import { getTranslations } from "next-intl/server"
+import { headers } from "next/headers"
 import { StaffNav } from "@/components/staff/staff-nav"
 import { RewardLookup } from "@/components/staff/reward-lookup"
-import { createClient } from "@/lib/supabase/server"
-import { getCurrentRole } from "@/lib/get-current-role"
 
 export default async function StaffRewardsPage() {
   const t = await getTranslations("StaffRewards")
-  const supabase = await createClient()
-  const role = await getCurrentRole(supabase)
+  // Resolved once in middleware.ts and reused here via a trusted, private
+  // request header -- see app/[locale]/layout.tsx's matching comment for
+  // why this can't be spoofed by a client.
+  const role = (await headers()).get("x-resolved-role") || null
 
   return (
     <div className="flex h-full flex-col overflow-hidden">

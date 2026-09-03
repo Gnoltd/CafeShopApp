@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { resolveRedirect } from "./middleware-rules"
+import { resolveRedirect, getSupabaseAuthCookieName, hasSupabaseAuthCookie } from "./middleware-rules"
 
 describe("resolveRedirect — auth-required exact paths", () => {
   it("redirects an anonymous guest away from /profile", () => {
@@ -62,5 +62,53 @@ describe("resolveRedirect — existing /staff and /admin behavior unaffected", (
 
   it("still redirects a customer away from /admin/dashboard", () => {
     expect(resolveRedirect("/admin/dashboard", "customer")).toBe("/menu")
+  })
+})
+
+describe("getSupabaseAuthCookieName", () => {
+  it("derives sb-<project-ref>-auth-token from the Supabase URL's hostname", () => {
+    expect(getSupabaseAuthCookieName("https://qhiypdqnrnzndxdwqxbx.supabase.co")).toBe(
+      "sb-qhiypdqnrnzndxdwqxbx-auth-token",
+    )
+  })
+
+  it("uses only the first hostname label as the project ref", () => {
+    expect(getSupabaseAuthCookieName("https://abcdefgh.supabase.co/")).toBe("sb-abcdefgh-auth-token")
+  })
+
+  it("returns null for an unparseable URL", () => {
+    expect(getSupabaseAuthCookieName("not-a-url")).toBeNull()
+  })
+
+  it("returns null for an empty string", () => {
+    expect(getSupabaseAuthCookieName("")).toBeNull()
+  })
+})
+
+describe("hasSupabaseAuthCookie", () => {
+  const storageKey = "sb-qhiypdqnrnzndxdwqxbx-auth-token"
+
+  it("is false for a guest with no cookies at all", () => {
+    expect(hasSupabaseAuthCookie([], storageKey)).toBe(false)
+  })
+
+  it("is false when only unrelated cookies are present", () => {
+    expect(hasSupabaseAuthCookie(["theme", "NEXT_LOCALE"], storageKey)).toBe(false)
+  })
+
+  it("is true for the exact unchunked cookie name", () => {
+    expect(hasSupabaseAuthCookie(["theme", storageKey], storageKey)).toBe(true)
+  })
+
+  it("is true for a chunked cookie (large token split into .0/.1/...)", () => {
+    expect(hasSupabaseAuthCookie([`${storageKey}.0`, `${storageKey}.1`], storageKey)).toBe(true)
+  })
+
+  it("does not match a cookie for a different Supabase project", () => {
+    expect(hasSupabaseAuthCookie(["sb-someotherproject-auth-token"], storageKey)).toBe(false)
+  })
+
+  it("does not match a similarly-prefixed but distinct cookie name", () => {
+    expect(hasSupabaseAuthCookie([`${storageKey}-code-verifier`], storageKey)).toBe(false)
   })
 })

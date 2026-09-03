@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
-import { getCurrentRole } from "@/lib/get-current-role"
+import { headers } from "next/headers"
 import { ROLE_HOME, canAccessAdmin } from "@/lib/roles"
 import { AdminLayoutClient } from "@/components/admin/admin-layout-client"
 
@@ -18,8 +17,10 @@ export default async function AdminLayout({
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
-  const supabase = await createClient()
-  const role = await getCurrentRole(supabase)
+  // Resolved once in middleware.ts and reused here via a trusted, private
+  // request header -- see app/[locale]/layout.tsx's matching comment for
+  // why this can't be spoofed by a client.
+  const role = (await headers()).get("x-resolved-role") || null
 
   if (!canAccessAdmin(role)) {
     redirect(`/${locale}${role ? (ROLE_HOME[role] ?? "/menu") : "/login"}`)

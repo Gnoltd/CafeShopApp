@@ -2,7 +2,12 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 import createIntlMiddleware from "next-intl/middleware"
 import { routing } from "./i18n/routing"
-import { resolveRedirect, splitLocaleFromPathname } from "./lib/middleware-rules"
+import {
+  resolveRedirect,
+  splitLocaleFromPathname,
+  getSupabaseAuthCookieName,
+  hasSupabaseAuthCookie,
+} from "./lib/middleware-rules"
 import { getCurrentRole } from "./lib/get-current-role"
 
 const handleI18nRouting = createIntlMiddleware(routing)
@@ -74,6 +79,16 @@ async function resolveRole(request: NextRequest): Promise<string | null> {
   if (!supabaseUrl || !supabasePublishableKey) return null
 
   try {
+    // Skip the network round trip (Auth getUser() + a profiles SELECT)
+    // entirely for a request that can't possibly be authenticated -- no
+    // Supabase auth cookie present at all. This is the common case (every
+    // guest request) and was previously paying for two full round trips
+    // just to learn "anonymous".
+    const storageKey = getSupabaseAuthCookieName(supabaseUrl)
+    if (!storageKey) return null
+    const cookieNames = request.cookies.getAll().map((cookie) => cookie.name)
+    if (!hasSupabaseAuthCookie(cookieNames, storageKey)) return null
+
     const supabase = createServerClient(supabaseUrl, supabasePublishableKey, {
       cookies: {
         getAll() {
@@ -104,7 +119,28 @@ export async function middleware(request: NextRequest) {
   // below preserve it since it reads from this same request object.
   request.headers.set("x-nonce", nonce)
 
+  // Resolve the role once, here, and stash it in a private request header
+  // so every downstream layout/page reuses this exact result instead of
+  // each repeating its own Auth + profiles round trip (previously up to
+  // 3-4x per request across root/staff/admin layouts and leaf pages).
+  //
+  // Security-critical: request.headers.set() REPLACES any value already
+  // present for this header name (confirmed against the Fetch-standard
+  // Headers API NextRequest.headers implements — it does not append), and
+  // HTTP header names are case-insensitive, so this unconditionally
+  // clobbers whatever a client may have sent on its own request (e.g. a
+  // spoofed `X-Resolved-Role: admin`) before any downstream code ever
+  // reads it. There is no code path between the incoming request and this
+  // line that reads x-resolved-role, so nothing can observe the
+  // client-supplied value first.
+  const role = await resolveRole(request)
+  request.headers.set("x-resolved-role", role ?? "")
+
   // Let next-intl resolve/normalize the locale prefix first (e.g. "/" -> "/vi").
+  // Mutating request.headers above (not just the eventual response's) is
+  // what makes x-resolved-role visible to Server Components via
+  // next/headers, same mechanism as x-nonce above -- must happen before
+  // this call so next-intl's own NextResponse.next() picks it up.
   const intlResponse = handleI18nRouting(request)
   applySecurityHeaders(intlResponse.headers, csp)
 
@@ -115,7 +151,6 @@ export async function middleware(request: NextRequest) {
   }
 
   const { locale, rest } = splitLocaleFromPathname(request.nextUrl.pathname)
-  const role = await resolveRole(request)
 
   const redirectPath = resolveRedirect(rest, role)
   if (redirectPath) {

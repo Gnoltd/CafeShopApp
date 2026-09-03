@@ -1,9 +1,9 @@
 import { getTranslations } from "next-intl/server"
+import { headers } from "next/headers"
 import { StaffNav } from "@/components/staff/staff-nav"
 import { PosTerminal } from "@/components/staff/pos-terminal"
 import { createClient } from "@/lib/supabase/server"
 import { getCategories, getMenuItems } from "@/lib/supabase/menu-data"
-import { getCurrentRole } from "@/lib/get-current-role"
 import { TablesProvider } from "@/hooks/useTables"
 import { ShiftProvider } from "@/hooks/useShift"
 import { KitchenOrdersProvider } from "@/hooks/useKitchenOrders"
@@ -17,11 +17,11 @@ import { KitchenOrdersProvider } from "@/hooks/useKitchenOrders"
 export default async function PosPage() {
   const t = await getTranslations("Staff")
   const supabase = await createClient()
-  const [categories, items, role] = await Promise.all([
-    getCategories(supabase),
-    getMenuItems(supabase),
-    getCurrentRole(supabase),
-  ])
+  // Resolved once in middleware.ts and reused here via a trusted, private
+  // request header -- see app/[locale]/layout.tsx's matching comment for
+  // why this can't be spoofed by a client.
+  const role = (await headers()).get("x-resolved-role") || null
+  const [categories, items] = await Promise.all([getCategories(supabase), getMenuItems(supabase)])
 
   return (
     <div className="flex h-full flex-col overflow-hidden">

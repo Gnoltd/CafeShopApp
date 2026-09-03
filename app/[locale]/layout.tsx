@@ -7,8 +7,6 @@ import { Be_Vietnam_Pro, Playfair_Display } from "next/font/google";
 import { routing } from "@/i18n/routing";
 import { HeaderActionsStack } from "@/components/shared/header-actions-stack";
 import { ThemeProvider } from "@/hooks/useTheme";
-import { createClient } from "@/lib/supabase/server";
-import { getCurrentRole } from "@/lib/get-current-role";
 import "../globals.css";
 
 const beVietnamPro = Be_Vietnam_Pro({
@@ -63,11 +61,18 @@ export default async function RootLayout({
 
   setRequestLocale(locale);
   const messages = await getMessages();
-  const supabase = await createClient();
-  const role = await getCurrentRole(supabase);
+  const requestHeaders = await headers();
   // Set by middleware.ts's CSP nonce generation -- required so this one
   // inline script is allowed under a strict `script-src 'nonce-...'` CSP.
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const nonce = requestHeaders.get("x-nonce") ?? undefined;
+  // Resolved once in middleware.ts (Auth + profiles lookup, respecting
+  // is_active) and passed via a private request header -- see
+  // "Middleware overwrites a private resolved-role request header" in
+  // daily.md Task 4. A client can't forge this: middleware.ts
+  // unconditionally overwrites the header before any downstream code
+  // reads it. Empty string means "no role" (guest), matching
+  // getCurrentRole's own `null`.
+  const role = requestHeaders.get("x-resolved-role") || null;
 
   return (
     <html
