@@ -172,14 +172,16 @@
 - Modify: `messages/vi.json`, `messages/en.json`
 - Add component test dependencies/config only as part of the first tested UI fix.
 
-- [ ] Remove production hydration error #418: keep the server/client theme markup stable, suppress only the intentional `<html>` theme-class difference, and test stored/system light and dark preferences.
-- [ ] Replace the nested Menu card `<button>` + `role="button"` quick-add span with sibling semantic controls; Enter/Space must activate both paths.
-- [ ] Build one accessible Dialog module with focus trap/restore, Escape, labelled title/description, `aria-modal`, and inert background; migrate admin forms, confirmations, QR scanner, quick-add, Check Bill, rewards, and drawers/sheets.
-- [ ] Add confirmations for menu deletion, QR regeneration (explicitly warn printed codes stop working), cash received, and mark-out-of-stock.
-- [ ] Raise all interactive targets to at least 44×44 CSS pixels. Confirmed small targets include the 40px global controls, 36px Menu category chips, Login password reveal, Forgot Password, and Sign Up link.
-- [ ] Add `autocomplete="email"`, `current-password`, `new-password`, name, tel, and address tokens to auth/profile/address forms.
-- [ ] Translate hardcoded auth artwork, landing gallery, table-cart, star-rating, and staff tooltip text in both catalogs.
-- [ ] Run axe, keyboard-only traversal, focus-order, 200% zoom, and screen-reader smoke tests in both locales and themes.
+- [x] Remove production hydration error #418: keep the server/client theme markup stable, suppress only the intentional `<html>` theme-class difference, and test stored/system light and dark preferences. (`bcd12d2`)
+- [x] Replace the nested Menu card `<button>` + `role="button"` quick-add span with sibling semantic controls; Enter/Space must activate both paths. (`bcd12d2`)
+- [x] Build one accessible Dialog module with focus trap/restore, Escape, labelled title/description, `aria-modal`, and inert background; migrate admin forms, confirmations, QR scanner, quick-add, Check Bill, rewards, and drawers/sheets. (`13a4c3a`, review-clean after 2 fix rounds: `38adc11`, `78f032c`)
+- [x] Add confirmations for menu deletion, QR regeneration (explicitly warn printed codes stop working), cash received, and mark-out-of-stock. (`13a4c3a`)
+- [x] Raise all interactive targets to at least 44×44 CSS pixels. Confirmed small targets include the 40px global controls, 36px Menu category chips, Login password reveal, Forgot Password, and Sign Up link. (`bcd12d2`; inline Sign Up/Login sentence links can only reach 44px height not width without a visual regression — WCAG 2.5.5's own sentence-link exception, reviewer-confirmed no better fix available)
+- [x] Add `autocomplete="email"`, `current-password`, `new-password`, name, tel, and address tokens to auth/profile/address forms. (`bcd12d2` + `feafa40`)
+- [x] Translate hardcoded auth artwork, landing gallery, table-cart, star-rating, and staff tooltip text in both catalogs. (`44c588a`)
+- [ ] Run axe, keyboard-only traversal, focus-order, 200% zoom, and screen-reader smoke tests in both locales and themes. **Blocked**: needs a working browser tool; Playwright MCP isn't connected this session (the underlying `npx`-not-on-`$PATH` cause was fixed mid-session via symlinks, but MCP servers only reconnect at session start). Same class of gap as Task 8's mobile-device matrix below — needs a fresh session or a human pass.
+
+**Task 6 status: 7/8 items done and individually code-reviewed (all commits above pushed and deployed, `tsc`/`vitest` 262/262/`build` clean at each step). The 1 remaining item needs live browser access this session doesn't have.** Minor findings deferred (not blocking, listed for a future polish pass): quick-add button missing an explicit `focus-visible` ring (covered by the app's global outline rule, non-blocking); theme-icon one-frame flash on mount (`useEffect` vs `useLayoutEffect`); duplicated password-reveal JSX between login/signup forms; `FIELD_INPUT_PROPS` typed as bare `string`; `dialog.tsx`'s docblock cites the wrong internal option name for why `inert` isn't used (the described end-behavior is still correct); `vi.json`'s "Xoá" vs the more standard "Xóa" orthography; `signup-form.tsx`'s hardcoded `email@example.com` placeholder.
 
 ### Task 7: Restore quality gates and cover real failure behavior (P2)
 
