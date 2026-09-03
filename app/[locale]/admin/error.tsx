@@ -5,6 +5,7 @@ import { useEffect } from "react"
 import { AlertTriangle } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
+import { Link } from "@/i18n/navigation"
 
 export default function AdminError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const t = useTranslations("RouteBoundary")
@@ -20,6 +21,9 @@ export default function AdminError({ error, reset }: { error: Error & { digest?:
       <p className="text-xs text-muted-foreground">{t("errorMessage")}</p>
       <Button variant="neubrutal" size="sm" onClick={reset}>
         {t("retryButton")}
+      </Button>
+      <Button variant="ghost" size="sm" render={<Link href="/admin/dashboard" />} nativeButton={false}>
+        {t("homeButton")}
       </Button>
     </div>
   )

@@ -99,6 +99,7 @@
     "forgotPassword": "Quên mật khẩu?",
     "continueWithGoogle": "Tiếp Tục Với Google",
     "oauthRedirecting": "Đang đăng nhập…",
+    "oauthStartError": "Không thể bắt đầu đăng nhập bằng Google. Vui lòng thử lại.",
     "oauthCallbackError": "Có lỗi xảy ra khi đăng nhập bằng Google.",
     "or": "hoặc",
     "noAccount": "Chưa có tài khoản?",

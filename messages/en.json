@@ -99,6 +99,7 @@
     "forgotPassword": "Forgot password?",
     "continueWithGoogle": "Continue with Google",
     "oauthRedirecting": "Signing you in…",
+    "oauthStartError": "Google sign-in could not start. Please try again.",
     "oauthCallbackError": "Something went wrong signing in with Google.",
     "or": "or",
     "noAccount": "Don't have an account?",

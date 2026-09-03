@@ -53,6 +53,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [oauthLoading, setOauthLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [view, setView] = useState<"login" | "requestReset" | "resetSent">("login")
   const [resetEmail, setResetEmail] = useState("")
@@ -81,11 +82,20 @@ export function LoginForm() {
   }
 
   async function handleGoogleSignIn() {
+    setError(null)
+    setOauthLoading(true)
     const supabase = createClient()
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/${locale}/callback` },
-    })
+    try {
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/${locale}/callback` },
+      })
+      if (oauthError) setError(t("oauthStartError"))
+    } catch {
+      setError(t("oauthStartError"))
+    } finally {
+      setOauthLoading(false)
+    }
   }
 
   async function handleSendResetLink() {
@@ -253,7 +263,7 @@ export function LoginForm() {
           </div>
 
           {error && (
-            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {t("loginError")}: {error}
             </p>
           )}
@@ -276,10 +286,11 @@ export function LoginForm() {
         <Button
           variant="outline"
           onClick={handleGoogleSignIn}
+          disabled={oauthLoading}
           className="h-12 w-full gap-3 rounded-xl text-sm font-medium"
         >
           <GoogleIcon />
-          {t("continueWithGoogle")}
+          {oauthLoading ? t("oauthRedirecting") : t("continueWithGoogle")}
         </Button>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">

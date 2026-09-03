@@ -54,6 +54,7 @@ export function SignupForm() {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [oauthLoading, setOauthLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmEmailSent, setConfirmEmailSent] = useState(false)
 
@@ -89,11 +90,20 @@ export function SignupForm() {
   }
 
   async function handleGoogleSignIn() {
+    setError(null)
+    setOauthLoading(true)
     const supabase = createClient()
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/${locale}/callback` },
-    })
+    try {
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/${locale}/callback` },
+      })
+      if (oauthError) setError(t("oauthStartError"))
+    } catch {
+      setError(t("oauthStartError"))
+    } finally {
+      setOauthLoading(false)
+    }
   }
 
   if (confirmEmailSent) {
@@ -215,7 +225,7 @@ export function SignupForm() {
           </p>
 
           {error && (
-            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {t("signupError")}: {error}
             </p>
           )}
@@ -239,10 +249,11 @@ export function SignupForm() {
         <Button
           variant="outline"
           onClick={handleGoogleSignIn}
+          disabled={oauthLoading}
           className="h-12 w-full gap-3 rounded-xl text-sm font-medium"
         >
           <GoogleIcon />
-          {t("continueWithGoogle")}
+          {oauthLoading ? t("oauthRedirecting") : t("continueWithGoogle")}
         </Button>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">

@@ -66,6 +66,10 @@ describe("resolveRedirect — existing /staff and /admin behavior unaffected", (
   it("still redirects a customer away from /admin/dashboard", () => {
     expect(resolveRedirect("/admin/dashboard", "customer")).toBe("/menu")
   })
+
+  it("redirects non-manager customers away from admin settings", () => {
+    expect(resolveRedirect("/admin/settings", "customer")).toBe("/menu")
+  })
 })
 
 describe("getSupabaseAuthCookieName", () => {

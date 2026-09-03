@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import { motion, useMotionValue, type PanInfo } from "framer-motion"
 import { Minus, Plus, Trash2, ArrowRight, ShoppingBasket, Ticket, X } from "lucide-react"
@@ -121,8 +121,11 @@ export function CartView() {
     "not_found" | "inactive" | "not_started" | "expired" | "limit_reached" | "below_minimum" | "check_failed" | null
   >(null)
   const [isApplyingPromo, setIsApplyingPromo] = useState(false)
+  const promoRequestPending = useRef(false)
 
   async function handleApplyPromo() {
+    if (promoRequestPending.current) return
+    promoRequestPending.current = true
     setIsApplyingPromo(true)
     try {
       const result = await applyPromoCode(promoInput)
@@ -138,6 +141,7 @@ export function CartView() {
       // Apply permanently disabled with no way to retry.
       setPromoErrorReason("check_failed")
     } finally {
+      promoRequestPending.current = false
       setIsApplyingPromo(false)
     }
   }
