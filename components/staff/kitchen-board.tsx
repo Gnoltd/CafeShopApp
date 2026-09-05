@@ -6,7 +6,7 @@ import { Check, Coffee, CornerUpLeft, MessageSquareQuote, ShoppingBag, Utensils 
 import { cn } from "@/lib/utils"
 import { formatOrderId } from "@/lib/format"
 import { SegmentedControl } from "@/components/motion/segmented-control"
-import { PREV_ITEM_STATUS, willCompleteOrderOnAdvance } from "@/hooks/useKitchenOrders"
+import { PREV_ITEM_STATUS } from "@/hooks/useKitchenOrders"
 import type { KdsStatus, KdsOrder } from "@/hooks/useKitchenOrders"
 
 const COLUMNS: { status: KdsStatus; key: "columnNew" | "columnPreparing" | "columnReady"; dot: string }[] = [
@@ -61,6 +61,7 @@ export function KitchenBoard({
   now,
   onAdvanceItem,
   onRegressItem,
+  onHandOver,
   isItemPending,
   onPaymentAction,
 }: {
@@ -68,6 +69,7 @@ export function KitchenBoard({
   now: number
   onAdvanceItem: (orderId: string, itemId: string) => void
   onRegressItem: (orderId: string, itemId: string) => void
+  onHandOver: (orderId: string) => void
   isItemPending: (orderId: string, itemId: string) => boolean
   onPaymentAction: (order: KdsOrder, action: PaymentAction) => void
 }) {
@@ -122,6 +124,7 @@ export function KitchenBoard({
                     locale={locale}
                     onAdvanceItem={onAdvanceItem}
                     onRegressItem={onRegressItem}
+                    onHandOver={onHandOver}
                     isItemPending={isItemPending}
                     onPaymentAction={onPaymentAction}
                   />
@@ -141,6 +144,7 @@ function Ticket({
   locale,
   onAdvanceItem,
   onRegressItem,
+  onHandOver,
   isItemPending,
   onPaymentAction,
 }: {
@@ -149,12 +153,16 @@ function Ticket({
   locale: string
   onAdvanceItem: (orderId: string, itemId: string) => void
   onRegressItem: (orderId: string, itemId: string) => void
+  onHandOver: (orderId: string) => void
   isItemPending: (orderId: string, itemId: string) => boolean
   onPaymentAction: (order: KdsOrder, action: PaymentAction) => void
 }) {
   const t = useTranslations("KitchenDisplay")
-  const next = order.items.find((item) => item.status !== "served")
-  const done = order.items.filter((item) => item.status === "served").length
+  // First item still awaiting its own one-tap (preparing -> ready) --
+  // once every item is "ready", `next` is undefined and the whole ticket's
+  // CTA switches to the single "Đã Phục Vụ" hand-over tap below.
+  const next = order.items.find((item) => item.status === "preparing")
+  const done = order.items.filter((item) => item.status !== "preparing").length
   const late = now - order.createdAt >= 600000
   const paymentAction = paymentActionForOrder(order)
   const regressTarget = regressTargetFor(order)
@@ -195,29 +203,31 @@ function Ticket({
 
       <div className="flex flex-col gap-2.5">
         {order.items.map((item) => {
-          // One tap, straight to done -- matches the reference's per-item
-          // checklist exactly (a plain done/not-done toggle). See
-          // NEXT_ITEM_STATUS's own comment for how this stays consistent
-          // with the order-level "Sẵn Sàng" column.
-          const served = item.status === "served"
+          // One tap, straight to done-looking (green/checked/struck) --
+          // matches the reference's per-item checklist exactly. The real
+          // status underneath is "ready", not "served" (see
+          // NEXT_ITEM_STATUS's comment for why) -- visually identical
+          // either way, so the checkbox only cares whether it's still
+          // "preparing" or not.
+          const done = item.status !== "preparing"
           const optionsText = itemOptionsText(item, locale)
           return (
             <div key={item.id} className="flex flex-col gap-1.5">
               <button
                 type="button"
                 onClick={() => onAdvanceItem(order.id, item.id)}
-                disabled={served || order.status === "pending_payment" || isItemPending(order.id, item.id)}
+                disabled={done || order.status === "pending_payment" || isItemPending(order.id, item.id)}
                 className="flex items-start gap-2 text-left disabled:pointer-events-none"
               >
                 <span
                   className={cn(
                     "nb-border-sm mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-[5px]",
-                    served ? "bg-success text-white" : "bg-card"
+                    done ? "bg-success text-white" : "bg-card"
                   )}
                 >
-                  {served && <Check className="size-3" />}
+                  {done && <Check className="size-3" />}
                 </span>
-                <span className={cn("min-w-0 flex-1 text-sm font-extrabold leading-tight", served && "text-muted-foreground line-through")}>
+                <span className={cn("min-w-0 flex-1 text-sm font-extrabold leading-tight", done && "text-muted-foreground line-through")}>
                   {item.quantity}× {locale === "vi" ? item.nameVi : item.nameEn}
                   {optionsText && (
                     <span className="mt-0.5 block text-[11px] font-semibold text-muted-foreground no-underline">{optionsText}</span>
@@ -243,6 +253,33 @@ function Ticket({
         >
           {paymentAction === "mark-table-cash" ? t("markCash") : t("confirmCashReceived")}
         </button>
+      ) : order.status === "ready" ? (
+        // Every item is "ready" -- the one deliberate tap that hands the
+        // whole order over (and, if already paid, is what actually
+        // completes it). Never an automatic side effect of the last
+        // per-item tap; see NEXT_ITEM_STATUS's comment for why that
+        // distinction is the whole point of this branch.
+        <div className="flex items-center gap-2">
+          {regressTarget && (
+            <button
+              type="button"
+              onClick={() => onRegressItem(order.id, regressTarget.id)}
+              disabled={isItemPending(order.id, regressTarget.id)}
+              aria-label={t("undoItem")}
+              title={t("undoItem")}
+              className="nb-border nb-shadow-sm nb-press flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-card text-muted-foreground disabled:opacity-40"
+            >
+              <CornerUpLeft className="size-4" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => onHandOver(order.id)}
+            className="nb-border nb-shadow nb-press h-10 flex-1 rounded-lg bg-success text-xs font-extrabold uppercase tracking-wide text-white"
+          >
+            {t("markServed")}
+          </button>
+        </div>
       ) : next ? (
         <div className="flex items-center gap-2">
           {regressTarget && (
@@ -261,10 +298,7 @@ function Ticket({
             type="button"
             onClick={() => onAdvanceItem(order.id, next.id)}
             disabled={isItemPending(order.id, next.id)}
-            className={cn(
-              "nb-border nb-shadow nb-press h-10 flex-1 rounded-lg text-xs font-extrabold uppercase tracking-wide text-white disabled:opacity-40",
-              willCompleteOrderOnAdvance(order, next.id) ? "bg-success" : "bg-primary"
-            )}
+            className="nb-border nb-shadow nb-press h-10 flex-1 rounded-lg bg-primary text-xs font-extrabold uppercase tracking-wide text-white disabled:opacity-40"
           >
             {order.status === "paid" ? t("startPreparing") : t("markReady")}
           </button>

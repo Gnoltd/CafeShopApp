@@ -12,7 +12,7 @@ import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { LanguageSwitcher } from "@/components/shared/language-switcher"
 
 export function KitchenDisplay() {
-  const { orders, pendingPaymentOrders, advanceItem, regressItem, isItemPending, confirmCashPayment, confirmTableCashPayment, markTableCashPayment, completedCount, avgTimeLabel } = useKitchenOrders()
+  const { orders, pendingPaymentOrders, advanceItem, regressItem, isItemPending, serveTable, confirmCashPayment, confirmTableCashPayment, markTableCashPayment, completedCount, avgTimeLabel } = useKitchenOrders()
   const t = useTranslations("KitchenDisplay")
   const locale = useLocale()
   const [now, setNow] = useState(0)
@@ -44,6 +44,19 @@ export function KitchenDisplay() {
       regressItem(orderId, itemId).catch(() => setError(t("updateError")))
     },
     [regressItem, t]
+  )
+  // "Đã Giao Khách" -- a pickup ticket's own single-order hand-over,
+  // reusing the exact bulk action the dine-in Tables column already calls
+  // for a whole table's ready orders (serveTable). One deliberate tap once
+  // every item is "ready", not an accidental side effect of ticking the
+  // last drink -- see NEXT_ITEM_STATUS's own comment for why that
+  // distinction matters for an order that's already paid.
+  const handleHandOver = useCallback(
+    (orderId: string) => {
+      setError(null)
+      serveTable([orderId]).catch(() => setError(t("updateError")))
+    },
+    [serveTable, t]
   )
   const handlePaymentAction = useCallback(async (order: (typeof orders)[number], action: PaymentAction) => {
     setError(null)
@@ -115,6 +128,7 @@ export function KitchenDisplay() {
               now={now}
               onAdvanceItem={handleAdvanceItem}
               onRegressItem={handleRegressItem}
+              onHandOver={handleHandOver}
               isItemPending={isItemPending}
               onPaymentAction={handlePaymentAction}
             />

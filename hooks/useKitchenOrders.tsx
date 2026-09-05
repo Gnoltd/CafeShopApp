@@ -26,16 +26,20 @@ import {
 export type KdsStatus = Extract<RealOrderStatus, "paid" | "preparing" | "ready">
 export type { KdsOrderRow as KdsOrder }
 
-// One tap per drink, straight to done -- matches the reference's per-item
-// checklist (a plain done/not-done toggle, no visible middle step). "ready"
-// is skipped as a per-item stopping point entirely; the enum keeps the
-// value (still valid, still typed) since order_items.status itself is
-// unchanged, but no code path sets it anymore. This doesn't lose the
-// "Sẵn Sàng" column: KitchenBoard's own column filter already treats
-// order.status "ready" and "served" as the same column, so an order whose
-// items go straight to "served" still lands there correctly.
+// One tap per drink -- lands on "ready" (visually identical to "served":
+// green, checked, struck through; KitchenBoard treats status !== "preparing"
+// as done). Real bug this reverts from an earlier pass: sending the tap
+// straight to "served" meant the LAST item finishing on an already-paid
+// order (e.g. any POS cash sale, paid up front) satisfied
+// complete_order_when_served_and_paid instantly -- the ticket vanished off
+// the board the moment it was ticked, with zero time visible in "Sẵn Sàng"
+// and no way to recall it. "served" is now reached only through the
+// ticket-level "Đã Giao Khách" bulk action (KitchenOrdersProvider's
+// existing serveTable, already used by the dine-in Tables column) once the
+// whole order is "ready" -- a deliberate, distinct tap, not an accidental
+// side effect of ticking the last drink.
 const NEXT_ITEM_STATUS: Record<OrderItemStatus, OrderItemStatus | null> = {
-  preparing: "served",
+  preparing: "ready",
   ready: "served",
   served: null,
 }
@@ -45,13 +49,12 @@ const NEXT_ITEM_STATUS: Record<OrderItemStatus, OrderItemStatus | null> = {
 // has no forward-only constraint, and sync_order_status_from_items
 // (migration 0082) recomputes the parent order's rolled-up status from its
 // items' current statuses on every update, in either direction, so a
-// regressed item correctly reopens its parent order too (e.g. "served" ->
-// "preparing" flips the order itself back to "preparing", same single step
-// as the forward tap).
+// regressed item correctly reopens its parent order too (e.g. "ready" ->
+// "preparing" flips the order itself back to "preparing").
 export const PREV_ITEM_STATUS: Record<OrderItemStatus, OrderItemStatus | null> = {
   preparing: null,
   ready: "preparing",
-  served: "preparing",
+  served: "ready",
 }
 
 // Pure so it's directly testable: given the order this item belongs to,

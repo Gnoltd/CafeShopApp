@@ -214,15 +214,15 @@ describe("PREV_ITEM_STATUS", () => {
     expect(PREV_ITEM_STATUS.preparing).toBeNull()
   })
 
-  it("reverses ready back to preparing, and served back to preparing too -- the forward tap is one step, so is the undo", () => {
+  it("reverses ready back to preparing, and served back to ready -- one step at a time, same as the forward tap", () => {
     expect(PREV_ITEM_STATUS.ready).toBe("preparing")
-    expect(PREV_ITEM_STATUS.served).toBe("preparing")
+    expect(PREV_ITEM_STATUS.served).toBe("ready")
   })
 })
 
 describe("advanceItemGuarded regressing a status (the KDS undo button)", () => {
   it("moves an item backward through the same guarded path used to move it forward", async () => {
-    let orders: KdsOrderRow[] = [makeOrder(["served"])]
+    let orders: KdsOrderRow[] = [makeOrder(["ready"])]
     const setOrders = (updater: (current: KdsOrderRow[]) => KdsOrderRow[]) => {
       orders = updater(orders)
     }
@@ -232,7 +232,7 @@ describe("advanceItemGuarded regressing a status (the KDS undo button)", () => {
     }
     const regress = vi.fn().mockResolvedValue(undefined)
 
-    await advanceItemGuarded(pending, setPending, orders, "order-1", "item-0", PREV_ITEM_STATUS.served!, setOrders, regress)
+    await advanceItemGuarded(pending, setPending, orders, "order-1", "item-0", PREV_ITEM_STATUS.ready!, setOrders, regress)
 
     expect(orders[0].items[0].status).toBe("preparing")
     expect(regress).toHaveBeenCalledWith("item-0", "preparing")
