@@ -22,6 +22,7 @@ import {
 import { saveMenuItem } from "@/lib/supabase/save-menu-item"
 import type { RecipeEntry } from "@/lib/supabase/inventory-data"
 import { MenuItemForm } from "@/components/admin/menu-item-form"
+import { MenuCategoriesCard } from "@/components/admin/menu-categories-card"
 
 const ICONS: Record<MenuIcon, typeof Coffee> = {
   coffee: Coffee,
@@ -48,6 +49,7 @@ export function MenuManagement({
   const supabase = createClient()
 
   const [items, setItems] = useState(initialItems)
+  const [categoryList, setCategoryList] = useState(categories)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [formMode, setFormMode] = useState<FormMode>(null)
@@ -59,10 +61,16 @@ export function MenuManagement({
   const [itemPendingDelete, setItemPendingDelete] = useState<MenuItem | null>(null)
 
   const categoryLabel = (id: string) => {
-    const category = categories.find((c) => c.id === id)
+    const category = categoryList.find((c) => c.id === id)
     if (!category) return id
     return locale === "vi" ? category.nameVi : category.nameEn
   }
+
+  const itemCountByCategory = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const item of items) counts[item.categoryId] = (counts[item.categoryId] ?? 0) + 1
+    return counts
+  }, [items])
 
   const visibleItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
@@ -173,7 +181,7 @@ export function MenuManagement({
 
       {formMode && (
         <MenuItemForm
-          categories={categories}
+          categories={categoryList}
           initialItem={formMode.type === "edit" ? formMode.item : undefined}
           onCancel={() => setFormMode(null)}
           onSave={(input, extraGroupIds, recipeEntries, sizes) =>
@@ -182,54 +190,58 @@ export function MenuManagement({
         />
       )}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative sm:max-w-xs">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value)
-              setCurrentPage(1)
-            }}
-            placeholder={t("searchPlaceholder")}
-            className="nb-border-sm h-10 rounded-lg bg-card pl-9"
-          />
-        </div>
-        <div className="flex flex-wrap gap-2">
+      <MenuCategoriesCard
+        categories={categoryList}
+        onCategoriesChange={setCategoryList}
+        itemCountByCategory={itemCountByCategory}
+      />
+
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value)
+            setCurrentPage(1)
+          }}
+          placeholder={t("searchPlaceholder")}
+          className="nb-border-sm h-10 rounded-lg bg-card pl-9"
+        />
+      </div>
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedCategory(null)
+            setCurrentPage(1)
+          }}
+          className={cn(
+            "nb-border-sm nb-shadow-sm nb-press-sm shrink-0 rounded-lg px-3 py-1.5 text-sm font-extrabold",
+            selectedCategory === null
+              ? "bg-primary text-primary-foreground"
+              : "bg-card text-muted-foreground"
+          )}
+        >
+          {t("allCategories")}
+        </button>
+        {categoryList.map((category) => (
           <button
+            key={category.id}
             type="button"
             onClick={() => {
-              setSelectedCategory(null)
+              setSelectedCategory(category.id)
               setCurrentPage(1)
             }}
             className={cn(
-              "nb-border-sm nb-shadow-sm nb-press-sm rounded-lg px-3 py-1.5 text-sm font-extrabold",
-              selectedCategory === null
+              "nb-border-sm nb-shadow-sm nb-press-sm shrink-0 rounded-lg px-3 py-1.5 text-sm font-extrabold",
+              selectedCategory === category.id
                 ? "bg-primary text-primary-foreground"
                 : "bg-card text-muted-foreground"
             )}
           >
-            {t("allCategories")}
+            {locale === "vi" ? category.nameVi : category.nameEn}
           </button>
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              type="button"
-              onClick={() => {
-                setSelectedCategory(category.id)
-                setCurrentPage(1)
-              }}
-              className={cn(
-                "nb-border-sm nb-shadow-sm nb-press-sm rounded-lg px-3 py-1.5 text-sm font-extrabold",
-                selectedCategory === category.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-card text-muted-foreground"
-              )}
-            >
-              {locale === "vi" ? category.nameVi : category.nameEn}
-            </button>
-          ))}
-        </div>
+        ))}
       </div>
 
       <div className="flex flex-col gap-3 md:hidden">
@@ -253,9 +265,16 @@ export function MenuManagement({
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-bold text-card-foreground">
-                    {locale === "vi" ? item.nameVi : item.nameEn}
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="truncate font-bold text-card-foreground">
+                      {locale === "vi" ? item.nameVi : item.nameEn}
+                    </p>
+                    {item.isPopular && (
+                      <span className="nb-border-sm shrink-0 rounded-full bg-accent/30 px-1.5 py-0.5 text-[9px] font-extrabold text-accent-foreground">
+                        {t("popularBadge")}
+                      </span>
+                    )}
+                  </div>
                   <p className="truncate text-xs italic text-muted-foreground">
                     {locale === "vi" ? item.nameEn : item.nameVi}
                   </p>

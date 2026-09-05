@@ -20,4 +20,7 @@ export {
   updateModifierGroup,
   setItemModifierGroups,
   setItemSizes,
+  createCategory,
+  updateCategory,
+  deleteCategory,
 } from "./menu-admin"

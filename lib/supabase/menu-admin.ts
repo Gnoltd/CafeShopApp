@@ -8,6 +8,37 @@ import {
   MENU_ITEM_SELECT,
   mapMenuItemRow,
 } from "./menu-mapping"
+import type { MenuCategory } from "./menu-catalog"
+
+export async function createCategory(
+  supabase: SupabaseClient,
+  input: { nameVi: string; nameEn: string; sortOrder: number }
+): Promise<MenuCategory> {
+  const { data, error } = await supabase
+    .from("categories")
+    .insert({ name_vi: input.nameVi, name_en: input.nameEn, sort_order: input.sortOrder })
+    .select("id, name_vi, name_en, sort_order")
+    .single()
+  if (error) throw error
+  return { id: data.id, nameVi: data.name_vi, nameEn: data.name_en, sortOrder: data.sort_order }
+}
+
+export async function updateCategory(
+  supabase: SupabaseClient,
+  id: string,
+  input: { nameVi: string; nameEn: string }
+): Promise<void> {
+  const { error } = await supabase.from("categories").update({ name_vi: input.nameVi, name_en: input.nameEn }).eq("id", id)
+  if (error) throw error
+}
+
+// Blocked at the DB level by menu_items_category_id_fkey (ON DELETE
+// RESTRICT) whenever a menu item still references this category -- callers
+// must catch and show a friendly error rather than a raw FK violation.
+export async function deleteCategory(supabase: SupabaseClient, id: string): Promise<void> {
+  const { error } = await supabase.from("categories").delete().eq("id", id)
+  if (error) throw error
+}
 
 export type MenuItemSizeInput = {
   name: string

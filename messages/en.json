@@ -868,7 +868,15 @@
     "previous": "Previous",
     "next": "Next",
     "deleteConfirmTitle": "Delete this item?",
-    "deleteConfirmBody": "“{name}” will be removed from the menu along with its sizes, extras and recipe links. This can’t be undone."
+    "deleteConfirmBody": "“{name}” will be removed from the menu along with its sizes, extras and recipe links. This can’t be undone.",
+    "categoriesTitle": "Categories",
+    "manageCategories": "Manage",
+    "doneCategories": "Done",
+    "addCategory": "+ Add Category",
+    "categorySaveError": "Couldn't save the category. Try again.",
+    "categoryDeleteError": "Can't delete — some menu items still use this category.",
+    "removeCategory": "Delete category",
+    "popularBadge": "Popular"
   },
   "AdminInventory": {
     "title": "Inventory",

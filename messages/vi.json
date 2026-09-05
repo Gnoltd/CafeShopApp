@@ -868,7 +868,15 @@
     "previous": "Trước",
     "next": "Sau",
     "deleteConfirmTitle": "Xóa món này?",
-    "deleteConfirmBody": "“{name}” sẽ bị xóa khỏi thực đơn cùng với các size, món thêm và công thức liên quan. Không thể hoàn tác."
+    "deleteConfirmBody": "“{name}” sẽ bị xóa khỏi thực đơn cùng với các size, món thêm và công thức liên quan. Không thể hoàn tác.",
+    "categoriesTitle": "Danh Mục",
+    "manageCategories": "Quản Lý",
+    "doneCategories": "Xong",
+    "addCategory": "+ Thêm Danh Mục",
+    "categorySaveError": "Không thể lưu danh mục. Vui lòng thử lại.",
+    "categoryDeleteError": "Không thể xóa — vẫn còn món ăn dùng danh mục này.",
+    "removeCategory": "Xóa danh mục",
+    "popularBadge": "Nổi Bật"
   },
   "AdminInventory": {
     "title": "Kho Hàng",
