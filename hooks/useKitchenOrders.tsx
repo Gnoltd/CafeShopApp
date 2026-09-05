@@ -15,6 +15,7 @@ import {
   getPendingPaymentOrders,
   setOrderPaymentMethodCash,
   changeOrderPaymentMethod,
+  recallLastCompletedOrder as recallLastCompletedOrderQuery,
   type KdsOrderRow,
   type OrderItemStatus,
   type RealOrderStatus,
@@ -233,6 +234,7 @@ type KitchenOrdersContextValue = {
   markTableCashPayment: (tableId: string) => Promise<void>
   markCashPayment: (orderId: string) => Promise<void>
   undoCashPayment: (orderId: string) => Promise<void>
+  recallLastOrder: () => Promise<void>
   completedCount: number
   avgTimeLabel: string
 }
@@ -372,6 +374,15 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
     await changeOrderPaymentMethod(supabase, orderId, null)
   }
 
+  // No optimistic update -- which order (if any) is eligible lives entirely
+  // server-side (recall_last_completed_order's own ORDER BY completed_at desc
+  // LIMIT 1 WHERE clause). The existing orders/order_items Realtime
+  // subscription picks up the resulting status change and refetches like any
+  // other server-driven mutation.
+  async function recallLastOrder() {
+    await recallLastCompletedOrderQuery(supabase)
+  }
+
   const avgTimeLabel =
     completedDurations.length === 0
       ? "--:--"
@@ -393,6 +404,7 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
         markTableCashPayment,
         markCashPayment,
         undoCashPayment,
+        recallLastOrder,
         completedCount,
         avgTimeLabel,
       }}

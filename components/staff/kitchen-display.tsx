@@ -8,11 +8,12 @@ import { KitchenStatsFooter } from "@/components/staff/kitchen-stats-footer"
 import { formatKitchenClock } from "@/components/staff/kitchen-clock"
 import { KitchenBoard, type PaymentAction } from "@/components/staff/kitchen-board"
 import { useKitchenOrders } from "@/hooks/useKitchenOrders"
+import { NOTHING_TO_RECALL_ERROR } from "@/lib/supabase/orders-data"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { LanguageSwitcher } from "@/components/shared/language-switcher"
 
 export function KitchenDisplay() {
-  const { orders, pendingPaymentOrders, advanceItem, regressItem, isItemPending, serveTable, confirmCashPayment, confirmTableCashPayment, markTableCashPayment, completedCount, avgTimeLabel } = useKitchenOrders()
+  const { orders, pendingPaymentOrders, advanceItem, regressItem, isItemPending, serveTable, confirmCashPayment, confirmTableCashPayment, markTableCashPayment, recallLastOrder, completedCount, avgTimeLabel } = useKitchenOrders()
   const t = useTranslations("KitchenDisplay")
   const locale = useLocale()
   const [now, setNow] = useState(0)
@@ -58,6 +59,12 @@ export function KitchenDisplay() {
     },
     [serveTable, t]
   )
+  const handleRecall = useCallback(() => {
+    setError(null)
+    recallLastOrder().catch((err) => {
+      setError(err instanceof Error && err.message === NOTHING_TO_RECALL_ERROR ? t("recallNothingError") : t("updateError"))
+    })
+  }, [recallLastOrder, t])
   const handlePaymentAction = useCallback(async (order: (typeof orders)[number], action: PaymentAction) => {
     setError(null)
     try {
@@ -133,7 +140,7 @@ export function KitchenDisplay() {
               onPaymentAction={handlePaymentAction}
             />
           </div>
-          <KitchenStatsFooter orders={orders} now={now} />
+          <KitchenStatsFooter orders={orders} now={now} onRecall={handleRecall} />
         </div>
       </section>
     </div>

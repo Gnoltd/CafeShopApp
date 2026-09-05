@@ -138,3 +138,18 @@ export async function markTableCashPayment(supabase: SupabaseClient, tableId: st
     .is("payment_method", null)
   if (error) throw error
 }
+
+// Undo a mistaken "Đã Giao Khách" tap. recall_last_completed_order (migration
+// 0087) reverts the single most recent completed+paid pickup order (within a
+// 15-minute window) back to "ready" -- never straight to "served", since that
+// would just be immediately re-completed by complete_order_when_served_and_paid.
+// Raises a distinct 'nothing_to_recall' message when there's no eligible order,
+// which the caller surfaces as a specific hint rather than the generic
+// updateError -- everything else (wrong role, window expired) collapses to
+// the generic error like every other action in this file.
+export const NOTHING_TO_RECALL_ERROR = "nothing_to_recall"
+
+export async function recallLastCompletedOrder(supabase: SupabaseClient): Promise<void> {
+  const { error } = await supabase.rpc("recall_last_completed_order")
+  if (error) throw error
+}

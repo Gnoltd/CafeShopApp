@@ -7,7 +7,7 @@ import { Link } from "@/i18n/navigation"
 import { formatKitchenClock } from "@/components/staff/kitchen-clock"
 import type { KdsOrder } from "@/hooks/useKitchenOrders"
 
-export function KitchenStatsFooter({ now }: { orders: KdsOrder[]; now: number }) {
+export function KitchenStatsFooter({ now, onRecall }: { orders: KdsOrder[]; now: number; onRecall: () => void }) {
   const t = useTranslations("KitchenDisplay")
   const locale = useLocale()
   return (
@@ -25,7 +25,7 @@ export function KitchenStatsFooter({ now }: { orders: KdsOrder[]; now: number })
         <Plus className="h-3.5 w-3.5" />
         {t("walkInOrder")}
       </Button>
-      <Button variant="neubrutal" size="sm" disabled title={t("demoUnavailable")}>
+      <Button variant="neubrutal" size="sm" onClick={onRecall}>
         {t("recall")}
       </Button>
     </footer>

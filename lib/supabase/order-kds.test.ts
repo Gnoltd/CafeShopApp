@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from "vitest"
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { confirmTableCashPayment, markTableCashPayment, advanceOrderItemStatus, markOrderItemsServed } from "./order-kds"
+import {
+  confirmTableCashPayment,
+  markTableCashPayment,
+  advanceOrderItemStatus,
+  markOrderItemsServed,
+  recallLastCompletedOrder,
+} from "./order-kds"
 
 describe("confirmTableCashPayment", () => {
   it("calls confirm_table_cash_payment with the table id and returns the row count", async () => {
@@ -106,5 +112,21 @@ describe("markOrderItemsServed", () => {
     const supabase = { from } as unknown as SupabaseClient
 
     await expect(markOrderItemsServed(supabase, ["order-1"])).rejects.toThrow("not_authorized")
+  })
+})
+
+describe("recallLastCompletedOrder", () => {
+  it("calls the RPC with no arguments", async () => {
+    const rpc = vi.fn(() => Promise.resolve({ error: null }))
+    const supabase = { rpc } as unknown as SupabaseClient
+
+    await recallLastCompletedOrder(supabase)
+
+    expect(rpc).toHaveBeenCalledWith("recall_last_completed_order")
+  })
+
+  it("throws the RPC's error, including the nothing-to-recall case", async () => {
+    const supabase = { rpc: vi.fn(() => Promise.resolve({ data: null, error: new Error("nothing_to_recall") })) } as unknown as SupabaseClient
+    await expect(recallLastCompletedOrder(supabase)).rejects.toThrow("nothing_to_recall")
   })
 })

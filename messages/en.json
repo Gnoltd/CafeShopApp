@@ -548,7 +548,7 @@
     "itemsLabel": "items",
     "walkInOrder": "Manual Order",
     "recall": "Recall last",
-    "demoUnavailable": "Recalling a completed order isn't supported yet — coming soon.",
+    "recallNothingError": "No recently completed order to recall.",
     "awaitingGatewayPayment": "Awaiting online payment",
     "footerHint": "Tap an item or its action button to update progress.",
     "stationLabel": "Barista Station 1",

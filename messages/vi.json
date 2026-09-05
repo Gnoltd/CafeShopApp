@@ -548,7 +548,7 @@
     "itemsLabel": "món",
     "walkInOrder": "Đơn Thủ Công",
     "recall": "Gọi lại đơn vừa giao",
-    "demoUnavailable": "Chưa hỗ trợ gọi lại đơn đã hoàn tất — sắp có.",
+    "recallNothingError": "Không có đơn nào vừa hoàn tất để gọi lại.",
     "awaitingGatewayPayment": "Đang chờ thanh toán trực tuyến",
     "footerHint": "Chạm vào món hoặc nút hành động để cập nhật tiến độ.",
     "stationLabel": "Trạm Pha Chế 1",
