@@ -7,8 +7,11 @@ import { SegmentedControl } from "@/components/motion/segmented-control"
 import { KitchenStatsFooter, formatKitchenClock } from "@/components/staff/kitchen-stats-footer"
 import { KitchenBoard, type PaymentAction } from "@/components/staff/kitchen-board"
 import { useKitchenOrders } from "@/hooks/useKitchenOrders"
+import { RoleBadge } from "@/components/shared/role-badge"
+import { ThemeToggle } from "@/components/shared/theme-toggle"
+import { LanguageSwitcher } from "@/components/shared/language-switcher"
 
-export function KitchenDisplay() {
+export function KitchenDisplay({ role }: { role: string | null }) {
   const { orders, pendingPaymentOrders, advanceItem, isItemPending, confirmCashPayment, confirmTableCashPayment, markTableCashPayment, completedCount, avgTimeLabel } = useKitchenOrders()
   const t = useTranslations("KitchenDisplay")
   const locale = useLocale()
@@ -87,6 +90,12 @@ export function KitchenDisplay() {
             <Kpi label={t("openTickets")} value={openCount} />
             <Kpi label={t("completedLabel")} value={completedCount} tone="success" />
             <Kpi label={t("avgTimeLabel")} value={avgTimeLabel} />
+          </div>
+
+          <div className="flex items-center gap-2 lg:ml-2">
+            <RoleBadge role={role} />
+            <ThemeToggle />
+            <LanguageSwitcher />
           </div>
         </header>
 
