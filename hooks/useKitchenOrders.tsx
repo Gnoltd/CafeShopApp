@@ -73,6 +73,44 @@ export function withItemStatus(
   )
 }
 
+// Real bug this closes: KDS_REFETCH_DELAY_MS's debounce is capped at
+// maxDelayMs (4x delayMs = 1200ms) so a continuous burst of taps -- the
+// documented "normal interaction pattern" below -- still forces a refetch
+// on a fixed cadence even while events keep arriving. If a tap's RPC is
+// still in flight when that capped refetch's SELECT fires, the fetch can
+// legitimately return a snapshot from *before* that write committed --
+// Realtime/refetch and the optimistic update are two entirely separate
+// paths with no coordination between them. Blindly overwriting `orders`
+// with that snapshot reverts the still-pending tap's optimistic status
+// back to what the server had a moment ago, indistinguishable from the tap
+// never having registered; the next refetch (triggered once the RPC's own
+// write actually lands) then shows the correct status with no new tap
+// from the user, indistinguishable from the board "jumping on its own."
+// Fix: for any item currently mid-flight (tracked in pendingItemKeys),
+// keep showing its last-known-locally-applied status instead of trusting
+// a fetch that may have raced ahead of that item's own commit -- every
+// other item in the same snapshot is unaffected and applied as fetched.
+export function mergeInFlightItems(
+  fresh: KdsOrderRow[],
+  previous: KdsOrderRow[],
+  pendingKeys: Set<string>
+): KdsOrderRow[] {
+  if (pendingKeys.size === 0) return fresh
+  return fresh.map((order) => {
+    const previousOrder = previous.find((o) => o.id === order.id)
+    if (!previousOrder) return order
+    let changed = false
+    const items = order.items.map((item) => {
+      if (!pendingKeys.has(itemPendingKey(order.id, item.id))) return item
+      const previousItem = previousOrder.items.find((i) => i.id === item.id)
+      if (!previousItem || previousItem.status === item.status) return item
+      changed = true
+      return { ...item, status: previousItem.status }
+    })
+    return changed ? { ...order, items } : order
+  })
+}
+
 // The debounced Realtime refetch (useLatestRefetch, KDS_REFETCH_DELAY_MS
 // below) can take up to ~1.2s to confirm a tap on a busy board -- ticking
 // several items in quick succession is the NORMAL interaction pattern, not
@@ -218,7 +256,10 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
     // A straggling older response must never overwrite a newer one that
     // already landed -- overlapping fetches don't resolve in call order.
     if (isStale()) return
-    setOrders(active)
+    // mergeInFlightItems: don't let a refetch that raced ahead of a still-
+    // in-flight tap revert that tap's optimistic status -- see its own
+    // comment above for the exact race this closes.
+    setOrders((current) => mergeInFlightItems(active, current, pendingItemKeys))
     setPendingPaymentOrders(pending)
   }
 

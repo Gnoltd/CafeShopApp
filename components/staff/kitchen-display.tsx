@@ -7,11 +7,10 @@ import { SegmentedControl } from "@/components/motion/segmented-control"
 import { KitchenStatsFooter, formatKitchenClock } from "@/components/staff/kitchen-stats-footer"
 import { KitchenBoard, type PaymentAction } from "@/components/staff/kitchen-board"
 import { useKitchenOrders } from "@/hooks/useKitchenOrders"
-import { RoleBadge } from "@/components/shared/role-badge"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { LanguageSwitcher } from "@/components/shared/language-switcher"
 
-export function KitchenDisplay({ role }: { role: string | null }) {
+export function KitchenDisplay() {
   const { orders, pendingPaymentOrders, advanceItem, regressItem, isItemPending, confirmCashPayment, confirmTableCashPayment, markTableCashPayment, completedCount, avgTimeLabel } = useKitchenOrders()
   const t = useTranslations("KitchenDisplay")
   const locale = useLocale()
@@ -93,14 +92,13 @@ export function KitchenDisplay({ role }: { role: string | null }) {
             ]}
           />
 
-          <div className="grid grid-cols-3 gap-3 lg:ml-auto lg:gap-5">
+          <div className="grid shrink-0 grid-cols-3 gap-3 lg:ml-auto lg:gap-5">
             <Kpi label={t("openTickets")} value={openCount} />
             <Kpi label={t("completedLabel")} value={completedCount} tone="success" />
             <Kpi label={t("avgTimeLabel")} value={avgTimeLabel} />
           </div>
 
-          <div className="flex items-center gap-2 lg:ml-2">
-            <RoleBadge role={role} />
+          <div className="flex shrink-0 items-center gap-2 lg:ml-2">
             <ThemeToggle />
             <LanguageSwitcher />
           </div>

@@ -6,6 +6,7 @@ import {
   advanceItemGuarded,
   itemPendingKey,
   PREV_ITEM_STATUS,
+  mergeInFlightItems,
 } from "./useKitchenOrders"
 import type { KdsOrderRow, OrderItemStatus } from "@/lib/supabase/order-kds"
 
@@ -235,5 +236,50 @@ describe("advanceItemGuarded regressing a status (the KDS undo button)", () => {
 
     expect(orders[0].items[0].status).toBe("preparing")
     expect(regress).toHaveBeenCalledWith("item-0", "preparing")
+  })
+})
+
+// The bug this closes: a staff-reported "clicks sometimes don't register,
+// then the board sometimes jumps to a different step by itself." Root
+// cause -- the debounced board refetch (KDS_REFETCH_DELAY_MS, capped by
+// maxDelayMs) can legitimately return a snapshot taken before a still-
+// in-flight tap's RPC committed, especially mid-burst when a fixed cadence
+// forces a refetch regardless of pending activity. The old code blindly
+// replaced `orders` with that snapshot, silently reverting the optimistic
+// tap (looked like the click was ignored) until a later refetch -- once
+// the RPC actually landed -- corrected it with no new tap from the user
+// (looked like the board moved on its own).
+describe("mergeInFlightItems", () => {
+  it("returns the fresh snapshot untouched when nothing is pending", () => {
+    const fresh = [makeOrder(["ready"])]
+    expect(mergeInFlightItems(fresh, [makeOrder(["preparing"])], new Set())).toBe(fresh)
+  })
+
+  it("keeps the previous (optimistic) status for a pending item even when the fresh fetch disagrees", () => {
+    const previous = [makeOrder(["ready"])] // optimistic tap already applied locally
+    const fresh = [makeOrder(["preparing"])] // refetch raced ahead of that tap's own commit
+    const pending = new Set([itemPendingKey("order-1", "item-0")])
+
+    const merged = mergeInFlightItems(fresh, previous, pending)
+
+    expect(merged[0].items[0].status).toBe("ready")
+  })
+
+  it("still applies the fresh status for every item that isn't pending", () => {
+    const previous = [makeOrder(["ready", "preparing"])]
+    const fresh = [makeOrder(["served", "ready"])]
+    // Only item-0 is mid-flight; item-1's fresh "ready" is real server truth.
+    const pending = new Set([itemPendingKey("order-1", "item-0")])
+
+    const merged = mergeInFlightItems(fresh, previous, pending)
+
+    expect(merged[0].items[0].status).toBe("ready") // preserved (pending)
+    expect(merged[0].items[1].status).toBe("ready") // taken from fresh
+  })
+
+  it("passes through an order the previous snapshot doesn't have (e.g. a brand-new ticket)", () => {
+    const fresh = [makeOrder(["preparing"])]
+    const merged = mergeInFlightItems(fresh, [], new Set([itemPendingKey("order-1", "item-0")]))
+    expect(merged).toEqual(fresh)
   })
 })
