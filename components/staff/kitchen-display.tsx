@@ -6,11 +6,10 @@ import { Coffee, Timer } from "lucide-react"
 import { SegmentedControl } from "@/components/motion/segmented-control"
 import { KitchenStatsFooter, formatKitchenClock } from "@/components/staff/kitchen-stats-footer"
 import { KitchenBoard } from "@/components/staff/kitchen-board"
-import { KitchenPendingPayment } from "@/components/staff/kitchen-pending-payment"
 import { useKitchenOrders } from "@/hooks/useKitchenOrders"
 
 export function KitchenDisplay() {
-  const { orders, pendingPaymentOrders, advanceItem, isItemPending, confirmCashPayment, completedCount, avgTimeLabel } = useKitchenOrders()
+  const { orders, advanceItem, isItemPending, completedCount, avgTimeLabel } = useKitchenOrders()
   const t = useTranslations("KitchenDisplay")
   const locale = useLocale()
   const [now, setNow] = useState(0)
@@ -37,19 +36,6 @@ export function KitchenDisplay() {
     [advanceItem, t]
   )
 
-  const handleConfirmCashPayment = useCallback(
-    (orderId: string) => {
-      setError(null)
-      return confirmCashPayment(orderId).catch((err) => {
-        setError(t("updateError"))
-        // Rethrow so the ConfirmDialog in KitchenPendingPayment catches it
-        // too and keeps itself open instead of closing as if it worked.
-        throw err
-      })
-    },
-    [confirmCashPayment, t]
-  )
-
   const visibleOrders = useMemo(
     () => orders.filter((order) => filter === "all" || order.orderType === filter),
     [filter, orders]
@@ -58,8 +44,8 @@ export function KitchenDisplay() {
   const clock = now === 0 ? "--:--:--" : formatKitchenClock(now, locale)
 
   return (
-    <div className="h-full overflow-hidden bg-muted/60 p-3 sm:p-4 lg:p-6">
-      <section className="nb-border mx-auto flex h-full max-w-[1180px] flex-col overflow-hidden rounded-2xl bg-background shadow-[0_16px_40px_rgb(43_33_24_/_18%)]">
+    <div className="flex h-full min-h-[680px] items-center justify-center overflow-hidden bg-muted/60 p-3 sm:p-4 lg:p-7">
+      <section className="nb-border mx-auto flex h-full w-full max-w-[1180px] flex-col overflow-hidden rounded-[22px] border-[10px] bg-background shadow-[0_24px_70px_rgb(0_0_0_/_30%)] lg:h-[760px] lg:max-h-[calc(100dvh-56px)]">
         <header className="flex shrink-0 flex-col gap-3 border-b-2 border-ink bg-card px-4 py-3 lg:flex-row lg:items-center lg:gap-5 lg:px-5">
           <div className="flex items-center gap-3">
             <div className="nb-border-sm flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -99,9 +85,6 @@ export function KitchenDisplay() {
         <div className="flex min-h-0 flex-1 flex-col gap-3 p-3">
           {error && (
             <p className="shrink-0 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
-          )}
-          {pendingPaymentOrders.length > 0 && (
-            <KitchenPendingPayment orders={pendingPaymentOrders} onConfirm={handleConfirmCashPayment} />
           )}
           <div className="min-h-0 flex-1 overflow-hidden">
             <KitchenBoard orders={visibleOrders} now={now} onAdvanceItem={handleAdvanceItem} isItemPending={isItemPending} />

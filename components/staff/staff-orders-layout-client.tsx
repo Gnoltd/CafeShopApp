@@ -23,6 +23,10 @@ export function StaffOrdersLayoutClient({
   const isShiftHistoryActive = pathname === "/staff/orders/shift-history"
   const { completedCount, avgTimeLabel } = useKitchenOrders()
 
+  if (isLiveOrdersActive) {
+    return <div className="h-full overflow-hidden">{children}</div>
+  }
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <KitchenTopBar />
