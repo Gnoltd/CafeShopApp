@@ -62,6 +62,16 @@ export function DashboardView({ locale }: { locale: string }) {
     }
   }
 
+  async function handleExport() {
+    const { exportDashboardExcel } = await import("@/lib/export-dashboard-excel")
+    exportDashboardExcel({
+      stats,
+      lowStock,
+      tableCounts: { available: availableCount, occupied: occupiedCount, cleaning: cleaningCount },
+      locale,
+    })
+  }
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -69,19 +79,10 @@ export function DashboardView({ locale }: { locale: string }) {
           <h2 className="text-2xl font-bold text-card-foreground">{t("overview")}</h2>
           <p className="text-muted-foreground">{t("welcomeMessage")}</p>
         </div>
-        <Button
-          variant="outline"
-          className="h-10 gap-2"
-          onClick={async () => {
-            const { exportDashboardExcel } = await import("@/lib/export-dashboard-excel")
-            exportDashboardExcel({
-              stats,
-              lowStock,
-              tableCounts: { available: availableCount, occupied: occupiedCount, cleaning: cleaningCount },
-              locale,
-            })
-          }}
-        >
+        {/* Full-width at the bottom of the page on mobile (matching the
+            reference) -- inline here would fight the wrapping title for
+            room on a narrow screen. */}
+        <Button variant="outline" className="hidden h-10 shrink-0 gap-2 md:flex" onClick={handleExport}>
           <FileSpreadsheet className="h-4 w-4" />
           {t("exportExcel")}
         </Button>
@@ -92,7 +93,7 @@ export function DashboardView({ locale }: { locale: string }) {
       )}
       {hasStaleStats && !hasStatsError && <StaleNotice onRetry={retryStats} />}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Link
           href="/admin/shift"
           className="nb-border-sm nb-shadow-sm nb-press-sm rounded-xl bg-card p-5"
@@ -204,7 +205,9 @@ export function DashboardView({ locale }: { locale: string }) {
         {restockError && (
           <p className="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{restockError}</p>
         )}
-        <div className="overflow-x-auto">
+        {/* Desktop: full table. Mobile: a stacked card list (matching the
+            reference) instead of a cramped, horizontally-scrolling table. */}
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b text-left text-muted-foreground">
@@ -268,6 +271,39 @@ export function DashboardView({ locale }: { locale: string }) {
             </tbody>
           </table>
         </div>
+        <div className="md:hidden">
+          {isLoading ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">{t("loadingInventory")}</p>
+          ) : lowStock.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">{t("noLowStock")}</p>
+          ) : (
+            lowStock.map((item) => {
+              const Icon = INGREDIENT_ICONS[item.icon]
+              return (
+                <div key={item.id} className="flex items-center gap-3 border-t py-3 first:border-t-0 first:pt-0">
+                  <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-card-foreground">
+                      {locale === "vi" ? item.nameVi : item.nameEn}
+                    </p>
+                    <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-destructive">
+                      <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
+                      {t("critical")} · {item.stock} {item.unit}
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="h-8 shrink-0"
+                    onClick={() => handleRestock(item.id)}
+                    disabled={restockingId === item.id}
+                  >
+                    {restockingId === item.id ? t("restocking") : t("restock")}
+                  </Button>
+                </div>
+              )
+            })
+          )}
+        </div>
       </div>
 
       <div className="nb-border-sm nb-shadow-sm rounded-xl bg-card p-5">
@@ -279,7 +315,7 @@ export function DashboardView({ locale }: { locale: string }) {
             </span>
           )}
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-3 gap-3">
           <div className="rounded-lg bg-green-50 p-3 text-center dark:bg-green-950/20">
             <p className="text-xl font-bold text-green-700">{availableCount}</p>
             <p className="text-xs text-muted-foreground">{t("tableAvailable")}</p>
@@ -294,6 +330,11 @@ export function DashboardView({ locale }: { locale: string }) {
           </div>
         </div>
       </div>
+
+      <Button variant="outline" className="h-10 w-full gap-2 md:hidden" onClick={handleExport}>
+        <FileSpreadsheet className="h-4 w-4" />
+        {t("exportExcel")}
+      </Button>
     </div>
   )
 }
