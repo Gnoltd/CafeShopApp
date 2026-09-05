@@ -61,8 +61,11 @@ export function KitchenDisplay() {
   )
   const handleRecall = useCallback(() => {
     setError(null)
-    recallLastOrder().catch((err) => {
-      setError(err instanceof Error && err.message === NOTHING_TO_RECALL_ERROR ? t("recallNothingError") : t("updateError"))
+    // The RPC's rejection is the raw PostgREST error body ({code, message,
+    // ...}), not an Error instance -- check .message directly rather than
+    // guarding with `instanceof Error`.
+    recallLastOrder().catch((err: { message?: string } | undefined) => {
+      setError(err?.message === NOTHING_TO_RECALL_ERROR ? t("recallNothingError") : t("updateError"))
     })
   }, [recallLastOrder, t])
   const handlePaymentAction = useCallback(async (order: (typeof orders)[number], action: PaymentAction) => {
