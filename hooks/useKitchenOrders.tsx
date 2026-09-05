@@ -382,13 +382,24 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
     await changeOrderPaymentMethod(supabase, orderId, null)
   }
 
-  // No optimistic update -- which order (if any) is eligible lives entirely
-  // server-side (recall_last_completed_order's own ORDER BY completed_at desc
-  // LIMIT 1 WHERE clause). The existing orders/order_items Realtime
-  // subscription picks up the resulting status change and refetches like any
-  // other server-driven mutation.
+  // No optimistic status update -- which order (if any) is eligible lives
+  // entirely server-side (recall_last_completed_order's own ORDER BY
+  // completed_at desc LIMIT 1 WHERE clause). The existing orders/order_items
+  // Realtime subscription picks up the resulting status change and refetches
+  // like any other server-driven mutation.
+  //
+  // completedCount/completedDurations DO need an explicit undo here, though --
+  // they're pure client-side session counters (see the "served" branch of
+  // advanceItem and serveTable above), so nothing else will ever correct them
+  // once recall reverses a completion. The RPC recalls the single MOST
+  // RECENTLY completed order, which is exactly the last entry pushed onto
+  // completedDurations -- popping it keeps both stats consistent with the
+  // recalled order no longer counting as done, without needing to identify
+  // which entry was "its" duration.
   async function recallLastOrder() {
     await recallLastCompletedOrderQuery(supabase)
+    setCompletedCount((count) => Math.max(0, count - 1))
+    setCompletedDurations((durations) => durations.slice(0, -1))
   }
 
   const avgTimeLabel =
