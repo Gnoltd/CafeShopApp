@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { urgencyLevelFor } from "./kitchen-board"
+import { urgencyLevelFor, paymentActionForOrder } from "./kitchen-board"
 
 describe("urgencyLevelFor", () => {
   it("is normal just after creation", () => {
@@ -30,5 +30,17 @@ describe("urgencyLevelFor", () => {
   it("stays critical well beyond the threshold", () => {
     const createdAt = 0
     expect(urgencyLevelFor(createdAt, createdAt + 45 * 60_000)).toBe("critical")
+  })
+})
+
+describe("paymentActionForOrder", () => {
+  const base = { id: "o", orderType: "dine-in" as const, status: "served" as const, paymentStatus: "pending", paymentMethod: null, createdAt: 0, items: [], total: 0, tableId: "t" }
+  it("routes an unselected table tab through Mark Cash then Confirm Cash", () => {
+    expect(paymentActionForOrder(base)).toBe("mark-table-cash")
+    expect(paymentActionForOrder({ ...base, paymentMethod: "cash" })).toBe("confirm-table-cash")
+  })
+  it("keeps gateway payments staff-read-only and permits pickup cash confirmation", () => {
+    expect(paymentActionForOrder({ ...base, paymentMethod: "stripe" })).toBeNull()
+    expect(paymentActionForOrder({ ...base, orderType: "pickup", paymentMethod: "cash", tableId: undefined })).toBe("confirm-pickup-cash")
   })
 })

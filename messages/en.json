@@ -548,6 +548,7 @@
     "simulate": "Add test order",
     "recall": "Recall last",
     "demoUnavailable": "Available only in the design demo — this screen never creates fake orders.",
+    "awaitingGatewayPayment": "Awaiting online payment",
     "footerHint": "Tap an item or its action button to update progress.",
     "stationLabel": "Barista Station 1",
     "systemOnline": "System Online",

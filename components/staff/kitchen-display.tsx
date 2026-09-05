@@ -5,11 +5,11 @@ import { useLocale, useTranslations } from "next-intl"
 import { Coffee, Timer } from "lucide-react"
 import { SegmentedControl } from "@/components/motion/segmented-control"
 import { KitchenStatsFooter, formatKitchenClock } from "@/components/staff/kitchen-stats-footer"
-import { KitchenBoard } from "@/components/staff/kitchen-board"
+import { KitchenBoard, type PaymentAction } from "@/components/staff/kitchen-board"
 import { useKitchenOrders } from "@/hooks/useKitchenOrders"
 
 export function KitchenDisplay() {
-  const { orders, advanceItem, isItemPending, completedCount, avgTimeLabel } = useKitchenOrders()
+  const { orders, advanceItem, isItemPending, confirmCashPayment, confirmTableCashPayment, markTableCashPayment, completedCount, avgTimeLabel } = useKitchenOrders()
   const t = useTranslations("KitchenDisplay")
   const locale = useLocale()
   const [now, setNow] = useState(0)
@@ -35,6 +35,14 @@ export function KitchenDisplay() {
     },
     [advanceItem, t]
   )
+  const handlePaymentAction = useCallback(async (order: (typeof orders)[number], action: PaymentAction) => {
+    setError(null)
+    try {
+      if (action === "confirm-pickup-cash") await confirmCashPayment(order.id)
+      if (action === "mark-table-cash" && order.tableId) await markTableCashPayment(order.tableId)
+      if (action === "confirm-table-cash" && order.tableId) await confirmTableCashPayment(order.tableId)
+    } catch { setError(t("updateError")) }
+  }, [confirmCashPayment, confirmTableCashPayment, markTableCashPayment, t])
 
   const visibleOrders = useMemo(
     () => orders.filter((order) => filter === "all" || order.orderType === filter),
@@ -87,7 +95,7 @@ export function KitchenDisplay() {
             <p className="shrink-0 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
           )}
           <div className="min-h-0 flex-1 overflow-hidden">
-            <KitchenBoard orders={visibleOrders} now={now} onAdvanceItem={handleAdvanceItem} isItemPending={isItemPending} />
+            <KitchenBoard orders={visibleOrders} now={now} onAdvanceItem={handleAdvanceItem} isItemPending={isItemPending} onPaymentAction={handlePaymentAction} />
           </div>
           <KitchenStatsFooter orders={orders} now={now} />
         </div>

@@ -548,6 +548,7 @@
     "simulate": "Thêm đơn mẫu",
     "recall": "Gọi lại đơn vừa giao",
     "demoUnavailable": "Chỉ có trong bản mô phỏng thiết kế — không tạo đơn hàng giả.",
+    "awaitingGatewayPayment": "Đang chờ thanh toán trực tuyến",
     "footerHint": "Chạm vào món hoặc nút hành động để cập nhật tiến độ.",
     "stationLabel": "Trạm Pha Chế 1",
     "systemOnline": "Hệ Thống Hoạt Động",
