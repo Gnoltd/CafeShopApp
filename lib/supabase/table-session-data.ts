@@ -146,6 +146,15 @@ export async function placeTableRound(
   submissionId = crypto.randomUUID()
 ): Promise<{ orderId: string; total: number }> {
   const { data, error } = await supabase.rpc("place_table_round", { p_qr_token: qrToken, p_submission_id: submissionId })
+  // Production may temporarily be behind migration 0085. PostgREST's
+  // PGRST202 means this exact overload is absent; only then is the legacy
+  // one-argument function safe to try. Business/RLS/RPC failures must stay
+  // visible to the caller and must never be replayed without idempotency.
+  if (error && error.code === "PGRST202") {
+    const legacy = await supabase.rpc("place_table_round", { p_qr_token: qrToken })
+    if (legacy.error) throw legacy.error
+    return legacy.data as { orderId: string; total: number }
+  }
   if (error) throw error
   return data as { orderId: string; total: number }
 }

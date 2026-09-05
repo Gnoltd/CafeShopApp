@@ -188,6 +188,22 @@ describe("placeTableRound", () => {
     await placeTableRound(supabase, "qr-token-1", "submission-1")
     expect(rpc).toHaveBeenCalledWith("place_table_round", { p_qr_token: "qr-token-1", p_submission_id: "submission-1" })
   })
+
+  it("retries only a missing two-argument RPC signature with the legacy overload", async () => {
+    const rpc = vi.fn()
+      .mockResolvedValueOnce({ data: null, error: { code: "PGRST202", message: "function not found" } })
+      .mockResolvedValueOnce({ data: { orderId: "legacy-order", total: 40000 }, error: null })
+    const supabase = { rpc } as unknown as SupabaseClient
+    await expect(placeTableRound(supabase, "qr-token-1", "submission-1")).resolves.toEqual({ orderId: "legacy-order", total: 40000 })
+    expect(rpc).toHaveBeenNthCalledWith(2, "place_table_round", { p_qr_token: "qr-token-1" })
+  })
+
+  it("does not retry real RPC failures", async () => {
+    const rpc = vi.fn(() => Promise.resolve({ data: null, error: { code: "42501", message: "not authorized" } }))
+    const supabase = { rpc } as unknown as SupabaseClient
+    await expect(placeTableRound(supabase, "qr-token-1")).rejects.toEqual(expect.objectContaining({ code: "42501" }))
+    expect(rpc).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe("abandonTableSession", () => {

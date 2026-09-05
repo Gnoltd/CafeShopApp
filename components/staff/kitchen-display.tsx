@@ -9,7 +9,7 @@ import { KitchenBoard, type PaymentAction } from "@/components/staff/kitchen-boa
 import { useKitchenOrders } from "@/hooks/useKitchenOrders"
 
 export function KitchenDisplay() {
-  const { orders, advanceItem, isItemPending, confirmCashPayment, confirmTableCashPayment, markTableCashPayment, completedCount, avgTimeLabel } = useKitchenOrders()
+  const { orders, pendingPaymentOrders, advanceItem, isItemPending, confirmCashPayment, confirmTableCashPayment, markTableCashPayment, completedCount, avgTimeLabel } = useKitchenOrders()
   const t = useTranslations("KitchenDisplay")
   const locale = useLocale()
   const [now, setNow] = useState(0)
@@ -44,10 +44,10 @@ export function KitchenDisplay() {
     } catch { setError(t("updateError")) }
   }, [confirmCashPayment, confirmTableCashPayment, markTableCashPayment, t])
 
-  const visibleOrders = useMemo(
-    () => orders.filter((order) => filter === "all" || order.orderType === filter),
-    [filter, orders]
-  )
+  const visibleOrders = useMemo(() => {
+    const all = [...orders, ...pendingPaymentOrders.filter((pending) => !orders.some((order) => order.id === pending.id))]
+    return all.filter((order) => filter === "all" || order.orderType === filter)
+  }, [filter, orders, pendingPaymentOrders])
   const openCount = orders.filter((order) => order.status !== "served").length
   const clock = now === 0 ? "--:--:--" : formatKitchenClock(now, locale)
 

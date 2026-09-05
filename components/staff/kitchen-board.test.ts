@@ -43,4 +43,7 @@ describe("paymentActionForOrder", () => {
     expect(paymentActionForOrder({ ...base, paymentMethod: "stripe" })).toBeNull()
     expect(paymentActionForOrder({ ...base, orderType: "pickup", paymentMethod: "cash", tableId: undefined })).toBe("confirm-pickup-cash")
   })
+  it("requires confirmation before a pending pickup cash order enters the kitchen", () => {
+    expect(paymentActionForOrder({ ...base, orderType: "pickup", status: "pending_payment", paymentMethod: "cash", tableId: undefined })).toBe("confirm-pickup-cash")
+  })
 })
