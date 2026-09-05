@@ -2,11 +2,11 @@
 
 import { useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
-import { Check, Coffee, CornerUpLeft, ShoppingBag, Utensils } from "lucide-react"
+import { Check, Coffee, CornerUpLeft, MessageSquareQuote, ShoppingBag, Utensils } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { formatOrderId } from "@/lib/format"
 import { SegmentedControl } from "@/components/motion/segmented-control"
-import { PREV_ITEM_STATUS } from "@/hooks/useKitchenOrders"
+import { PREV_ITEM_STATUS, willCompleteOrderOnAdvance } from "@/hooks/useKitchenOrders"
 import type { KdsStatus, KdsOrder } from "@/hooks/useKitchenOrders"
 
 const COLUMNS: { status: KdsStatus; key: "columnNew" | "columnPreparing" | "columnReady"; dot: string }[] = [
@@ -193,44 +193,44 @@ function Ticket({
         </div>
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2.5">
         {order.items.map((item) => {
-          // Three real statuses (preparing/ready/served), not two -- a
-          // checkbox that only lit up at "served" made the first tap on any
-          // item (preparing -> ready) show *no visible change at all* on
-          // the item itself, with the only externally visible effect being
-          // the whole ticket relocating to a different column a moment
-          // later. That disconnect between "what I tapped" and "what
-          // changed" is what read as taps not registering / the board
-          // jumping on its own. Every status now gets its own look.
+          // One tap, straight to done -- matches the reference's per-item
+          // checklist exactly (a plain done/not-done toggle). See
+          // NEXT_ITEM_STATUS's own comment for how this stays consistent
+          // with the order-level "Sẵn Sàng" column.
           const served = item.status === "served"
-          const ready = item.status === "ready"
           const optionsText = itemOptionsText(item, locale)
           return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onAdvanceItem(order.id, item.id)}
-              disabled={served || order.status === "pending_payment" || isItemPending(order.id, item.id)}
-              className="flex items-start gap-2 text-left disabled:pointer-events-none"
-            >
-              <span
-                className={cn(
-                  "nb-border-sm mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-[5px]",
-                  served ? "bg-success text-white" : ready ? "bg-warn text-white" : "bg-card"
-                )}
+            <div key={item.id} className="flex flex-col gap-1.5">
+              <button
+                type="button"
+                onClick={() => onAdvanceItem(order.id, item.id)}
+                disabled={served || order.status === "pending_payment" || isItemPending(order.id, item.id)}
+                className="flex items-start gap-2 text-left disabled:pointer-events-none"
               >
-                {(served || ready) && <Check className="size-3" />}
-              </span>
-              <span className={cn("min-w-0 flex-1 text-sm font-extrabold leading-tight", served && "text-muted-foreground line-through")}>
-                {item.quantity}× {locale === "vi" ? item.nameVi : item.nameEn}
-                {ready && <span className="ml-1.5 text-[10px] font-extrabold uppercase tracking-wide text-warn no-underline">{t("readyLabel")}</span>}
-                {optionsText && (
-                  <span className="mt-0.5 block text-[11px] font-semibold text-muted-foreground no-underline">{optionsText}</span>
-                )}
-                {item.note && <span className="mt-1 block text-[11px] font-semibold text-muted-foreground no-underline">{item.note}</span>}
-              </span>
-            </button>
+                <span
+                  className={cn(
+                    "nb-border-sm mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-[5px]",
+                    served ? "bg-success text-white" : "bg-card"
+                  )}
+                >
+                  {served && <Check className="size-3" />}
+                </span>
+                <span className={cn("min-w-0 flex-1 text-sm font-extrabold leading-tight", served && "text-muted-foreground line-through")}>
+                  {item.quantity}× {locale === "vi" ? item.nameVi : item.nameEn}
+                  {optionsText && (
+                    <span className="mt-0.5 block text-[11px] font-semibold text-muted-foreground no-underline">{optionsText}</span>
+                  )}
+                </span>
+              </button>
+              {item.note && (
+                <div className="nb-border-sm ml-7 flex items-start gap-2 rounded-md bg-warn/15 px-2.5 py-1.5">
+                  <MessageSquareQuote className="mt-0.5 size-3.5 shrink-0 text-warn" />
+                  <span className="text-[11px] font-bold leading-tight">{item.note}</span>
+                </div>
+              )}
+            </div>
           )
         })}
       </div>
@@ -263,14 +263,10 @@ function Ticket({
             disabled={isItemPending(order.id, next.id)}
             className={cn(
               "nb-border nb-shadow nb-press h-10 flex-1 rounded-lg text-xs font-extrabold uppercase tracking-wide text-white disabled:opacity-40",
-              next.status === "ready" ? "bg-success" : "bg-primary"
+              willCompleteOrderOnAdvance(order, next.id) ? "bg-success" : "bg-primary"
             )}
           >
-            {order.status === "paid" && next.status === "preparing"
-              ? t("startPreparing")
-              : next.status === "ready"
-                ? t("markServed")
-                : t("markReady")}
+            {order.status === "paid" ? t("startPreparing") : t("markReady")}
           </button>
         </div>
       ) : order.status === "served" && order.paymentStatus === "pending" ? (

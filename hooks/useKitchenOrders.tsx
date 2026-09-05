@@ -26,24 +26,32 @@ import {
 export type KdsStatus = Extract<RealOrderStatus, "paid" | "preparing" | "ready">
 export type { KdsOrderRow as KdsOrder }
 
+// One tap per drink, straight to done -- matches the reference's per-item
+// checklist (a plain done/not-done toggle, no visible middle step). "ready"
+// is skipped as a per-item stopping point entirely; the enum keeps the
+// value (still valid, still typed) since order_items.status itself is
+// unchanged, but no code path sets it anymore. This doesn't lose the
+// "Sẵn Sàng" column: KitchenBoard's own column filter already treats
+// order.status "ready" and "served" as the same column, so an order whose
+// items go straight to "served" still lands there correctly.
 const NEXT_ITEM_STATUS: Record<OrderItemStatus, OrderItemStatus | null> = {
-  preparing: "ready",
+  preparing: "served",
   ready: "served",
   served: null,
 }
 
-// The mockup's per-ticket "back" arrow (mis-tapped Mark Ready/Mark Served)
-// -- safe to send straight through advanceOrderItemStatus with no new RPC:
-// order_items.status has no forward-only constraint, and
-// sync_order_status_from_items (migration 0082) recomputes the parent
-// order's rolled-up status from its items' current statuses on every
-// update, in either direction, so a regressed item correctly reopens its
-// parent order too (e.g. "ready" -> "preparing" flips the order itself
-// back to "preparing").
+// The mockup's per-ticket "back" arrow (mis-tapped done) -- safe to send
+// straight through advanceOrderItemStatus with no new RPC: order_items.status
+// has no forward-only constraint, and sync_order_status_from_items
+// (migration 0082) recomputes the parent order's rolled-up status from its
+// items' current statuses on every update, in either direction, so a
+// regressed item correctly reopens its parent order too (e.g. "served" ->
+// "preparing" flips the order itself back to "preparing", same single step
+// as the forward tap).
 export const PREV_ITEM_STATUS: Record<OrderItemStatus, OrderItemStatus | null> = {
   preparing: null,
   ready: "preparing",
-  served: "ready",
+  served: "preparing",
 }
 
 // Pure so it's directly testable: given the order this item belongs to,

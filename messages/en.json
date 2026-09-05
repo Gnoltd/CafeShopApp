@@ -532,7 +532,6 @@
     "markCash": "Mark Cash",
     "undoCash": "Undo",
     "undoItem": "Send back a step",
-    "readyLabel": "Ready",
     "markOccupied": "Mark Occupied",
     "markCleaning": "Mark Cleaning",
     "updateError": "Failed to update. Try again.",
