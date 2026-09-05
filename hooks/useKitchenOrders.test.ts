@@ -5,6 +5,7 @@ import {
   advanceItemOptimistically,
   advanceItemGuarded,
   itemPendingKey,
+  PREV_ITEM_STATUS,
 } from "./useKitchenOrders"
 import type { KdsOrderRow, OrderItemStatus } from "@/lib/supabase/order-kds"
 
@@ -24,6 +25,8 @@ function makeOrder(itemStatuses: OrderItemStatus[]): KdsOrderRow {
       quantity: 1,
       note: null,
       status,
+      sizeName: null,
+      modifierNames: [],
     })),
   }
 }
@@ -195,5 +198,42 @@ describe("advanceItemGuarded", () => {
     expect(advance).toHaveBeenCalledTimes(2)
     expect(getPending().has(itemPendingKey("order-1", "item-0"))).toBe(true)
     expect(getPending().has(itemPendingKey("order-1", "item-1"))).toBe(true)
+  })
+})
+
+// PREV_ITEM_STATUS backs the KDS ticket's "undo" button (kitchen-board.tsx's
+// regressTargetFor + kitchen-display.tsx's regressItem) -- these lock in
+// that it's the exact inverse of the forward progression, and that the
+// same generic advanceItemGuarded/advanceItemOptimistically machinery
+// tested above (built for the forward direction) works identically when
+// handed a "previous" status instead, since neither takes any direction
+// as an assumption -- both just apply whatever target status they're given.
+describe("PREV_ITEM_STATUS", () => {
+  it("has no previous step before preparing, the item's own starting status", () => {
+    expect(PREV_ITEM_STATUS.preparing).toBeNull()
+  })
+
+  it("reverses ready back to preparing and served back to ready", () => {
+    expect(PREV_ITEM_STATUS.ready).toBe("preparing")
+    expect(PREV_ITEM_STATUS.served).toBe("ready")
+  })
+})
+
+describe("advanceItemGuarded regressing a status (the KDS undo button)", () => {
+  it("moves an item backward through the same guarded path used to move it forward", async () => {
+    let orders: KdsOrderRow[] = [makeOrder(["ready"])]
+    const setOrders = (updater: (current: KdsOrderRow[]) => KdsOrderRow[]) => {
+      orders = updater(orders)
+    }
+    let pending = new Set<string>()
+    const setPending = (updater: (current: Set<string>) => Set<string>) => {
+      pending = updater(pending)
+    }
+    const regress = vi.fn().mockResolvedValue(undefined)
+
+    await advanceItemGuarded(pending, setPending, orders, "order-1", "item-0", PREV_ITEM_STATUS.ready!, setOrders, regress)
+
+    expect(orders[0].items[0].status).toBe("preparing")
+    expect(regress).toHaveBeenCalledWith("item-0", "preparing")
   })
 })

@@ -101,11 +101,19 @@ describe("getMyOrders", () => {
     const row = {
       id: "ord-options", created_at: "2026-07-10T10:00:00Z", order_type: "pickup", status: "completed",
       subtotal: 1, discount_amount: 0, tax_amount: 0, total: 1, table_id: null, payment_status: "paid", payment_method: "cash", tables: null,
-      order_items: [{ menu_item_id: "item-1", size_id: "size-xl", quantity: 1, unit_price: 1, note: "no ice", status: "ready", order_item_modifiers: [{ modifier_id: "mod-1" }], menu_items: { name_vi: "x", name_en: "x" } }],
+      order_items: [{
+        menu_item_id: "item-1", size_id: "size-xl", quantity: 1, unit_price: 1, note: "no ice", status: "ready",
+        menu_item_sizes: { name: "XL" },
+        order_item_modifiers: [{ modifier_id: "mod-1", modifiers: { name_vi: "Trân châu", name_en: "Pearls" } }],
+        menu_items: { name_vi: "x", name_en: "x" },
+      }],
     }
     const supabase = { from: () => ({ select: () => ({ order: () => Promise.resolve({ data: [row], error: null }) }) }) } as unknown as SupabaseClient
     const [item] = (await getMyOrders(supabase))[0].items
-    expect(item).toMatchObject({ sizeId: "size-xl", modifierIds: ["mod-1"], note: "no ice" })
+    expect(item).toMatchObject({
+      sizeId: "size-xl", modifierIds: ["mod-1"], note: "no ice",
+      sizeName: "XL", modifierNames: [{ nameVi: "Trân châu", nameEn: "Pearls" }],
+    })
   })
   it("maps nested rows, translating order_type back to hyphenated form", async () => {
     const row = {

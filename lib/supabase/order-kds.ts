@@ -10,7 +10,16 @@ import {
 } from "./order-mapping"
 
 export type OrderItemStatus = RealOrderItemStatus
-export type KdsOrderItemRow = { id: string; nameVi: string; nameEn: string; quantity: number; note: string | null; status: OrderItemStatus }
+export type KdsOrderItemRow = {
+  id: string
+  nameVi: string
+  nameEn: string
+  quantity: number
+  note: string | null
+  status: OrderItemStatus
+  sizeName: string | null
+  modifierNames: { nameVi: string; nameEn: string }[]
+}
 export type KdsOrderRow = {
   id: string
   orderType: OrderType
@@ -41,6 +50,11 @@ function mapKdsRow(row: OrderRow): KdsOrderRow {
       quantity: oi.quantity,
       note: oi.note,
       status: oi.status,
+      sizeName: oi.menu_item_sizes?.name ?? null,
+      modifierNames: (oi.order_item_modifiers ?? []).map((modifier) => ({
+        nameVi: modifier.modifiers.name_vi,
+        nameEn: modifier.modifiers.name_en,
+      })),
     })),
     total: row.total,
   }

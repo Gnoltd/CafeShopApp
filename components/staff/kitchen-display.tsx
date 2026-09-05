@@ -12,7 +12,7 @@ import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { LanguageSwitcher } from "@/components/shared/language-switcher"
 
 export function KitchenDisplay({ role }: { role: string | null }) {
-  const { orders, pendingPaymentOrders, advanceItem, isItemPending, confirmCashPayment, confirmTableCashPayment, markTableCashPayment, completedCount, avgTimeLabel } = useKitchenOrders()
+  const { orders, pendingPaymentOrders, advanceItem, regressItem, isItemPending, confirmCashPayment, confirmTableCashPayment, markTableCashPayment, completedCount, avgTimeLabel } = useKitchenOrders()
   const t = useTranslations("KitchenDisplay")
   const locale = useLocale()
   const [now, setNow] = useState(0)
@@ -37,6 +37,13 @@ export function KitchenDisplay({ role }: { role: string | null }) {
       advanceItem(orderId, itemId).catch(() => setError(t("updateError")))
     },
     [advanceItem, t]
+  )
+  const handleRegressItem = useCallback(
+    (orderId: string, itemId: string) => {
+      setError(null)
+      regressItem(orderId, itemId).catch(() => setError(t("updateError")))
+    },
+    [regressItem, t]
   )
   const handlePaymentAction = useCallback(async (order: (typeof orders)[number], action: PaymentAction) => {
     setError(null)
@@ -104,7 +111,14 @@ export function KitchenDisplay({ role }: { role: string | null }) {
             <p className="shrink-0 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
           )}
           <div className="min-h-0 flex-1 overflow-hidden">
-            <KitchenBoard orders={visibleOrders} now={now} onAdvanceItem={handleAdvanceItem} isItemPending={isItemPending} onPaymentAction={handlePaymentAction} />
+            <KitchenBoard
+              orders={visibleOrders}
+              now={now}
+              onAdvanceItem={handleAdvanceItem}
+              onRegressItem={handleRegressItem}
+              isItemPending={isItemPending}
+              onPaymentAction={handlePaymentAction}
+            />
           </div>
           <KitchenStatsFooter orders={orders} now={now} />
         </div>

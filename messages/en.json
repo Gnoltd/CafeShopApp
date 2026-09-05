@@ -531,6 +531,7 @@
     "tableAwaitingPaymentCount": "Awaiting Payment ({count})",
     "markCash": "Mark Cash",
     "undoCash": "Undo",
+    "undoItem": "Send back a step",
     "markOccupied": "Mark Occupied",
     "markCleaning": "Mark Cleaning",
     "updateError": "Failed to update. Try again.",

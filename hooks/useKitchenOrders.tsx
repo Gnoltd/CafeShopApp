@@ -32,6 +32,20 @@ const NEXT_ITEM_STATUS: Record<OrderItemStatus, OrderItemStatus | null> = {
   served: null,
 }
 
+// The mockup's per-ticket "back" arrow (mis-tapped Mark Ready/Mark Served)
+// -- safe to send straight through advanceOrderItemStatus with no new RPC:
+// order_items.status has no forward-only constraint, and
+// sync_order_status_from_items (migration 0082) recomputes the parent
+// order's rolled-up status from its items' current statuses on every
+// update, in either direction, so a regressed item correctly reopens its
+// parent order too (e.g. "ready" -> "preparing" flips the order itself
+// back to "preparing").
+export const PREV_ITEM_STATUS: Record<OrderItemStatus, OrderItemStatus | null> = {
+  preparing: null,
+  ready: "preparing",
+  served: "ready",
+}
+
 // Pure so it's directly testable: given the order this item belongs to,
 // would advancing this one item to "served" leave every item in the
 // order served? Order completion (and the completedCount/avgTimeLabel
@@ -162,6 +176,7 @@ type KitchenOrdersContextValue = {
   isLoading: boolean
   isRealtimeConnected: boolean
   advanceItem: (orderId: string, itemId: string) => Promise<void>
+  regressItem: (orderId: string, itemId: string) => Promise<void>
   isItemPending: (orderId: string, itemId: string) => boolean
   serveTable: (orderIds: string[]) => Promise<void>
   confirmCashPayment: (orderId: string) => Promise<void>
@@ -255,6 +270,19 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
     )
   }
 
+  async function regressItem(orderId: string, itemId: string) {
+    const order = orders.find((o) => o.id === orderId)
+    if (!order) return
+    const item = order.items.find((i) => i.id === itemId)
+    if (!item) return
+    const prev = PREV_ITEM_STATUS[item.status]
+    if (!prev) return
+    if (isItemPending(orderId, itemId)) return
+    await advanceItemGuarded(pendingItemKeys, setPendingItemKeys, orders, orderId, itemId, prev, setOrders, (id, status) =>
+      advanceOrderItemStatus(supabase, id, status)
+    )
+  }
+
   async function serveTable(orderIds: string[]) {
     const ordersToServe = orders.filter((o) => orderIds.includes(o.id) && o.status === "ready")
     for (const order of ordersToServe) {
@@ -305,6 +333,7 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
         isLoading,
         isRealtimeConnected,
         advanceItem,
+        regressItem,
         isItemPending,
         serveTable,
         confirmCashPayment,
