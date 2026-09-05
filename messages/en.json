@@ -928,7 +928,9 @@
     "cancel": "Cancel",
     "save": "Save",
     "markOutOfStockConfirmTitle": "Mark as out of stock?",
-    "markOutOfStockConfirmBody": "“{name}” will be set to zero stock, and every menu item using it becomes unavailable. This can’t be undone."
+    "markOutOfStockConfirmBody": "“{name}” will be set to zero stock, and every menu item using it becomes unavailable. This can’t be undone.",
+    "restocking": "Restocking…",
+    "restockError": "Couldn't restock this item — please try again."
   },
   "AdminTables": {
     "title": "Tables",

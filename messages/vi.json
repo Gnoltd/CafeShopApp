@@ -928,7 +928,9 @@
     "cancel": "Hủy",
     "save": "Lưu",
     "markOutOfStockConfirmTitle": "Đánh dấu hết hàng?",
-    "markOutOfStockConfirmBody": "“{name}” sẽ được đặt về 0 và mọi món dùng nguyên liệu này sẽ không thể bán. Không thể hoàn tác."
+    "markOutOfStockConfirmBody": "“{name}” sẽ được đặt về 0 và mọi món dùng nguyên liệu này sẽ không thể bán. Không thể hoàn tác.",
+    "restocking": "Đang nhập kho…",
+    "restockError": "Không thể nhập kho món này — vui lòng thử lại."
   },
   "AdminTables": {
     "title": "Quản Lý Bàn",

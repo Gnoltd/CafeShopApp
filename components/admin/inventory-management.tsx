@@ -41,6 +41,7 @@ export function InventoryManagement({ locale }: { locale: string }) {
     ingredients,
     isLoading,
     error,
+    restock,
     adjustStock,
     setOutOfStock,
     addIngredient,
@@ -57,6 +58,20 @@ export function InventoryManagement({ locale }: { locale: string }) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formMode, setFormMode] = useState<{ type: "add" } | { type: "edit"; ingredient: Ingredient } | null>(null)
   const [isLoadingMoreLogs, setIsLoadingMoreLogs] = useState(false)
+  const [restockingId, setRestockingId] = useState<string | null>(null)
+  const [restockError, setRestockError] = useState<string | null>(null)
+
+  async function handleRestock(id: string) {
+    setRestockError(null)
+    setRestockingId(id)
+    try {
+      await restock(id)
+    } catch {
+      setRestockError(t("restockError"))
+    } finally {
+      setRestockingId(null)
+    }
+  }
 
   const lowStockCount = ingredients.filter((i) => i.stock < i.threshold).length
   const editingIngredient = ingredients.find((i) => i.id === editingId) ?? null
@@ -88,7 +103,7 @@ export function InventoryManagement({ locale }: { locale: string }) {
 
       {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{t("loadError")}</p>}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <div className="nb-border-sm nb-shadow-sm flex items-center gap-3 rounded-xl bg-card p-4">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Boxes className="h-5 w-5" />
@@ -107,7 +122,7 @@ export function InventoryManagement({ locale }: { locale: string }) {
             <p className="text-xl font-bold text-card-foreground">{lowStockCount}</p>
           </div>
         </div>
-        <div className="nb-border-sm nb-shadow-sm flex items-center gap-3 rounded-xl bg-card p-4">
+        <div className="nb-border-sm nb-shadow-sm col-span-2 flex items-center gap-3 rounded-xl bg-card p-4 sm:col-span-1">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary/15 text-secondary">
             <History className="h-5 w-5" />
           </div>
@@ -144,58 +159,126 @@ export function InventoryManagement({ locale }: { locale: string }) {
       </div>
 
       {tab === "ingredients" ? (
-        <div className="nb-border-sm nb-shadow-sm overflow-x-auto rounded-xl bg-card">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b text-left text-muted-foreground">
-                <th className="px-4 py-3 font-medium">{t("ingredient")}</th>
-                <th className="px-4 py-3 font-medium">{t("unit")}</th>
-                <th className="px-4 py-3 font-medium">{t("currentStock")}</th>
-                <th className="px-4 py-3 font-medium">{t("threshold")}</th>
-                <th className="px-4 py-3 font-medium">{t("status")}</th>
-                <th className="px-4 py-3 text-right font-medium">{t("adjustStock")}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
-                    {t("loadingIngredients")}
-                  </td>
-                </tr>
-              ) : (
-                ingredients.map((ingredient) => {
+        <>
+          {restockError && (
+            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{restockError}</p>
+          )}
+          {/* Desktop: full table. Mobile: a stacked card list with a stock
+              bar and a one-tap Restock action, matching the reference. */}
+          <div className="hidden md:block">
+            <div className="nb-border-sm nb-shadow-sm overflow-x-auto rounded-xl bg-card">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b text-left text-muted-foreground">
+                    <th className="px-4 py-3 font-medium">{t("ingredient")}</th>
+                    <th className="px-4 py-3 font-medium">{t("unit")}</th>
+                    <th className="px-4 py-3 font-medium">{t("currentStock")}</th>
+                    <th className="px-4 py-3 font-medium">{t("threshold")}</th>
+                    <th className="px-4 py-3 font-medium">{t("status")}</th>
+                    <th className="px-4 py-3 text-right font-medium">{t("adjustStock")}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
+                        {t("loadingIngredients")}
+                      </td>
+                    </tr>
+                  ) : (
+                    ingredients.map((ingredient) => {
+                      const Icon = ICONS[ingredient.icon]
+                      const isOut = ingredient.stock <= 0
+                      const isLow = !isOut && ingredient.stock < ingredient.threshold
+                      return (
+                        <tr key={ingredient.id}>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-primary">
+                                <Icon className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-card-foreground">
+                                  {locale === "vi" ? ingredient.nameVi : ingredient.nameEn}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {locale === "vi" ? ingredient.subtitleVi : ingredient.subtitleEn}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">{ingredient.unit}</td>
+                          <td className="px-4 py-3 font-bold text-card-foreground">
+                            {ingredient.stock} {ingredient.unit}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            {ingredient.threshold} {ingredient.unit}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={cn(
+                                "nb-border-sm rounded-full px-2.5 py-1 text-xs font-extrabold",
+                                isOut
+                                  ? "bg-destructive text-destructive-foreground"
+                                  : isLow
+                                    ? "bg-destructive/10 text-destructive"
+                                    : "bg-green-100 text-green-700"
+                              )}
+                            >
+                              {isOut ? t("outOfStock") : isLow ? t("lowStock") : t("inStock")}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex justify-end gap-1">
+                              <button
+                                type="button"
+                                onClick={() => setFormMode({ type: "edit", ingredient })}
+                                aria-label={t("edit")}
+                                title={t("edit")}
+                                className="rounded-lg p-2 text-secondary transition-colors hover:bg-secondary/10"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                              <Button size="sm" variant="neubrutal" className="h-8" onClick={() => setEditingId(ingredient.id)}>
+                                {t("adjustStock")}
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 md:hidden">
+            {isLoading ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">{t("loadingIngredients")}</p>
+            ) : (
+              ingredients.map((ingredient) => {
                 const Icon = ICONS[ingredient.icon]
                 const isOut = ingredient.stock <= 0
                 const isLow = !isOut && ingredient.stock < ingredient.threshold
+                const pct = Math.min(100, Math.round((ingredient.stock / Math.max(ingredient.threshold, 1)) * 100))
                 return (
-                  <tr key={ingredient.id}>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-primary">
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-card-foreground">
-                            {locale === "vi" ? ingredient.nameVi : ingredient.nameEn}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {locale === "vi" ? ingredient.subtitleVi : ingredient.subtitleEn}
-                          </p>
-                        </div>
+                  <div key={ingredient.id} className="nb-border-sm nb-shadow-sm flex flex-col gap-2.5 rounded-lg bg-card p-3">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-chip text-secondary">
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-extrabold text-card-foreground">
+                          {locale === "vi" ? ingredient.nameVi : ingredient.nameEn}
+                        </p>
+                        <p className="truncate text-[10px] font-semibold text-muted-foreground">
+                          {locale === "vi" ? ingredient.subtitleVi : ingredient.subtitleEn}
+                        </p>
                       </div>
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">{ingredient.unit}</td>
-                    <td className="px-4 py-3 font-bold text-card-foreground">
-                      {ingredient.stock} {ingredient.unit}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {ingredient.threshold} {ingredient.unit}
-                    </td>
-                    <td className="px-4 py-3">
                       <span
                         className={cn(
-                          "nb-border-sm rounded-full px-2.5 py-1 text-xs font-extrabold",
+                          "nb-border-sm shrink-0 rounded-full px-2 py-0.5 text-[10px] font-extrabold",
                           isOut
                             ? "bg-destructive text-destructive-foreground"
                             : isLow
@@ -205,30 +288,50 @@ export function InventoryManagement({ locale }: { locale: string }) {
                       >
                         {isOut ? t("outOfStock") : isLow ? t("lowStock") : t("inStock")}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setFormMode({ type: "edit", ingredient })}
-                          aria-label={t("edit")}
-                          title={t("edit")}
-                          className="rounded-lg p-2 text-secondary transition-colors hover:bg-secondary/10"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <Button size="sm" variant="neubrutal" className="h-8" onClick={() => setEditingId(ingredient.id)}>
-                          {t("adjustStock")}
-                        </Button>
+                    </div>
+
+                    <div>
+                      <div className="mb-1 flex items-baseline justify-between">
+                        <span className={cn("text-[11px] font-extrabold", isOut || isLow ? "text-destructive" : "text-card-foreground")}>
+                          {ingredient.stock} {ingredient.unit}
+                        </span>
+                        <span className="text-[10px] font-semibold text-muted-foreground">
+                          {t("threshold")} {ingredient.threshold} {ingredient.unit}
+                        </span>
                       </div>
-                    </td>
-                  </tr>
+                      <div className="h-[7px] overflow-hidden rounded-full bg-muted">
+                        <div
+                          className={cn("h-full rounded-full", isOut || isLow ? "bg-destructive" : "bg-success")}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="neubrutal"
+                        className="h-[34px] flex-1"
+                        disabled={restockingId === ingredient.id}
+                        onClick={() => handleRestock(ingredient.id)}
+                      >
+                        {restockingId === ingredient.id ? t("restocking") : t("restock")}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-[34px] flex-1"
+                        onClick={() => setEditingId(ingredient.id)}
+                      >
+                        {t("adjustStock")}
+                      </Button>
+                    </div>
+                  </div>
                 )
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+              })
+            )}
+          </div>
+        </>
       ) : (
         <div className="nb-border-sm nb-shadow-sm overflow-x-auto rounded-xl bg-card">
           {logsError && (
