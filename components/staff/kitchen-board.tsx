@@ -195,26 +195,36 @@ function Ticket({
 
       <div className="flex flex-col gap-2">
         {order.items.map((item) => {
-          const complete = item.status === "served"
+          // Three real statuses (preparing/ready/served), not two -- a
+          // checkbox that only lit up at "served" made the first tap on any
+          // item (preparing -> ready) show *no visible change at all* on
+          // the item itself, with the only externally visible effect being
+          // the whole ticket relocating to a different column a moment
+          // later. That disconnect between "what I tapped" and "what
+          // changed" is what read as taps not registering / the board
+          // jumping on its own. Every status now gets its own look.
+          const served = item.status === "served"
+          const ready = item.status === "ready"
           const optionsText = itemOptionsText(item, locale)
           return (
             <button
               key={item.id}
               type="button"
               onClick={() => onAdvanceItem(order.id, item.id)}
-              disabled={complete || order.status === "pending_payment" || isItemPending(order.id, item.id)}
+              disabled={served || order.status === "pending_payment" || isItemPending(order.id, item.id)}
               className="flex items-start gap-2 text-left disabled:pointer-events-none"
             >
               <span
                 className={cn(
                   "nb-border-sm mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-[5px]",
-                  complete ? "bg-success text-white" : "bg-card"
+                  served ? "bg-success text-white" : ready ? "bg-warn text-white" : "bg-card"
                 )}
               >
-                {complete && <Check className="size-3" />}
+                {(served || ready) && <Check className="size-3" />}
               </span>
-              <span className={cn("min-w-0 flex-1 text-sm font-extrabold leading-tight", complete && "text-muted-foreground line-through")}>
+              <span className={cn("min-w-0 flex-1 text-sm font-extrabold leading-tight", served && "text-muted-foreground line-through")}>
                 {item.quantity}× {locale === "vi" ? item.nameVi : item.nameEn}
+                {ready && <span className="ml-1.5 text-[10px] font-extrabold uppercase tracking-wide text-warn no-underline">{t("readyLabel")}</span>}
                 {optionsText && (
                   <span className="mt-0.5 block text-[11px] font-semibold text-muted-foreground no-underline">{optionsText}</span>
                 )}
@@ -256,7 +266,11 @@ function Ticket({
               next.status === "ready" ? "bg-success" : "bg-primary"
             )}
           >
-            {next.status === "ready" ? t("markServed") : t("markReady")}
+            {order.status === "paid" && next.status === "preparing"
+              ? t("startPreparing")
+              : next.status === "ready"
+                ? t("markServed")
+                : t("markReady")}
           </button>
         </div>
       ) : order.status === "served" && order.paymentStatus === "pending" ? (
