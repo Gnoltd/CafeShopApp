@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { formatKitchenClock } from "./kitchen-stats-footer"
+import { formatKitchenClock } from "./kitchen-clock"
 
 describe("formatKitchenClock", () => {
   it("formats a fixed UTC instant as Asia/Ho_Chi_Minh wall-clock time (en, 12h)", () => {
