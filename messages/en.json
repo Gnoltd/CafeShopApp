@@ -396,6 +396,8 @@
     "statusCompleted": "Completed",
     "runningTabTitle": "Running Tab",
     "noRoundsYet": "No rounds ordered yet.",
+    "roundPaymentPaid": "Paid",
+    "roundPaymentUnpaid": "Unpaid",
     "unpaidTotalLabel": "Unpaid total",
     "checkBillButton": "Check Bill",
     "paymentInProgressNote": "A payment is in progress for this table — ordering is paused until it finishes.",

@@ -396,6 +396,8 @@
     "statusCompleted": "Hoàn Tất",
     "runningTabTitle": "Sổ Gọi Món",
     "noRoundsYet": "Chưa có lượt gọi món nào.",
+    "roundPaymentPaid": "Đã thanh toán",
+    "roundPaymentUnpaid": "Chưa thanh toán",
     "unpaidTotalLabel": "Tổng chưa thanh toán",
     "checkBillButton": "Xem Hoá Đơn",
     "paymentInProgressNote": "Bàn này đang thanh toán — vui lòng chờ đến khi hoàn tất mới gọi thêm món.",

@@ -142,7 +142,7 @@ export function TableCartPanel({
                 </div>
                 <div className="mt-1 flex items-center justify-between">
                   <span className={round.paymentStatus === "paid" ? "text-xs text-muted-foreground" : "text-xs font-bold text-amber-700"}>
-                    {round.paymentStatus === "paid" ? "" : ""}
+                    {round.paymentStatus === "paid" ? t("roundPaymentPaid") : t("roundPaymentUnpaid")}
                   </span>
                   <span className="text-sm font-extrabold text-price">{formatVND(round.total)}</span>
                 </div>
