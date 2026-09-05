@@ -339,7 +339,15 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
 
   async function serveTable(orderIds: string[]) {
     const ordersToServe = orders.filter((o) => orderIds.includes(o.id) && o.status === "ready")
-    for (const order of ordersToServe) {
+    // Real bug this closes: hand-over doesn't always mean *complete* --
+    // complete_order_when_served_and_paid only fires when payment is
+    // already settled. A Pay Later order that's still payment_status
+    // "pending" correctly stays on the board (KitchenBoard's own
+    // "awaitingGatewayPayment" branch), so it must not tick the
+    // completedCount/avgTimeLabel KPIs -- those numbers are meant to
+    // describe orders that actually left the board, not every tap of
+    // this button.
+    for (const order of ordersToServe.filter((o) => o.paymentStatus === "paid")) {
       setCompletedCount((count) => count + 1)
       setCompletedDurations((durations) => [...durations, Date.now() - order.createdAt])
     }
