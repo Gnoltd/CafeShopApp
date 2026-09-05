@@ -117,6 +117,7 @@ export function KitchenBoard({
               {columnOrders.map((order) => {
                 const isReady = column.status === "ready"
                 const urgency = isReady ? "normal" : urgencyLevelFor(order.createdAt, now)
+                const nextItem = order.items.find((item) => item.status !== "served")
                 return (
                   <article key={order.id} className="nb-border-sm nb-shadow-sm rounded-xl bg-card p-3">
                     <div
@@ -167,7 +168,12 @@ export function KitchenBoard({
                     <div className="space-y-2 border-t pt-3">
                       {order.items.map((item) => (
                         <div key={item.id} className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex min-w-0 items-start gap-3">
+                          <button
+                            type="button"
+                            onClick={() => onAdvanceItem(order.id, item.id)}
+                            disabled={item.status === "served" || isItemPending(order.id, item.id)}
+                            className="flex min-w-0 items-start gap-3 text-left disabled:pointer-events-none"
+                          >
                             <div className="nb-border-sm flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-chip text-sm font-bold text-card-foreground">
                               {item.quantity}x
                             </div>
@@ -184,7 +190,7 @@ export function KitchenBoard({
                                 <p className="break-words text-sm font-medium italic text-secondary">{item.note}</p>
                               )}
                             </div>
-                          </div>
+                          </button>
                           {item.status === "served" ? (
                             <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" />
                           ) : (
@@ -209,6 +215,19 @@ export function KitchenBoard({
                         </div>
                       ))}
                     </div>
+                    {nextItem && (
+                      <button
+                        type="button"
+                        onClick={() => onAdvanceItem(order.id, nextItem.id)}
+                        disabled={isItemPending(order.id, nextItem.id)}
+                        className={cn(
+                          "nb-border nb-shadow nb-press mt-3 flex h-11 w-full items-center justify-center rounded-lg text-xs font-extrabold uppercase tracking-wide text-white disabled:pointer-events-none disabled:opacity-40",
+                          nextItem.status === "preparing" ? "bg-primary" : "bg-green-600"
+                        )}
+                      >
+                        {nextItem.status === "preparing" ? t("markReady") : t("markServed")}
+                      </button>
+                    )}
                   </article>
                 )
               })}

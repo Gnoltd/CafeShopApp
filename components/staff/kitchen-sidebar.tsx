@@ -22,9 +22,9 @@ export function KitchenSidebar({
   const isLiveOrdersActive = !isHistoryActive && !isShiftHistoryActive
 
   return (
-    <aside className="nb-border border-y-0 border-l-0 hidden w-64 shrink-0 flex-col bg-muted/40 py-4 md:flex">
-      <div className="flex items-center gap-3 px-6 pb-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary/20 text-secondary">
+    <aside className="nb-border border-y-0 border-l-0 hidden w-56 shrink-0 flex-col bg-muted/60 py-4 md:flex">
+      <div className="flex items-center gap-3 px-4 pb-4">
+        <div className="nb-border-sm flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-chip text-secondary">
           <CookingPot className="h-5 w-5" />
         </div>
         <div>
@@ -38,7 +38,7 @@ export function KitchenSidebar({
           href="/staff/orders"
           className={
             isLiveOrdersActive
-              ? "nb-border-sm flex items-center gap-3 rounded-lg bg-chip px-4 py-3 font-bold text-secondary"
+              ? "nb-border-sm nb-shadow-sm flex items-center gap-3 rounded-lg bg-chip px-4 py-3 font-bold text-secondary"
               : "flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-muted-foreground hover:bg-muted/40"
           }
         >
@@ -49,7 +49,7 @@ export function KitchenSidebar({
           href="/staff/orders/history"
           className={
             isHistoryActive
-              ? "nb-border-sm flex items-center gap-3 rounded-lg bg-chip px-4 py-3 font-bold text-secondary"
+              ? "nb-border-sm nb-shadow-sm flex items-center gap-3 rounded-lg bg-chip px-4 py-3 font-bold text-secondary"
               : "flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-muted-foreground hover:bg-muted/40"
           }
         >
@@ -60,7 +60,7 @@ export function KitchenSidebar({
           href="/staff/orders/shift-history"
           className={
             isShiftHistoryActive
-              ? "nb-border-sm flex items-center gap-3 rounded-lg bg-chip px-4 py-3 font-bold text-secondary"
+              ? "nb-border-sm nb-shadow-sm flex items-center gap-3 rounded-lg bg-chip px-4 py-3 font-bold text-secondary"
               : "flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-muted-foreground hover:bg-muted/40"
           }
         >

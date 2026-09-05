@@ -14,6 +14,10 @@ import { cn } from "@/lib/utils"
 export function HeaderActionsStack({ role }: { role: string | null }) {
   const pathname = usePathname()
   const isLanding = pathname === "/"
+  // The live KDS renders the same controls in its framed station header so
+  // they remain part of the operator's scan path instead of floating over
+  // the board. Other staff routes keep the shared stack.
+  const isKitchenDisplay = pathname === "/staff/orders"
   const [hiddenByHero, setHiddenByHero] = useState(isLanding)
 
   useEffect(() => {
@@ -27,6 +31,8 @@ export function HeaderActionsStack({ role }: { role: string | null }) {
     observer.observe(hero)
     return () => observer.disconnect()
   }, [isLanding])
+
+  if (isKitchenDisplay) return null
 
   return (
     <div
