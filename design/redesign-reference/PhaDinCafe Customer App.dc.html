@@ -1,0 +1,1665 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/phadincafe-design-system-ff7f5c03-94f5-4df0-a0cd-89c7b607ee6b/tokens/colors.css">
+<link rel="stylesheet" href="_ds/phadincafe-design-system-ff7f5c03-94f5-4df0-a0cd-89c7b607ee6b/tokens/typography.css">
+<link rel="stylesheet" href="_ds/phadincafe-design-system-ff7f5c03-94f5-4df0-a0cd-89c7b607ee6b/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/phadincafe-design-system-ff7f5c03-94f5-4df0-a0cd-89c7b607ee6b/tokens/effects.css">
+<link rel="stylesheet" href="_ds/phadincafe-design-system-ff7f5c03-94f5-4df0-a0cd-89c7b607ee6b/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/phadincafe-design-system-ff7f5c03-94f5-4df0-a0cd-89c7b607ee6b/tokens/base.css">
+<link rel="stylesheet" href="_ds/phadincafe-design-system-ff7f5c03-94f5-4df0-a0cd-89c7b607ee6b/styles.css">
+<script src="https://unpkg.com/lucide@0.462.0/dist/umd/lucide.js"></script>
+<script src="./image-slot.js"></script>
+<script src="_ds/phadincafe-design-system-ff7f5c03-94f5-4df0-a0cd-89c7b607ee6b/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:#e9ded0;font-family:var(--font-sans)}
+a{color:var(--primary)}a:hover{color:var(--red-brick-600)}
+.pdc-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch}
+.pdc-scroll::-webkit-scrollbar{display:none}
+.pdc-x::-webkit-scrollbar{display:none}
+@keyframes pulseSoft{0%,100%{opacity:1}50%{opacity:.45}}
+input,textarea{font-family:var(--font-sans)}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 16px;box-sizing:border-box">
+<div class="{{ shellClass }}" style="width:390px;height:780px;background:var(--background);color:var(--foreground);border-radius:36px;border:8px solid #16110c;box-shadow:0 20px 60px rgba(0,0,0,.28);overflow:hidden;position:relative;display:flex;flex-direction:column">
+
+  <div class="pdc-scroll" ref="{{ scrollRef }}" style="flex:1;display:flex;flex-direction:column;position:relative">
+
+    <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:20px;padding-bottom:26px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:22px 20px 0">
+          <div>
+            <p style="margin:0;font-size:12px;color:var(--muted-foreground);font-weight:600">{{ L.greet }}</p>
+            <p style="margin:2px 0 0;font-size:19px;font-weight:800">Ngọc Anh</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.LanguageSwitcher" locale="{{ locale }}" on-change="{{ setLocale }}" hint-size="86px,32px"></x-import>
+            <button onClick="{{ toggleDark }}" class="nb-border-sm pf-press" style="width:36px;height:36px;border-radius:50%;background:var(--card);color:var(--foreground);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0">{{ icoTheme }}</button>
+          </div>
+        </div>
+
+        <div style="padding:0 20px">
+          <div onClick="{{ goPromo }}" class="nb-border nb-shadow nb-press" style="border-radius:var(--radius-2xl);background:var(--primary);color:#fff;padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer">
+            <span style="display:flex;flex-shrink:0">{{ icoGift }}</span>
+            <div>
+              <p style="margin:0;font-weight:800;font-size:14px">{{ L.promoTitle }}</p>
+              <p style="margin:3px 0 0;font-size:11px;opacity:.85">{{ L.promoSub }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:0 20px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div onClick="{{ startScan }}" class="nb-border nb-shadow nb-press" style="border-radius:var(--radius-xl);background:var(--secondary);color:var(--secondary-foreground);padding:14px;display:flex;flex-direction:column;gap:8px;cursor:pointer">
+            <span style="display:flex">{{ icoQr }}</span>
+            <div>
+              <p style="margin:0;font-size:13px;font-weight:800;line-height:1.2">{{ L.dineInTitle }}</p>
+              <p style="margin:3px 0 0;font-size:10px;line-height:1.4;opacity:.85">{{ L.dineInSub }}</p>
+            </div>
+          </div>
+          <div onClick="{{ goMenu }}" class="nb-border nb-shadow nb-press" style="border-radius:var(--radius-xl);background:var(--card);padding:14px;display:flex;flex-direction:column;gap:8px;cursor:pointer">
+            <span style="display:flex;color:var(--secondary)">{{ icoBagHome }}</span>
+            <div>
+              <p style="margin:0;font-size:13px;font-weight:800;line-height:1.2">{{ L.pickupTitle }}</p>
+              <p style="margin:3px 0 0;font-size:10px;line-height:1.4;color:var(--muted-foreground)">{{ L.pickupSub }}</p>
+            </div>
+          </div>
+        </div>
+
+        <sc-if value="{{ hasTableSession }}">
+          <div onClick="{{ goTable }}" class="nb-border nb-shadow nb-press" style="margin:0 20px;border-radius:var(--radius-xl);background:var(--primary);color:#fff;padding:13px;display:flex;align-items:center;gap:11px;cursor:pointer">
+            <span class="live-pulse-dot" style="background:#fff"></span>
+            <div style="flex:1;min-width:0">
+              <p style="margin:0;font-size:12px;font-weight:800">{{ L.tableTitle }} · {{ tableStatusText }}</p>
+              <p style="margin:2px 0 0;font-size:11px;opacity:.85">{{ L.tableResumeHint }}</p>
+            </div>
+            <span style="display:flex">{{ icoForward }}</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ hasLive }}">
+          <div onClick="{{ goTracking }}" class="nb-border nb-shadow-sm nb-press-sm" style="margin:0 20px;border-radius:var(--radius-xl);background:var(--chip);padding:13px;display:flex;align-items:center;gap:11px;cursor:pointer">
+            <span class="live-pulse-dot"></span>
+            <div style="flex:1;min-width:0">
+              <p style="margin:0;font-size:12px;font-weight:800">{{ orderCode }} · {{ stageTitle }}</p>
+              <p style="margin:2px 0 0;font-size:11px;color:var(--muted-foreground)">{{ L.trackHint }}</p>
+            </div>
+            <span style="display:flex;color:var(--muted-foreground)">{{ icoForward }}</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ hasPopular }}" hint-placeholder-val="{{ true }}">
+          <section>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 20px 4px">
+              <div>
+                <p style="margin:0;font-size:13px;font-weight:800">{{ L.bestTitle }}</p>
+                <p style="margin:3px 0 0;font-size:11px;color:var(--muted-foreground);font-weight:600">{{ L.bestSub }}</p>
+              </div>
+              <button onClick="{{ goMenu }}" class="nb-border-sm pf-press" style="flex-shrink:0;border-radius:var(--radius-4xl);padding:6px 12px;background:var(--card);color:var(--foreground);font-family:var(--font-sans);font-size:11px;font-weight:800;cursor:pointer">{{ L.viewAll }}</button>
+            </div>
+
+            <sc-if value="{{ motionOn }}" hint-placeholder-val="{{ true }}">
+              <div ref="{{ bsRef }}" style="position:relative;height:{{ bsHeight }}">
+                <div style="position:sticky;top:0;height:min(330px, 100%)">
+                  <div style="position: absolute; inset: 0; overflow: hidden; width: 408px; height: 678px">
+                    <sc-for list="{{ bsCards }}" as="c" hint-placeholder-count="3">
+                      <div style="position:absolute;left:50%;top:0;width:244px;margin-left:-122px;will-change:transform;transform:{{ c.tf }};opacity:{{ c.op }};z-index:{{ c.z }};pointer-events:{{ c.pe }}">
+                        <sc-if value="{{ c.isProduct }}" hint-placeholder-val="{{ true }}">
+                          <div onClick="{{ c.open }}" class="nb-border nb-shadow nb-press" style="border-radius:var(--radius-2xl);background:var(--card);padding:12px;display:flex;flex-direction:column;gap:9px;cursor:pointer">
+                            <div style="position:relative;height:132px;border-radius:var(--radius-xl);overflow:hidden;background:var(--chip)">
+                              <image-slot id="{{ c.slotId }}" shape="rounded" radius="14" placeholder="{{ c.slotHint }}"></image-slot>
+                            </div>
+                            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+                              <div style="min-width:0">
+                                <p style="margin:0;font-size:15px;font-weight:800;line-height:1.2">{{ c.name }}</p>
+                                <p style="margin:2px 0 0;font-size:11px;color:var(--muted-foreground);font-weight:600">{{ c.sub }}</p>
+                              </div>
+                              <span style="font-size:15px;font-weight:800;color:var(--price);flex-shrink:0">{{ c.priceText }}</span>
+                            </div>
+                            <div class="nb-border-sm" style="display:flex;align-items:center;justify-content:center;gap:7px;border-radius:var(--radius-lg);background:var(--primary);color:#fff;padding:9px 0;font-size:12px;font-weight:800">
+                              <span>{{ L.select }}</span>
+                              <span style="display:flex">{{ c.arrow }}</span>
+                            </div>
+                          </div>
+                        </sc-if>
+                        <sc-if value="{{ c.isPromo }}">
+                          <div class="nb-border nb-shadow" style="border-radius:var(--radius-2xl);background:var(--primary);color:#fff;padding:16px;display:flex;flex-direction:column;gap:12px">
+                            <span style="display:flex">{{ c.gift }}</span>
+                            <div>
+                              <p style="margin:0;font-size:16px;font-weight:800;line-height:1.2">{{ L.promoTitle }}</p>
+                              <p style="margin:5px 0 0;font-size:11px;opacity:.85;line-height:1.5">{{ L.promoSub }}</p>
+                            </div>
+                            <div style="display:flex;flex-wrap:wrap;gap:8px">
+                              <sc-for list="{{ catLinks }}" as="cl" hint-placeholder-count="3">
+                                <button onClick="{{ cl.go }}" style="border:2px solid rgba(255,255,255,.6);border-radius:var(--radius-4xl);background:transparent;color:#fff;padding:6px 12px;font-family:var(--font-sans);font-size:11px;font-weight:800;cursor:pointer">{{ cl.label }}</button>
+                              </sc-for>
+                            </div>
+                            <button onClick="{{ goMenu }}" class="nb-border-sm" style="border-radius:var(--radius-lg);background:var(--card);color:var(--foreground);padding:10px 0;font-family:var(--font-sans);font-size:12px;font-weight:800;cursor:pointer">{{ L.viewAll }}</button>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ motionOff }}">
+              <div style="padding:8px 20px 0;display:flex;flex-direction:column;gap:12px">
+                <sc-for list="{{ popularStatic }}" as="it" hint-placeholder-count="4">
+                  <div onClick="{{ it.open }}" class="nb-border nb-shadow-sm nb-press-sm" style="display:flex;gap:12px;align-items:center;border-radius:var(--radius-lg);background:var(--card);padding:10px;cursor:pointer">
+                    <div style="position:relative;width:64px;height:64px;flex-shrink:0;border-radius:var(--radius-md);overflow:hidden;background:var(--chip)">
+                      <image-slot id="{{ it.slotId }}" shape="rounded" radius="9" placeholder="{{ it.slotHint }}"></image-slot>
+                    </div>
+                    <div style="flex:1;min-width:0">
+                      <p style="margin:0;font-size:14px;font-weight:800">{{ it.name }}</p>
+                      <p style="margin:2px 0 0;font-size:11px;color:var(--muted-foreground);font-weight:600">{{ it.sub }}</p>
+                      <p style="margin:3px 0 0;font-size:13px;font-weight:800;color:var(--price)">{{ it.priceText }}</p>
+                    </div>
+                    <span style="display:flex;color:var(--muted-foreground)">{{ it.arrow }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </section>
+        </sc-if>
+
+        <section style="padding:0 20px">
+          <p style="margin:0 0 10px;font-size:13px;font-weight:800">{{ L.quickReorder }}</p>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{ recent }}" as="h" hint-placeholder-count="2">
+              <div class="nb-border nb-shadow-sm" style="display:flex;align-items:center;gap:12px;border-radius:var(--radius-lg);background:var(--card);padding:11px">
+                <div style="width:44px;height:44px;flex-shrink:0;border-radius:var(--radius-md);background:var(--chip);color:var(--secondary);display:flex;align-items:center;justify-content:center">{{ h.icon }}</div>
+                <div style="flex:1;min-width:0">
+                  <p style="margin:0;font-size:12px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ h.itemsText }}</p>
+                  <p style="margin:2px 0 0;font-size:11px;color:var(--muted-foreground);font-weight:600">{{ h.code }} · {{ h.date }} · {{ h.totalText }}</p>
+                </div>
+                <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="neubrutal" size="sm" on-click="{{ h.reorder }}" hint-size="auto,32px">{{ L.reorder }}</x-import>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section style="padding:0 20px">
+          <div onClick="{{ goProfile }}" class="nb-border nb-shadow nb-press" style="border-radius:var(--radius-xl);background:var(--secondary);color:var(--secondary-foreground);padding:15px;display:flex;align-items:center;gap:14px;cursor:pointer">
+            <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.ProgressRing" percent="{{ loyaltyPct }}" size="{{ loyaltyRing }}" stroke-width="{{ ringStroke }}" hint-size="56px,56px">
+              <span style="font-size:13px;font-weight:800">{{ points }}</span>
+            </x-import>
+            <div style="flex:1">
+              <p style="margin:0;font-size:13px;font-weight:800">{{ L.loyaltyTitle }}</p>
+              <p style="margin:3px 0 0;font-size:11px;opacity:.85">{{ L.loyaltyBody }}</p>
+            </div>
+            <span style="display:flex;opacity:.8">{{ icoForward }}</span>
+          </div>
+        </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isMenu }}">
+      <div style="display:flex;flex-direction:column;gap:18px;padding-bottom:24px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:22px 20px 0">
+          <h1 style="margin:0;font-size:20px;font-weight:800">{{ L.menuTitle }}</h1>
+          <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.LanguageSwitcher" locale="{{ locale }}" on-change="{{ setLocale }}" hint-size="86px,32px"></x-import>
+        </div>
+
+        <div style="padding:0 20px;position:relative;display:flex;align-items:center">
+          <span style="position:absolute;left:32px;color:var(--muted-foreground);display:flex">{{ icoSearch }}</span>
+          <input value="{{ q }}" onChange="{{ onSearch }}" placeholder="{{ L.searchPh }}" style="width:100%;height:44px;box-sizing:border-box;border-radius:var(--radius-lg);border:2px solid var(--ink);background:var(--card);color:var(--foreground);padding:0 14px 0 40px;font-size:14px">
+        </div>
+
+        <div class="pdc-x" style="display:flex;gap:8px;overflow-x:auto;padding:0 20px">
+          <sc-for list="{{ cats }}" as="c" hint-placeholder-count="4">
+            <button onClick="{{ c.pick }}" class="{{ c.cls }}" style="flex-shrink:0;border-radius:var(--radius-4xl);padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:var(--font-sans);background:var(--card);color:var(--foreground)">{{ c.label }}</button>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ gridMode }}">
+          <div style="padding:0 20px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <sc-for list="{{ items }}" as="it" hint-placeholder-count="4">
+              <div onClick="{{ it.open }}" class="nb-border nb-shadow nb-press stagger-item" style="border-radius:var(--radius-xl);background:var(--card);padding:10px;display:flex;flex-direction:column;gap:8px;cursor:pointer">
+                <div style="height:92px;border-radius:var(--radius-lg);background:var(--chip);color:var(--secondary);display:flex;align-items:center;justify-content:center;position:relative">
+                  {{ it.icon }}
+                  <sc-if value="{{ it.popular }}"><span class="nb-border-sm" style="position:absolute;top:6px;left:6px;background:var(--accent);color:var(--accent-foreground);font-size:9px;font-weight:800;padding:2px 6px;border-radius:var(--radius-4xl)">HOT</span></sc-if>
+                </div>
+                <p style="margin:0;font-size:13px;font-weight:800;line-height:1.2">{{ it.name }}</p>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto">
+                  <span style="font-size:13px;font-weight:800;color:var(--price)">{{ it.priceText }}</span>
+                  <button onClick="{{ it.quick }}" class="nb-border-sm pf-press" style="width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer">{{ it.plus }}</button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ listMode }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:0 20px;display:flex;flex-direction:column;gap:12px">
+            <sc-for list="{{ items }}" as="it" hint-placeholder-count="5">
+              <div onClick="{{ it.open }}" class="nb-border nb-shadow-sm nb-press-sm stagger-item" style="display:flex;gap:12px;align-items:center;border-radius:var(--radius-lg);background:var(--card);padding:10px;cursor:pointer">
+                <div style="width:58px;height:58px;flex-shrink:0;border-radius:var(--radius-md);background:var(--chip);color:var(--secondary);display:flex;align-items:center;justify-content:center">{{ it.icon }}</div>
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <p style="margin:0;font-size:14px;font-weight:800">{{ it.name }}</p>
+                    <sc-if value="{{ it.popular }}"><span style="background:var(--accent);color:var(--accent-foreground);font-size:9px;font-weight:800;padding:2px 6px;border-radius:var(--radius-4xl)">HOT</span></sc-if>
+                  </div>
+                  <p style="margin:2px 0 0;font-size:11px;color:var(--muted-foreground);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.sub }}</p>
+                  <p style="margin:3px 0 0;font-size:13px;font-weight:800;color:var(--price)">{{ it.priceText }}</p>
+                </div>
+                <button onClick="{{ it.quick }}" class="nb-border-sm pf-press" style="width:32px;height:32px;flex-shrink:0;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer">{{ it.plus }}</button>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ noResults }}"><p style="margin:0;padding:0 20px;font-size:13px;color:var(--muted-foreground)">{{ L.noResults }}</p></sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isProduct }}">
+      <div style="display:flex;flex-direction:column;min-height:100%">
+        <div style="height:230px;flex-shrink:0;background:var(--coffee-900);color:rgba(255,248,242,.85);display:flex;align-items:center;justify-content:center;position:relative">
+          <div style="position:absolute;inset:0">
+            <image-slot id="{{ heroSlotId }}" shape="rect" placeholder="{{ L.dropPhoto }}"></image-slot>
+          </div>
+          <button onClick="{{ back }}" class="pf-press" style="position:absolute;top:16px;left:16px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.16);border:none;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer">{{ icoBack }}</button>
+          <button onClick="{{ toggleFav }}" class="pf-press" style="position:absolute;top:16px;right:16px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.16);border:none;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer">{{ icoHeart }}</button>
+          <div class="nb-border-sm" style="position:absolute;bottom:-20px;left:20px;display:flex;align-items:center;gap:12px;background:var(--card);color:var(--foreground);border-radius:var(--radius-4xl);padding:7px 12px">
+            <button onClick="{{ decQty }}" class="pf-press" style="width:26px;height:26px;border-radius:50%;border:none;background:var(--muted);color:var(--foreground);cursor:pointer;display:flex;align-items:center;justify-content:center">{{ icoMinus }}</button>
+            <span style="font-size:14px;font-weight:800;min-width:16px;text-align:center">{{ qty }}</span>
+            <button onClick="{{ incQty }}" class="pf-press" style="width:26px;height:26px;border-radius:50%;border:none;background:var(--primary);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center">{{ icoPlus }}</button>
+          </div>
+        </div>
+
+        <div style="padding:32px 20px 20px;display:flex;flex-direction:column;gap:20px">
+          <div>
+            <h1 style="margin:0;font-size:22px;font-weight:800;line-height:1.15">{{ pName }}</h1>
+            <p style="margin:3px 0 0;font-size:13px;font-weight:600;color:var(--muted-foreground)">{{ pSub }}</p>
+            <p style="margin:10px 0 0;font-size:13px;line-height:1.5;color:var(--muted-foreground);text-wrap:pretty">{{ pDesc }}</p>
+          </div>
+
+          <sc-if value="{{ hasSizes }}" hint-placeholder-val="{{ true }}">
+            <section>
+              <p style="margin:0 0 8px;font-size:12px;font-weight:800">{{ L.size }}</p>
+              <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.SegmentedControl" options="{{ sizeOpts }}" value="{{ size }}" on-change="{{ setSize }}" hint-size="100%,44px"></x-import>
+            </section>
+          </sc-if>
+
+          <section>
+            <p style="margin:0 0 8px;font-size:12px;font-weight:800">{{ L.sweetness }}</p>
+            <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.SegmentedControl" options="{{ sweetOpts }}" value="{{ sweet }}" on-change="{{ setSweet }}" hint-size="100%,44px"></x-import>
+          </section>
+
+          <section>
+            <p style="margin:0 0 8px;font-size:12px;font-weight:800">{{ L.ice }}</p>
+            <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.SegmentedControl" options="{{ iceOpts }}" value="{{ ice }}" on-change="{{ setIce }}" hint-size="100%,44px"></x-import>
+          </section>
+
+          <section>
+            <p style="margin:0 0 8px;font-size:12px;font-weight:800">{{ L.addons }}</p>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ topOpts }}" as="t" hint-placeholder-count="3">
+                <button onClick="{{ t.toggle }}" class="{{ t.cls }}" style="display:flex;align-items:center;gap:12px;border-radius:var(--radius-lg);padding:12px;cursor:pointer;font-family:var(--font-sans);background:var(--card);color:var(--foreground);text-align:left">
+                  <span style="display:flex;color:var(--secondary)">{{ t.icon }}</span>
+                  <span style="flex:1;font-size:13px;font-weight:700">{{ t.label }}</span>
+                  <span style="font-size:12px;font-weight:800;color:var(--price)">{{ t.priceText }}</span>
+                  <span class="nb-border-sm" style="width:22px;height:22px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;background:{{ t.boxBg }};color:#fff">{{ t.check }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </section>
+
+          <section>
+            <p style="margin:0 0 8px;font-size:12px;font-weight:800">{{ L.note }}</p>
+            <textarea value="{{ note }}" onChange="{{ onNote }}" rows="2" placeholder="{{ L.notePh }}" style="width:100%;box-sizing:border-box;border-radius:var(--radius-lg);border:2px solid var(--ink);background:var(--card);color:var(--foreground);padding:10px 12px;font-size:13px;resize:none"></textarea>
+          </section>
+        </div>
+
+        <div class="nb-border" style="position:sticky;bottom:0;background:var(--card);border-left:none;border-right:none;border-bottom:none;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div>
+            <p style="margin:0;font-size:11px;color:var(--muted-foreground);font-weight:600">{{ L.total }}</p>
+            <p style="margin:0;font-size:19px;font-weight:800;color:var(--price)">{{ configTotalText }}</p>
+          </div>
+          <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="neubrutal" size="lg" on-click="{{ addConfigured }}" hint-size="auto,44px">{{ L.addToCart }}</x-import>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCart }}">
+      <div style="display:flex;flex-direction:column;min-height:100%">
+        <div style="padding:22px 20px 14px">
+          <h1 style="margin:0;font-size:20px;font-weight:800">{{ L.cartTitle }}</h1>
+          <p style="margin:3px 0 0;font-size:12px;color:var(--muted-foreground);font-weight:600">{{ countText }}</p>
+        </div>
+
+        <div style="padding:0 20px 16px">
+          <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.SegmentedControl" options="{{ modeOpts }}" value="{{ mode }}" on-change="{{ setMode }}" hint-size="100%,44px"></x-import>
+        </div>
+
+        <sc-if value="{{ dineIn }}">
+          <div onClick="{{ startScan }}" class="nb-border-sm nb-press-sm" style="margin:0 20px 16px;display:flex;align-items:center;gap:10px;border-radius:var(--radius-lg);background:var(--chip);padding:12px;cursor:pointer">
+            <span style="display:flex;color:var(--secondary)">{{ icoQr }}</span>
+            <div style="flex:1;min-width:0">
+              <p style="margin:0;font-size:12px;font-weight:800">{{ L.dineInTitle }}</p>
+              <p style="margin:2px 0 0;font-size:10px;font-weight:600;color:var(--muted-foreground)">{{ L.dineInCartHint }}</p>
+            </div>
+            <span style="display:flex;color:var(--muted-foreground)">{{ icoForward }}</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ cartEmpty }}">
+          <div style="padding:40px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px">
+            <span style="color:var(--muted-foreground);display:flex">{{ icoBagBig }}</span>
+            <p style="margin:0;font-size:14px;font-weight:800">{{ L.emptyTitle }}</p>
+            <p style="margin:0;font-size:12px;color:var(--muted-foreground)">{{ L.emptyBody }}</p>
+            <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="neubrutal" on-click="{{ goMenu }}" hint-size="auto,40px">{{ L.viewMenu }}</x-import>
+          </div>
+        </sc-if>
+
+        <div style="padding:0 20px;display:flex;flex-direction:column;gap:12px">
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="2">
+            <div class="nb-border nb-shadow-sm stagger-item" style="display:flex;gap:12px;border-radius:var(--radius-lg);background:var(--card);padding:12px">
+              <div style="width:52px;height:52px;flex-shrink:0;border-radius:var(--radius-md);background:var(--chip);color:var(--secondary);display:flex;align-items:center;justify-content:center">{{ r.icon }}</div>
+              <div style="flex:1;min-width:0">
+                <p style="margin:0;font-size:13px;font-weight:800">{{ r.name }}</p>
+                <p style="margin:2px 0 0;font-size:11px;color:var(--muted-foreground);line-height:1.4">{{ r.optsText }}</p>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+                  <span style="font-size:13px;font-weight:800;color:var(--price)">{{ r.lineText }}</span>
+                  <div class="nb-border-sm" style="display:flex;align-items:center;gap:10px;border-radius:var(--radius-4xl);padding:3px 8px">
+                    <button onClick="{{ r.dec }}" class="pf-press" style="width:22px;height:22px;border:none;background:transparent;color:var(--foreground);cursor:pointer;display:flex;align-items:center;justify-content:center">{{ r.minus }}</button>
+                    <span style="font-size:12px;font-weight:800;min-width:12px;text-align:center">{{ r.qty }}</span>
+                    <button onClick="{{ r.inc }}" class="pf-press" style="width:22px;height:22px;border:none;background:transparent;color:var(--primary);cursor:pointer;display:flex;align-items:center;justify-content:center">{{ r.plus }}</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ cartFilled }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;gap:8px">
+              <input value="{{ promo }}" onChange="{{ onPromo }}" placeholder="{{ L.promoPh }}" style="flex:1;height:42px;box-sizing:border-box;border-radius:var(--radius-lg);border:2px solid var(--ink);background:var(--card);color:var(--foreground);padding:0 12px;font-size:13px">
+              <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="secondary" on-click="{{ applyPromo }}" hint-size="auto,40px">{{ L.apply }}</x-import>
+            </div>
+            <div class="nb-border nb-shadow" style="border-radius:var(--radius-xl);background:var(--card);padding:14px;display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600"><span>{{ L.subtotal }}</span><span>{{ subtotalText }}</span></div>
+              <sc-if value="{{ promoOn }}"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--success)"><span>{{ L.discount }}</span><span>{{ discountText }}</span></div></sc-if>
+              <div style="height:2px;background:var(--border)"></div>
+              <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800"><span>{{ L.grandTotal }}</span><span style="color:var(--price)">{{ totalText }}</span></div>
+            </div>
+          </div>
+          <div class="nb-border" style="position:sticky;bottom:0;background:var(--card);border-left:none;border-right:none;border-bottom:none;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div>
+              <p style="margin:0;font-size:11px;color:var(--muted-foreground);font-weight:600">{{ countText }}</p>
+              <p style="margin:0;font-size:18px;font-weight:800;color:var(--price)">{{ totalText }}</p>
+            </div>
+            <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="neubrutal" size="lg" on-click="{{ goCheckout }}" hint-size="auto,44px">{{ L.checkout }}</x-import>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCheckout }}">
+      <div style="display:flex;flex-direction:column;min-height:100%">
+        <div style="display:flex;align-items:center;gap:12px;padding:20px 20px 14px">
+          <button onClick="{{ goCart }}" class="nb-border-sm pf-press" style="width:34px;height:34px;border-radius:50%;background:var(--card);color:var(--foreground);display:flex;align-items:center;justify-content:center;cursor:pointer">{{ icoBack }}</button>
+          <h1 style="margin:0;font-size:18px;font-weight:800">{{ L.checkoutTitle }}</h1>
+        </div>
+
+        <div style="padding:0 20px;display:flex;flex-direction:column;gap:20px">
+          <section>
+            <p style="margin:0 0 8px;font-size:12px;font-weight:800">{{ L.pickupLabel }}</p>
+            <div class="nb-border nb-shadow-sm" style="border-radius:var(--radius-lg);background:var(--card);padding:12px;display:flex;align-items:center;gap:12px">
+              <span style="display:flex;color:var(--secondary)">{{ icoPin }}</span>
+              <div style="flex:1">
+                <p style="margin:0;font-size:13px;font-weight:800">PhaDinCafe · 128 Nguyễn Huệ</p>
+                <p style="margin:2px 0 0;font-size:11px;color:var(--muted-foreground)">{{ modeLabel }}</p>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <p style="margin:0 0 8px;font-size:12px;font-weight:800">{{ L.readyAt }}</p>
+            <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.SegmentedControl" options="{{ timeOpts }}" value="{{ pickupTime }}" on-change="{{ setTime }}" hint-size="100%,44px"></x-import>
+          </section>
+
+          <section>
+            <p style="margin:0 0 8px;font-size:12px;font-weight:800">{{ L.payMethod }}</p>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ payOpts }}" as="pm" hint-placeholder-count="3">
+                <button onClick="{{ pm.pick }}" class="{{ pm.cls }}" style="display:flex;align-items:center;gap:12px;border-radius:var(--radius-lg);padding:13px 12px;cursor:pointer;font-family:var(--font-sans);background:var(--card);color:var(--foreground);text-align:left">
+                  <span style="display:flex;color:var(--secondary)">{{ pm.icon }}</span>
+                  <div style="flex:1">
+                    <p style="margin:0;font-size:13px;font-weight:800">{{ pm.label }}</p>
+                    <p style="margin:1px 0 0;font-size:11px;color:var(--muted-foreground)">{{ pm.hint }}</p>
+                  </div>
+                  <span class="nb-border-sm" style="width:20px;height:20px;border-radius:50%;background:{{ pm.dotBg }}"></span>
+                </button>
+              </sc-for>
+            </div>
+          </section>
+
+          <section style="padding-bottom:20px">
+            <p style="margin:0 0 8px;font-size:12px;font-weight:800">{{ L.summary }}</p>
+            <div class="nb-border nb-shadow" style="border-radius:var(--radius-xl);background:var(--card);padding:14px;display:flex;flex-direction:column;gap:9px">
+              <sc-for list="{{ rows }}" as="r" hint-placeholder-count="2">
+                <div style="display:flex;justify-content:space-between;gap:10px;font-size:12px">
+                  <span style="font-weight:700">{{ r.summaryText }}</span>
+                  <span style="font-weight:800">{{ r.lineText }}</span>
+                </div>
+              </sc-for>
+              <div style="height:2px;background:var(--border)"></div>
+              <sc-if value="{{ promoOn }}"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--success)"><span>{{ L.discount }}</span><span>{{ discountText }}</span></div></sc-if>
+              <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800"><span>{{ L.grandTotal }}</span><span style="color:var(--price)">{{ totalText }}</span></div>
+            </div>
+          </section>
+        </div>
+
+        <div class="nb-border" style="position:sticky;bottom:0;margin-top:auto;background:var(--card);border-left:none;border-right:none;border-bottom:none;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div>
+            <p style="margin:0;font-size:11px;color:var(--muted-foreground);font-weight:600">{{ payViaText }}</p>
+            <p style="margin:0;font-size:18px;font-weight:800;color:var(--price)">{{ totalText }}</p>
+          </div>
+          <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="neubrutal" size="lg" on-click="{{ placeOrder }}" hint-size="auto,44px">{{ L.placeOrder }}</x-import>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isTracking }}">
+      <div style="display:flex;flex-direction:column;min-height:100%;padding-bottom:24px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 20px 6px">
+          <div>
+            <p style="margin:0;font-size:11px;font-weight:700;color:var(--muted-foreground)">{{ L.orderLbl }}</p>
+            <p style="margin:1px 0 0;font-size:18px;font-weight:800">{{ orderCode }}</p>
+          </div>
+          <div class="nb-border-sm" style="display:flex;align-items:center;gap:7px;border-radius:var(--radius-4xl);padding:6px 11px;background:var(--card)">
+            <span class="live-pulse-dot"></span>
+            <span style="font-size:11px;font-weight:800">{{ L.live }}</span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:18px 20px 22px">
+          <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.ProgressRing" percent="{{ stagePct }}" size="{{ ringSize }}" stroke-width="{{ ringStroke }}" hint-size="132px,132px">
+            <div style="display:flex;flex-direction:column;align-items:center">
+              <span style="font-size:26px;font-weight:800;line-height:1">{{ etaMins }}</span>
+              <span style="font-size:10px;font-weight:700;color:var(--muted-foreground)">{{ L.mins }}</span>
+            </div>
+          </x-import>
+          <p style="margin:6px 0 0;font-size:16px;font-weight:800">{{ stageTitle }}</p>
+          <p style="margin:0;font-size:12px;color:var(--muted-foreground);text-align:center;max-width:250px;text-wrap:pretty">{{ stageBody }}</p>
+        </div>
+
+        <div style="padding:0 14px 24px">
+          <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.StepProgress" steps="{{ steps }}" current-step="{{ stage }}" hint-size="100%,72px"></x-import>
+        </div>
+
+        <div style="padding:0 20px;display:flex;flex-direction:column;gap:12px">
+          <div class="nb-border nb-shadow" style="border-radius:var(--radius-xl);background:var(--card);padding:14px;display:flex;flex-direction:column;gap:9px">
+            <p style="margin:0;font-size:12px;font-weight:800">{{ L.items }}</p>
+            <sc-for list="{{ placedRows }}" as="r" hint-placeholder-count="2">
+              <div style="display:flex;justify-content:space-between;gap:10px;font-size:12px">
+                <span style="font-weight:700">{{ r.summaryText }}</span>
+                <span style="font-weight:800">{{ r.lineText }}</span>
+              </div>
+            </sc-for>
+            <div style="height:2px;background:var(--border)"></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800"><span>{{ payLabel }}</span><span style="color:var(--price)">{{ placedTotalText }}</span></div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="outline" on-click="{{ goOrders }}" hint-size="100%,40px">{{ L.history }}</x-import>
+            <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="neubrutal" on-click="{{ goMenu }}" hint-size="100%,40px">{{ L.orderMore }}</x-import>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isOrders }}">
+      <div style="display:flex;flex-direction:column;min-height:100%;padding-bottom:24px">
+        <div style="padding:22px 20px 14px">
+          <h1 style="margin:0;font-size:20px;font-weight:800">{{ L.ordersTitle }}</h1>
+          <p style="margin:3px 0 0;font-size:12px;color:var(--muted-foreground);font-weight:600">{{ L.ordersSub }}</p>
+        </div>
+
+        <sc-if value="{{ hasLive }}">
+          <div onClick="{{ goTracking }}" class="nb-border nb-shadow nb-press" style="margin:0 20px 16px;border-radius:var(--radius-xl);background:var(--primary);color:#fff;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer">
+            <span class="live-pulse-dot" style="background:#fff"></span>
+            <div style="flex:1">
+              <p style="margin:0;font-size:13px;font-weight:800">{{ orderCode }} · {{ stageTitle }}</p>
+              <p style="margin:2px 0 0;font-size:11px;opacity:.85">{{ L.trackHint }}</p>
+            </div>
+            <span style="display:flex">{{ icoForward }}</span>
+          </div>
+        </sc-if>
+
+        <div style="padding:0 20px;display:flex;flex-direction:column;gap:12px">
+          <sc-for list="{{ history }}" as="h" hint-placeholder-count="3">
+            <div class="nb-border nb-shadow-sm stagger-item" style="border-radius:var(--radius-lg);background:var(--card);padding:14px;display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <p style="margin:0;font-size:13px;font-weight:800">{{ h.code }}</p>
+                <span style="font-size:11px;font-weight:700;color:var(--muted-foreground)">{{ h.date }}</span>
+              </div>
+              <p style="margin:0;font-size:12px;color:var(--muted-foreground);line-height:1.5">{{ h.itemsText }}</p>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:14px;font-weight:800;color:var(--price)">{{ h.totalText }}</span>
+                  <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Badge" variant="success" hint-size="auto,20px">{{ L.done }}</x-import>
+                </div>
+                <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="neubrutal" size="sm" on-click="{{ h.reorder }}" hint-size="auto,32px">{{ L.reorder }}</x-import>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isScan }}">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;padding:36px 26px;text-align:center">
+        <sc-if value="{{ scanBusy }}" hint-placeholder-val="{{ true }}">
+          <div role="status" aria-busy="true" style="display:flex;flex-direction:column;align-items:center;gap:15px">
+            <div class="nb-border nb-shadow" style="width:96px;height:96px;border-radius:50%;background:var(--muted);animation:pulseSoft 1.6s ease-in-out infinite"></div>
+            <div style="width:160px;height:16px;border-radius:999px;background:var(--muted);animation:pulseSoft 1.6s ease-in-out infinite"></div>
+            <p style="margin:0;font-size:12px;font-weight:700;color:var(--muted-foreground)">{{ scanBusyLabel }}</p>
+          </div>
+        </sc-if>
+        <sc-if value="{{ scanBlocked }}">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+            <span style="width:80px;height:80px;border-radius:50%;background:{{ scanIconBg }};color:{{ scanIconFg }};display:flex;align-items:center;justify-content:center">{{ scanIcon }}</span>
+            <h2 style="margin:0;font-size:19px;font-weight:800;line-height:1.2;max-width:300px;text-wrap:pretty">{{ scanTitle }}</h2>
+            <p style="margin:0;font-size:12px;line-height:1.6;color:var(--muted-foreground);max-width:300px;text-wrap:pretty">{{ scanBody }}</p>
+            <div style="display:flex;flex-direction:column;gap:9px;width:100%;max-width:270px;margin-top:4px">
+              <sc-for list="{{ scanActions }}" as="a" hint-placeholder-count="2">
+                <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="{{ a.variant }}" disabled="{{ a.disabled }}" on-click="{{ a.go }}" style="width:100%" dc-props="{{ fullW }}" hint-size="100%,44px">{{ a.label }}</x-import>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isTable }}">
+      <div style="display:flex;flex-direction:column;flex:1;min-height:0">
+        <div style="display:flex;align-items:center;gap:11px;padding:20px 20px 0">
+          <span class="nb-border-sm" style="width:36px;height:36px;flex-shrink:0;border-radius:var(--radius-md);background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center">{{ icoTableTop }}</span>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:7px">
+              <p style="margin:0;font-size:15px;font-weight:800;line-height:1.15">{{ L.tableTitle }}</p>
+              <span class="live-pulse-dot"></span>
+            </div>
+            <p style="margin:2px 0 0;font-size:11px;font-weight:600;color:var(--muted-foreground)">{{ L.tableSub }}</p>
+          </div>
+          <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.LanguageSwitcher" locale="{{ locale }}" on-change="{{ setLocale }}" hint-size="80px,30px"></x-import>
+        </div>
+
+        <sc-if value="{{ tableStale }}">
+          <div role="status" style="margin:12px 20px 0;border-radius:var(--radius-md);background:color-mix(in oklch, var(--accent) 20%, transparent);color:var(--accent-foreground);padding:6px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <span style="font-size:11px;line-height:1.4">{{ L.staleNotice }}</span>
+            <button onClick="{{ clearTableStale }}" style="flex-shrink:0;border:none;background:transparent;color:inherit;padding:0;font-family:var(--font-sans);font-size:11px;font-weight:800;text-decoration:underline;text-underline-offset:2px;cursor:pointer">{{ L.retryButton }}</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ tablePaymentPending }}">
+          <div class="nb-border-sm" style="margin:12px 20px 0;border-radius:var(--radius-md);background:color-mix(in oklch, var(--warn) 18%, var(--card));padding:10px 11px;display:flex;align-items:flex-start;gap:9px">
+            <span style="display:flex;color:var(--warn);flex-shrink:0">{{ icoLock }}</span>
+            <span style="flex:1;font-size:11px;font-weight:700;line-height:1.45">{{ L.paymentInProgressNote }}</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ tableError }}">
+          <div role="alert" style="margin:12px 20px 0;border-radius:var(--radius-md);background:color-mix(in oklch, var(--destructive) 10%, transparent);padding:8px 11px;display:flex;align-items:flex-start;gap:9px">
+            <span style="flex:1;font-size:11px;font-weight:600;line-height:1.45;color:var(--destructive)">{{ tableError }}</span>
+            <button onClick="{{ clearTableError }}" aria-label="{{ L.close }}" class="pf-press" style="flex-shrink:0;width:20px;height:20px;border:none;background:transparent;color:var(--destructive);padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center">{{ icoX }}</button>
+          </div>
+        </sc-if>
+
+        <div style="padding:12px 20px 0">
+          <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.SegmentedControl" options="{{ tableTabOpts }}" value="{{ tableTab }}" on-change="{{ setTableTab }}" hint-size="100%,42px"></x-import>
+        </div>
+
+        <div class="pdc-scroll" style="flex:1;min-height:0;display:{{ tableMenuDisplay }};flex-direction:column;gap:12px;padding:14px 20px 20px">
+          <sc-for list="{{ items }}" as="it" hint-placeholder-count="4">
+            <div onClick="{{ it.addTable }}" class="nb-border nb-shadow-sm nb-press-sm stagger-item" style="display:flex;gap:12px;align-items:center;border-radius:var(--radius-lg);background:var(--card);padding:10px;cursor:{{ it.tableCursor }};opacity:{{ it.tableOp }}">
+              <div style="width:58px;height:58px;flex-shrink:0;border-radius:var(--radius-md);overflow:hidden;background:var(--chip);filter:{{ it.filter }}">
+                <image-slot id="{{ it.slotId }}" shape="rect" placeholder="{{ L.dropPhoto }}"></image-slot>
+              </div>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <p style="margin:0;font-size:14px;font-weight:800">{{ it.name }}</p>
+                  <sc-if value="{{ it.popular }}">
+                    <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Badge" variant="neubrutal" hint-size="auto,20px">{{ L.popularTag }}</x-import>
+                  </sc-if>
+                </div>
+                <p style="margin:2px 0 0;font-size:11px;color:var(--muted-foreground);font-weight:600">{{ it.sub }}</p>
+                <p style="margin:3px 0 0;font-size:13px;font-weight:800;color:var(--price)">{{ it.priceText }}</p>
+              </div>
+              <sc-if value="{{ it.tableAddable }}" hint-placeholder-val="{{ true }}">
+                <span class="nb-border-sm nb-shadow-sm" style="width:44px;height:44px;flex-shrink:0;border-radius:50%;background:{{ it.tableAddBg }};color:#fff;display:flex;align-items:center;justify-content:center">{{ it.plusBig }}</span>
+              </sc-if>
+              <sc-if value="{{ it.soldOut }}">
+                <span aria-label="{{ L.soldOut }}" class="nb-border-sm" style="width:32px;height:32px;flex-shrink:0;border-radius:50%;background:var(--chip);color:var(--muted-foreground);display:flex;align-items:center;justify-content:center">{{ icoBan }}</span>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+
+        <div class="pdc-scroll" style="flex:1;min-height:0;display:{{ tableOrderDisplay }};flex-direction:column;gap:18px;padding:14px 20px 20px">
+          <section style="display:flex;flex-direction:column;gap:9px">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <h2 style="margin:0;font-size:14px;font-weight:800">{{ L.draftCartTitle }}</h2>
+              <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Badge" variant="default" hint-size="auto,20px">{{ L.sharedTag }}</x-import>
+            </div>
+
+            <sc-if value="{{ tableDraftEmpty }}">
+              <div style="border:2.5px dashed var(--border);border-radius:var(--radius-lg);padding:20px 14px;display:flex;flex-direction:column;align-items:center;gap:11px">
+                <p style="margin:0;font-size:12px;font-weight:700;color:var(--muted-foreground);text-align:center;max-width:250px;text-wrap:pretty">{{ L.emptyDraftCart }}</p>
+                <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="neubrutal" on-click="{{ goTableMenu }}" hint-size="auto,40px">{{ L.orderMore }}</x-import>
+              </div>
+            </sc-if>
+
+            <sc-for list="{{ tableRows }}" as="r" hint-placeholder-count="2">
+              <div class="nb-border-sm" aria-busy="{{ r.busy }}" style="border-radius:var(--radius-lg);background:var(--card);padding:11px;display:flex;align-items:center;gap:11px;opacity:{{ r.op }}">
+                <div style="flex:1;min-width:0">
+                  <p style="margin:0;font-size:13px;font-weight:800;line-height:1.2">{{ r.name }}</p>
+                  <p style="margin:2px 0 0;font-size:10px;font-weight:600;color:var(--muted-foreground);line-height:1.4">{{ r.opts }}</p>
+                  <sc-if value="{{ r.byOther }}">
+                    <p style="margin:3px 0 0;font-size:10px;font-weight:800;color:var(--secondary)">{{ L.addedByOther }}</p>
+                  </sc-if>
+                  <p style="margin:4px 0 0;font-size:12px;font-weight:800;color:var(--price)">{{ r.lineText }}</p>
+                </div>
+                <div class="nb-border-sm" style="display:flex;align-items:center;gap:6px;border-radius:var(--radius-4xl);padding:2px 5px;flex-shrink:0">
+                  <button onClick="{{ r.dec }}" aria-label="{{ L.decrease }}" class="pf-press" style="width:32px;height:32px;border:none;background:transparent;color:var(--foreground);cursor:{{ r.cursor }};display:flex;align-items:center;justify-content:center">{{ r.minus }}</button>
+                  <span style="font-size:12px;font-weight:800;min-width:14px;text-align:center">{{ r.qty }}</span>
+                  <button onClick="{{ r.inc }}" aria-label="{{ L.increase }}" class="pf-press" style="width:32px;height:32px;border:none;background:transparent;color:var(--primary);cursor:{{ r.cursor }};display:flex;align-items:center;justify-content:center">{{ r.plus }}</button>
+                </div>
+                <button onClick="{{ r.remove }}" aria-label="{{ L.removeItem }}" class="pf-press" style="width:32px;height:32px;flex-shrink:0;border:none;background:transparent;color:var(--muted-foreground);cursor:{{ r.cursor }};display:flex;align-items:center;justify-content:center">{{ r.trash }}</button>
+              </div>
+            </sc-for>
+
+            <sc-if value="{{ tableDraftFilled }}">
+              <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="neubrutal" disabled="{{ placeDisabled }}" on-click="{{ placeRound }}" style="width:100%" dc-props="{{ fullW }}" hint-size="100%,44px">{{ placeLabel }}</x-import>
+            </sc-if>
+          </section>
+
+          <section style="display:flex;flex-direction:column;gap:9px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+              <h2 style="margin:0;font-size:14px;font-weight:800">{{ L.runningTabTitle }}</h2>
+              <sc-if value="{{ hasRounds }}">
+                <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="outline" size="sm" on-click="{{ goTableMenu }}" hint-size="auto,34px">{{ L.orderMore }}</x-import>
+              </sc-if>
+            </div>
+
+            <sc-if value="{{ noRounds }}">
+              <p style="margin:0;font-size:12px;color:var(--muted-foreground)">{{ L.noRoundsYet }}</p>
+            </sc-if>
+
+            <sc-for list="{{ roundRows }}" as="rd" hint-placeholder-count="2">
+              <div class="nb-border nb-shadow-sm" style="border-radius:var(--radius-lg);background:var(--card);padding:12px;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <span style="width:24px;height:24px;flex-shrink:0;border-radius:50%;background:var(--chip);color:var(--secondary);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800">{{ rd.n }}</span>
+                  <p style="margin:0;font-size:12px;font-weight:800;flex:1">{{ rd.label }}</p>
+                  <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Badge" variant="{{ rd.badgeVariant }}" hint-size="auto,20px">{{ rd.status }}</x-import>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:2px;padding-left:33px">
+                  <sc-for list="{{ rd.items }}" as="ri" hint-placeholder-count="2">
+                    <p style="margin:0;font-size:11px;color:var(--muted-foreground);line-height:1.45">{{ ri.text }}</p>
+                  </sc-for>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding-left:33px">
+                  <span style="font-size:10px;font-weight:800;color:{{ rd.payFg }}">{{ rd.payLabel }}</span>
+                  <span style="font-size:13px;font-weight:800;color:var(--price)">{{ rd.totalText }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </section>
+
+          <section style="display:{{ simDisplay }};flex-direction:column;gap:7px;border-top:2px solid var(--border);padding-top:12px">
+            <p style="margin:0;font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">{{ L.simTitle }}</p>
+            <div style="display:flex;gap:7px">
+              <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="outline" size="sm" on-click="{{ simOtherDiner }}" style="flex:1" dc-props="{{ fullW }}" hint-size="100%,32px">{{ L.simAdd }}</x-import>
+              <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="outline" size="sm" on-click="{{ simConflict }}" style="flex:1" dc-props="{{ fullW }}" hint-size="100%,32px">{{ L.simConflict }}</x-import>
+              <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="outline" size="sm" on-click="{{ showIdlePrompt }}" style="flex:1" dc-props="{{ fullW }}" hint-size="100%,32px">{{ L.simIdle }}</x-import>
+            </div>
+          </section>
+        </div>
+
+        <div class="nb-border" style="border-left:none;border-right:none;border-bottom:none;background:var(--card);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0">
+          <div style="min-width:0">
+            <p style="margin:0;font-size:10px;font-weight:700;color:var(--muted-foreground)">{{ L.unpaidTotalLabel }}</p>
+            <p style="margin:1px 0 0;font-size:19px;font-weight:800;color:var(--price)">{{ unpaidText }}</p>
+          </div>
+          <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="neubrutal" size="lg" disabled="{{ billDisabled }}" on-click="{{ openBill }}" hint-size="auto,48px">{{ L.checkBillButton }}</x-import>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isProfile }}">
+      <div style="display:flex;flex-direction:column;gap:18px;padding:22px 20px 26px">
+        <h1 style="margin:0;font-size:20px;font-weight:800">{{ L.profileTitle }}</h1>
+
+        <div class="nb-border nb-shadow" style="border-radius:var(--radius-xl);background:var(--card);padding:15px;display:flex;align-items:center;gap:14px">
+          <div class="nb-border-sm" style="width:54px;height:54px;flex-shrink:0;border-radius:50%;background:var(--chip);color:var(--secondary);display:flex;align-items:center;justify-content:center">{{ icoUser }}</div>
+          <div style="flex:1;min-width:0">
+            <p style="margin:0;font-size:16px;font-weight:800">Ngọc Anh</p>
+            <p style="margin:2px 0 0;font-size:12px;color:var(--muted-foreground);font-weight:600">0912 345 678</p>
+          </div>
+          <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.RoleBadge" role="customer" hint-size="auto,22px">{{ L.member }}</x-import>
+        </div>
+
+        <div class="nb-border nb-shadow" style="border-radius:var(--radius-xl);background:var(--secondary);color:var(--secondary-foreground);padding:16px;display:flex;align-items:center;gap:16px">
+          <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.ProgressRing" percent="{{ loyaltyPct }}" size="{{ ringSize2 }}" stroke-width="{{ ringStroke }}" hint-size="72px,72px">
+            <div style="display:flex;flex-direction:column;align-items:center">
+              <span style="font-size:17px;font-weight:800;line-height:1">{{ points }}</span>
+              <span style="font-size:9px;font-weight:700;opacity:.8">{{ L.points }}</span>
+            </div>
+          </x-import>
+          <div style="flex:1">
+            <p style="margin:0;font-size:14px;font-weight:800">{{ L.loyaltyTitle }}</p>
+            <p style="margin:4px 0 0;font-size:11px;line-height:1.5;opacity:.85;text-wrap:pretty">{{ L.loyaltyBody }}</p>
+          </div>
+        </div>
+
+        <div class="nb-border nb-shadow" style="border-radius:var(--radius-xl);background:var(--card);overflow:hidden">
+          <div style="display:flex;align-items:center;gap:12px;padding:14px">
+            <span style="display:flex;color:var(--secondary)">{{ icoGlobe }}</span>
+            <span style="flex:1;font-size:13px;font-weight:700">{{ L.language }}</span>
+            <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.LanguageSwitcher" locale="{{ locale }}" on-change="{{ setLocale }}" hint-size="86px,32px"></x-import>
+          </div>
+          <div style="height:2px;background:var(--border)"></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:14px">
+            <span style="display:flex;color:var(--secondary)">{{ icoTheme }}</span>
+            <span style="flex:1;font-size:13px;font-weight:700">{{ L.theme }}</span>
+            <button onClick="{{ toggleDark }}" class="nb-border-sm" style="width:52px;height:28px;border-radius:var(--radius-4xl);background:{{ switchBg }};cursor:pointer;display:flex;align-items:center;padding:2px;justify-content:{{ switchJustify }}">
+              <span style="width:20px;height:20px;border-radius:50%;background:var(--card);display:block"></span>
+            </button>
+          </div>
+          <sc-for list="{{ profileRows }}" as="row" hint-placeholder-count="4">
+            <div onClick="{{ row.go }}" style="border-top:2px solid var(--border);display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer">
+              <span style="display:flex;color:var(--secondary)">{{ row.icon }}</span>
+              <span style="flex:1;font-size:13px;font-weight:700">{{ row.label }}</span>
+              <span style="font-size:11px;font-weight:700;color:var(--muted-foreground)">{{ row.value }}</span>
+              <span style="display:flex;color:var(--muted-foreground)">{{ row.chev }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="outline" on-click="{{ signOut }}" hint-size="100%,40px">{{ L.signout }}</x-import>
+      </div>
+    </sc-if>
+
+  </div><sc-if value="{{ showTabs }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.AnimatedTabBar" items="{{ tabItems }}" active-href="{{ route }}" on-select="{{ nav }}" hint-size="100%,64px"></x-import></sc-if>
+
+    <sc-if value="{{ sheetOpen }}">
+      <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(0,0,0,.42);display:flex;align-items:flex-end;z-index:40;animation:sheetBackdrop 200ms var(--ease-out-expo)">
+        <div onClick="{{ stop }}" class="nb-border" style="width:100%;border-bottom:none;border-left:none;border-right:none;background:var(--card);color:var(--foreground);border-radius:var(--radius-2xl) var(--radius-2xl) 0 0;padding:16px 20px 20px;animation:sheetUp 380ms var(--ease-out-expo);display:flex;flex-direction:column;gap:16px">
+          <div style="width:46px;height:5px;border-radius:99px;background:var(--border);align-self:center"></div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <div style="width:52px;height:52px;flex-shrink:0;border-radius:var(--radius-md);background:var(--chip);color:var(--secondary);display:flex;align-items:center;justify-content:center">{{ sheetIcon }}</div>
+            <div style="flex:1;min-width:0">
+              <p style="margin:0;font-size:15px;font-weight:800">{{ pName }}</p>
+              <p style="margin:1px 0 0;font-size:11px;color:var(--muted-foreground);font-weight:600">{{ pSub }}</p>
+            </div>
+            <div class="nb-border-sm" style="display:flex;align-items:center;gap:10px;border-radius:var(--radius-4xl);padding:4px 9px">
+              <button onClick="{{ decQty }}" class="pf-press" style="width:22px;height:22px;border:none;background:transparent;color:var(--foreground);cursor:pointer;display:flex;align-items:center;justify-content:center">{{ icoMinus }}</button>
+              <span style="font-size:13px;font-weight:800;min-width:12px;text-align:center">{{ qty }}</span>
+              <button onClick="{{ incQty }}" class="pf-press" style="width:22px;height:22px;border:none;background:transparent;color:var(--primary);cursor:pointer;display:flex;align-items:center;justify-content:center">{{ icoPlus }}</button>
+            </div>
+          </div>
+          <sc-if value="{{ hasSizes }}" hint-placeholder-val="{{ true }}">
+            <div>
+              <p style="margin:0 0 7px;font-size:11px;font-weight:800">{{ L.size }}</p>
+              <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.SegmentedControl" options="{{ sizeOpts }}" value="{{ size }}" on-change="{{ setSize }}" hint-size="100%,40px"></x-import>
+            </div>
+          </sc-if>
+          <div>
+            <p style="margin:0 0 7px;font-size:11px;font-weight:800">{{ L.sweetness }}</p>
+            <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.SegmentedControl" options="{{ sweetOpts }}" value="{{ sweet }}" on-change="{{ setSweet }}" hint-size="100%,40px"></x-import>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <button onClick="{{ openFull }}" style="border:none;background:transparent;color:var(--primary);font-family:var(--font-sans);font-size:12px;font-weight:800;text-decoration:underline;cursor:pointer;padding:0">{{ L.fullOptions }}</button>
+            <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="neubrutal" size="lg" on-click="{{ addConfigured }}" hint-size="auto,44px">{{ sheetCta }}</x-import>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ idleOpen }}">
+      <div role="dialog" aria-modal="true" style="position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;z-index:62;animation:sheetBackdrop 200ms var(--ease-out-expo)">
+        <div class="nb-border nb-shadow" style="width:100%;border-left:none;border-right:none;border-bottom:none;background:var(--card);border-radius:var(--radius-2xl) var(--radius-2xl) 0 0;padding:20px;animation:sheetUp 380ms var(--ease-out-expo);display:flex;flex-direction:column;gap:12px">
+          <h2 style="margin:0;font-size:18px;font-weight:800">{{ L.idlePromptTitle }}</h2>
+          <p style="margin:0;font-size:12px;line-height:1.55;color:var(--muted-foreground);text-wrap:pretty">{{ L.idlePromptBody }}</p>
+          <p style="margin:0;font-size:10px;font-weight:800;color:var(--warn)">{{ idleCountdown }}</p>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:2px">
+            <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="neubrutal" on-click="{{ stillHere }}" style="width:100%" dc-props="{{ fullW }}" hint-size="100%,44px">{{ L.idlePromptYes }}</x-import>
+            <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="ghost" on-click="{{ abandonTable }}" style="width:100%" dc-props="{{ fullW }}" hint-size="100%,44px">{{ L.idlePromptNo }}</x-import>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ billOpen }}">
+      <div onClick="{{ closeBill }}" role="dialog" aria-modal="true" style="position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;z-index:56;animation:sheetBackdrop 200ms var(--ease-out-expo)">
+        <div onClick="{{ stop }}" class="nb-border pdc-scroll" style="width:100%;border-left:none;border-right:none;border-bottom:none;background:var(--card);border-radius:var(--radius-2xl) var(--radius-2xl) 0 0;padding:16px 20px 20px;animation:sheetUp 380ms var(--ease-out-expo);display:flex;flex-direction:column;gap:14px;max-height:92%">
+          <div style="width:44px;height:5px;border-radius:99px;background:var(--border);align-self:center"></div>
+
+          <sc-if value="{{ billNothing }}">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <p style="margin:0;font-size:13px;font-weight:600;color:var(--muted-foreground)">{{ L.checkBillNothingToPay }}</p>
+              <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="neubrutal" on-click="{{ closeBill }}" style="width:100%" dc-props="{{ fullW }}" hint-size="100%,44px">{{ L.close }}</x-import>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ billPayable }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <h2 style="margin:0;font-size:18px;font-weight:800">{{ L.checkBillButton }}</h2>
+                <button onClick="{{ closeBill }}" aria-label="{{ L.close }}" class="pf-press" style="width:44px;height:44px;border:none;background:transparent;color:var(--muted-foreground);cursor:{{ billBusyCursor }};display:flex;align-items:center;justify-content:center">{{ icoX }}</button>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <sc-for list="{{ billRounds }}" as="b" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:12px">
+                    <span style="font-weight:700">{{ b.label }}</span>
+                    <span style="font-weight:800">{{ b.totalText }}</span>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="display:flex;gap:8px">
+                <input value="{{ billPromo }}" onChange="{{ onBillPromo }}" placeholder="{{ L.promoPh }}" style="flex:1;height:44px;box-sizing:border-box;border-radius:var(--radius-lg);border:2px solid var(--ink);background:var(--card);color:var(--foreground);padding:0 12px;font-size:13px">
+                <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="secondary" disabled="{{ billPromoDisabled }}" on-click="{{ applyBillPromo }}" hint-size="auto,44px">{{ billPromoLabel }}</x-import>
+              </div>
+
+              <sc-if value="{{ billPromoMsg }}">
+                <p role="status" style="margin:0;font-size:11px;font-weight:700;line-height:1.45;color:{{ billPromoFg }}">{{ billPromoMsg }}</p>
+              </sc-if>
+
+              <div style="display:flex;flex-direction:column;gap:7px;border-top:2px solid var(--border);padding-top:11px">
+                <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600"><span>{{ L.unpaidTotalLabel }}</span><span>{{ unpaidText }}</span></div>
+                <sc-if value="{{ billHasDiscount }}">
+                  <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--success)"><span>{{ L.discount }}</span><span>{{ billDiscountText }}</span></div>
+                </sc-if>
+                <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--muted-foreground)"><span>{{ L.taxLabel }}</span><span>{{ billTaxText }}</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800"><span>{{ L.totalToPay }}</span><span style="color:var(--price)">{{ billTotalText }}</span></div>
+                <p style="margin:2px 0 0;font-size:10px;font-weight:600;color:var(--muted-foreground);line-height:1.45">{{ L.serverPriced }}</p>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+                <sc-for list="{{ billMethods }}" as="pm" hint-placeholder-count="3">
+                  <button onClick="{{ pm.pick }}" aria-pressed="{{ pm.on }}" class="nb-border nb-shadow-sm" style="border-radius:var(--radius-lg);background:{{ pm.bg }};color:{{ pm.fg }};padding:14px 4px;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:{{ pm.cursor }};opacity:{{ pm.op }};font-family:var(--font-sans)">
+                    {{ pm.icon }}
+                    <span style="font-size:11px;font-weight:800">{{ pm.label }}</span>
+                  </button>
+                </sc-for>
+              </div>
+
+              <sc-if value="{{ billError }}">
+                <p role="alert" style="margin:0;font-size:12px;font-weight:600;line-height:1.45;color:var(--destructive)">{{ billError }}</p>
+              </sc-if>
+
+              <sc-if value="{{ billRedirecting }}">
+                <div class="nb-border-sm" style="border-radius:var(--radius-md);background:var(--chip);padding:10px 11px;display:flex;align-items:center;gap:9px">
+                  <span style="display:flex;color:var(--secondary)">{{ icoExternal }}</span>
+                  <span style="flex:1;font-size:11px;font-weight:700;line-height:1.45">{{ billRedirectMsg }}</span>
+                </div>
+              </sc-if>
+
+              <x-import component-from-global-scope="PhaDinCafeDesignSystem_ff7f5c.Button" variant="neubrutal" size="lg" disabled="{{ billConfirmDisabled }}" on-click="{{ confirmBill }}" style="width:100%" dc-props="{{ fullW }}" hint-size="100%,48px">{{ billConfirmLabel }}</x-import>
+              <p style="margin:0;font-size:10px;font-weight:600;color:var(--muted-foreground);text-align:center;line-height:1.45">{{ L.billLockNote }}</p>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ toast }}">
+      <div class="nb-border nb-shadow" style="position:absolute;left:20px;right:20px;bottom:84px;z-index:50;border-radius:var(--radius-lg);background:var(--coffee-900);color:var(--cream-50);padding:12px 14px;display:flex;align-items:center;gap:10px;animation:staggerIn 260ms var(--ease-out-expo)">
+        <span style="display:flex;color:var(--accent)">{{ icoCheck }}</span>
+        <span style="font-size:12px;font-weight:700">{{ toast }}</span>
+      </div>
+    </sc-if>
+
+  <sc-if value="{{ showTabs }}" hint-placeholder-val="{{ true }}">
+    
+  </sc-if>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:470,&quot;height&quot;:860},&quot;menuLayout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;List rows&quot;,&quot;Grid cards&quot;],&quot;default&quot;:&quot;List rows&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Layout&quot;},&quot;quickAddMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Bottom sheet&quot;,&quot;Detail page&quot;],&quot;default&quot;:&quot;Bottom sheet&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Interaction&quot;},&quot;qrOutcome&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Valid table&quot;,&quot;Invalid code&quot;,&quot;Table being cleaned&quot;,&quot;Connection error&quot;,&quot;Cart transfer fails&quot;],&quot;default&quot;:&quot;Valid table&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Dine-in QR&quot;},&quot;showSimControls&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Dine-in QR&quot;}}">
+class Component extends DCLogic {
+  menu = [
+    {id:1,cat:"coffee",nameVi:"Phin Sữa Đá",nameEn:"Iced Milk Coffee",price:29000,popular:true,descVi:"Cà phê phin truyền thống, sữa đặc béo ngậy, đá đầy ly.",descEn:"Traditional phin-brewed coffee with rich condensed milk over ice.",sizes:[["s","S",0],["m","M",5000],["l","L",9000]]},
+    {id:2,cat:"coffee",nameVi:"Cà Phê Trứng",nameEn:"Egg Coffee",price:45000,popular:true,descVi:"Hương vị Hà Nội — lớp kem trứng đánh bông, mịn và ấm.",descEn:"A Hanoi classic — whipped egg cream, smooth and warm.",sizes:[["s","S",0],["m","M",5000]]},
+    {id:3,cat:"coffee",nameVi:"Bạc Xỉu",nameEn:"White Coffee",price:32000,popular:false,descVi:"Nhiều sữa, ít cà phê, dịu nhẹ cho buổi chiều.",descEn:"More milk, less coffee — gentle enough for the afternoon.",sizes:[["s","S",0],["m","M",5000],["l","L",9000]]},
+    {id:4,cat:"coffee",nameVi:"Cà Phê Muối",nameEn:"Salt Coffee",price:35000,popular:true,descVi:"Kem muối Huế, mặn ngọt cân bằng trên nền phin đậm.",descEn:"Huế-style salted cream balanced over a strong phin base.",sizes:[["m","M",0],["l","L",7000]]},
+    {id:5,cat:"coffee",nameVi:"Cà Phê Đen",nameEn:"Black Coffee",price:25000,popular:false,descVi:"Đậm đà, không sữa, pha phin từng giọt.",descEn:"Bold and milk-free, dripped one drop at a time.",sizes:[["s","S",0],["m","M",4000]]},
+    {id:6,cat:"tea",nameVi:"Trà Đào Cam Sả",nameEn:"Peach Lemongrass Tea",price:39000,popular:true,descVi:"Đào miếng, cam tươi và sả — thanh mát cả ngày.",descEn:"Peach slices, fresh orange and lemongrass — cool all day.",sizes:[["m","M",0],["l","L",7000]]},
+    {id:7,cat:"tea",nameVi:"Trà Sen Vàng",nameEn:"Golden Lotus Tea",price:42000,popular:false,descVi:"Trà xanh ướp sen, kem sữa mỏng phía trên.",descEn:"Lotus-scented green tea under a thin milk cream.",sizes:[["m","M",0],["l","L",7000]]},
+    {id:8,cat:"pastry",nameVi:"Bánh Mì Que",nameEn:"Crispy Breadsticks",price:19000,popular:false,descVi:"Pate và bơ, nướng giòn, ăn cùng cà phê sáng.",descEn:"Pâté and butter, baked crisp — made for morning coffee.",sizes:null},
+    {id:9,cat:"pastry",nameVi:"Bánh Flan Cà Phê",nameEn:"Coffee Flan",price:22000,popular:false,descVi:"Caramel đắng nhẹ, mềm mát.",descEn:"Lightly bitter caramel, soft and cool.",sizes:null},
+  ];
+  toppings = [
+    {id:"pearl",vi:"Trân châu",en:"Pearls",price:8000,icon:"candy"},
+    {id:"eggcream",vi:"Kem trứng",en:"Egg cream",price:12000,icon:"milk"},
+    {id:"shot",vi:"Thêm shot",en:"Extra shot",price:10000,icon:"cup-soda"},
+  ];
+  history = [
+    {code:"PDC-2418",date:"02/09",ids:[1,8],total:48000,vi:"Phin Sữa Đá (M) · Bánh Mì Que",en:"Iced Milk Coffee (M) · Crispy Breadsticks",cat:"coffee"},
+    {code:"PDC-2377",date:"29/08",ids:[2],total:45000,vi:"Cà Phê Trứng (S)",en:"Egg Coffee (S)",cat:"coffee"},
+    {code:"PDC-2301",date:"24/08",ids:[4,6,9],total:96000,vi:"Cà Phê Muối · Trà Đào Cam Sả · Bánh Flan",en:"Salt Coffee · Peach Lemongrass Tea · Coffee Flan",cat:"tea"},
+  ];
+  SOLD_OUT = [3];
+  TAX = 8;
+
+  state = {route:"home",locale:"vi",cat:"all",q:"",cart:[],pid:1,size:"m",sweet:"70",ice:"normal",tops:[],note:"",qty:1,sheet:false,mode:"pickup",pay:"momo",pickupTime:"asap",promo:"",promoOn:false,stage:0,placed:null,toast:null,fav:[],dark:false,
+    dest:"personal", scanPhase:"resolving", tableTab:"menu", tableCart:[], rounds:[], pending:[], placing:false,
+    tableStale:false, tablePaymentPending:false, tableError:null, tableOpen:false, notified:false,
+    idleOpen:false, idleLeft:60,
+    billOpen:false, billMethod:null, billSubmitting:false, billError:null, billRedirect:null,
+    billPromo:"", billPromoState:"idle", billPromoMsg:null, billDiscount:0};
+
+  scrollRef = React.createRef();
+  bsRef = React.createRef();
+
+  componentDidMount(){
+    if(!(window.lucide && window.lucide.icons)){
+      this.iconPoll=setInterval(()=>{
+        if(window.lucide && window.lucide.icons){ clearInterval(this.iconPoll); this.forceUpdate(); }
+      },120);
+    }
+    const reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    if(reduce) this.setState({reduce:true});
+    const el = this.scrollRef.current;
+    if(el){
+      this.onScroll = ()=>{
+        if(this.raf) return;
+        this.raf = requestAnimationFrame(()=>{
+          this.raf = null;
+          const sec = this.bsRef.current;
+          if(!sec) return;
+          this.setState({sp: el.scrollTop - sec.offsetTop});
+        });
+      };
+      el.addEventListener("scroll", this.onScroll, {passive:true});
+    }
+  }
+  pendT = [];
+
+  componentWillUnmount(){
+    clearInterval(this.timer); clearTimeout(this.toastT); clearInterval(this.iconPoll);
+    clearInterval(this.idleT); clearTimeout(this.scanT); clearTimeout(this.placeT);
+    clearTimeout(this.billT); clearTimeout(this.billPromoT); (this.pendT||[]).forEach(clearTimeout);
+    if(this.raf) cancelAnimationFrame(this.raf);
+    const el = this.scrollRef.current;
+    if(el && this.onScroll) el.removeEventListener("scroll", this.onScroll);
+  }
+
+  fmt(n){ return n.toLocaleString("vi-VN") + "đ"; }
+  ico(name,size){
+    size = size || 18;
+    const L = window.lucide;
+    const blank = React.createElement("span",{style:{display:"inline-block",width:size,height:size}});
+    if(!L || !L.icons) return blank;
+    const pascal = String(name).split("-").map(s=>s[0].toUpperCase()+s.slice(1)).join("");
+    const node = L.icons[pascal];
+    if(!node) return blank;
+    const svg = L.createElement(node);
+    svg.setAttribute("width",size);
+    svg.setAttribute("height",size);
+    svg.setAttribute("stroke-width","1.75");
+    return React.createElement("span",{style:{display:"flex"},dangerouslySetInnerHTML:{__html:svg.outerHTML}});
+  }
+  P = {
+    back:"chevron-left", fwd:"chevron-right", plus:"plus", minus:"minus",
+    search:"search", check:"check", heart:"heart", bell:"bell",
+    coffee:"coffee", cup:"cup-soda", croissant:"croissant",
+    bag:"shopping-basket", receipt:"receipt-text", user:"user", home:"house",
+    gift:"gift", pin:"map-pin", clock:"clock", globe:"languages",
+    wallet:"wallet", card:"credit-card", cash:"banknote",
+    sun:"sun", moon:"moon", star:"star", bookmark:"bookmark", headphones:"headphones",
+  };
+  catIcon(c){ return c==="tea" ? this.P.cup : c==="pastry" ? this.P.croissant : this.P.coffee; }
+  vn(){ return this.state.locale === "vi"; }
+  t(vi,en){ return this.vn() ? vi : en; }
+
+  toast(msg){ clearTimeout(this.toastT); this.setState({toast:msg}); this.toastT=setTimeout(()=>this.setState({toast:null}),2200); }
+  nav = (r)=>{ this.setState({route:r}); };
+  product(){ return this.menu.find(m=>m.id===this.state.pid) || this.menu[0]; }
+  itemName(m){ return this.t(m.nameVi,m.nameEn); }
+  sizeDelta(){ const p=this.product(); if(!p.sizes) return 0; const s=p.sizes.find(x=>x[0]===this.state.size); return s?s[2]:0; }
+  topsTotal(){ return this.state.tops.reduce((n,id)=>n+(this.toppings.find(t=>t.id===id)||{price:0}).price,0); }
+  unitPrice(){ return this.product().price + this.sizeDelta() + this.topsTotal(); }
+
+  openProduct(item){
+    this.setState({pid:item.id,size:item.sizes?item.sizes[0][0]:"m",sweet:"70",ice:"normal",tops:[],note:"",qty:1,sheet:false,route:"product"});
+  }
+  quickAdd(item){
+    const sheetMode = (this.props.quickAddMode ?? "Bottom sheet") === "Bottom sheet";
+    if(!sheetMode || !item.sizes){
+      this.pushCart(item,item.sizes?item.sizes[0][0]:null,"70","normal",[],"",1);
+      this.toast(this.itemName(item) + this.t(" đã vào giỏ"," added to cart"));
+      return;
+    }
+    this.setState({dest:"personal",pid:item.id,size:item.sizes[0][0],sweet:"70",ice:"normal",tops:[],note:"",qty:1,sheet:true});
+  }
+  lookup(id){ return this.menu.find(m=>m.id===id) || this.menu[0] || {id:0,cat:"coffee",nameVi:"—",nameEn:"—",price:0,sizes:null}; }
+  optsText(row){
+    const p=this.lookup(row.id);
+    const bits=[];
+    if(row.size && p.sizes){ const s=p.sizes.find(x=>x[0]===row.size); if(s) bits.push(this.t("Size ","Size ")+s[1]); }
+    bits.push(this.t("Ngọt ","Sweet ")+row.sweet+"%");
+    if(p.sizes) bits.push(this.t({none:"Không đá",less:"Ít đá",normal:"Đá bình thường"}[row.ice],{none:"No ice",less:"Less ice",normal:"Normal ice"}[row.ice]));
+    (row.tops||[]).forEach(id=>{ const t=this.toppings.find(x=>x.id===id); if(t) bits.push(this.t(t.vi,t.en)); });
+    if(row.note) bits.push("“"+row.note+"”");
+    return bits.join(" · ");
+  }
+  rowUnit(row){
+    const p=this.lookup(row.id);
+    let n=p.price;
+    if(p.sizes && row.size){ const s=p.sizes.find(x=>x[0]===row.size); if(s) n+=s[2]; }
+    (row.tops||[]).forEach(id=>{ const t=this.toppings.find(x=>x.id===id); if(t) n+=t.price; });
+    return n;
+  }
+  pushCart(item,size,sweet,ice,tops,note,qty){
+    const key=[item.id,size,sweet,ice,tops.slice().sort().join("+"),note].join("|");
+    this.setState(s=>{
+      const found=s.cart.find(r=>r.key===key);
+      if(found) return {cart:s.cart.map(r=>r.key===key?Object.assign({},r,{qty:r.qty+qty}):r)};
+      return {cart:s.cart.concat([{key:key,id:item.id,size:size,sweet:sweet,ice:ice,tops:tops,note:note,qty:qty}])};
+    });
+  }
+  addConfigured = ()=>{
+    const st=this.state, p=this.product();
+    if(st.dest==="table"){
+      this.pushTable(p,p.sizes?st.size:null,st.sweet,st.ice,st.tops,st.note,st.qty);
+      this.setState({sheet:false,route:"table",tableTab:"order"});
+      this.toast(this.itemName(p) + " × " + st.qty + this.t(" đã vào giỏ chung"," added to the shared cart"));
+      return;
+    }
+    this.pushCart(p,p.sizes?st.size:null,st.sweet,st.ice,st.tops,st.note,st.qty);
+    this.setState({sheet:false,route:"menu"});
+    this.toast(this.itemName(p) + " × " + st.qty + this.t(" đã vào giỏ"," added to cart"));
+  };
+  quickAddTable(item){
+    if(this.soldOut(item) || this.state.tablePaymentPending) return;
+    if(!item.sizes){
+      this.pushTable(item,null,"70","normal",[],"",1);
+      this.toast(this.itemName(item)+this.t(" đã vào giỏ chung"," added to the shared cart"));
+      return;
+    }
+    this.setState({dest:"table",pid:item.id,size:item.sizes[0][0],sweet:"70",ice:"normal",tops:[],note:"",qty:1,sheet:true});
+  }
+  subtotal(){ return this.state.cart.reduce((n,r)=>n+this.rowUnit(r)*r.qty,0); }
+  discount(){ return this.state.promoOn ? Math.round(this.subtotal()*0.1) : 0; }
+  total(){ return Math.max(this.subtotal()-this.discount(),0); }
+
+  placeOrder = ()=>{
+    const rows=this.state.cart.slice(), total=this.total();
+    const code="PDC-"+(2400+Math.floor(Math.random()*90));
+    clearInterval(this.timer);
+    this.setState({placed:{code:code,rows:rows,total:total,pay:this.state.pay},cart:[],promo:"",promoOn:false,stage:0,route:"tracking"});
+    this.timer=setInterval(()=>{
+      this.setState(s=>{ if(s.stage>=3){ clearInterval(this.timer); return null; } return {stage:s.stage+1}; });
+    },4200);
+  };
+  reorder(h){
+    h.ids.forEach(id=>{ const item=this.lookup(id); this.pushCart(item,item.sizes?item.sizes[0][0]:null,"70","normal",[],"",1); });
+    this.setState({route:"cart"});
+    this.toast(this.t("Đã thêm "+h.ids.length+" món từ "+h.code, "Added "+h.ids.length+" items from "+h.code));
+  }
+
+  soldOut(m){ return this.SOLD_OUT.indexOf(m.id)>=0; }
+
+  startScan = ()=>{
+    clearTimeout(this.scanT);
+    this.setState({route:"scan",scanPhase:"resolving",notified:false});
+    const outcome=this.props.qrOutcome ?? "Valid table";
+    const MAP={"Invalid code":"invalid","Table being cleaned":"cleaning","Connection error":"resolveError"};
+    this.scanT=setTimeout(()=>{
+      if(this.state.route!=="scan") return;
+      if(MAP[outcome]){ this.setState({scanPhase:MAP[outcome]}); return; }
+      const hasCart=this.state.cart.length>0;
+      this.setState({scanPhase:hasCart?"transferring":"ready"});
+      this.scanT=setTimeout(()=>{
+        if(this.state.route!=="scan") return;
+        if(hasCart&&outcome==="Cart transfer fails"){ this.setState({scanPhase:"transferFailed"}); return; }
+        this.enterTable(hasCart);
+      },hasCart?1100:450);
+    },1200);
+  };
+  enterTable(withTransfer){
+    const moved=withTransfer?this.state.cart.map(r=>Object.assign({},r,{id:"t"+r.key,by:"me"})):[];
+    clearInterval(this.idleT);
+    this.setState(s=>({route:"table",tableOpen:true,tableTab:moved.length?"order":"menu",
+      tableCart:s.tableCart.concat(moved),cart:withTransfer?[]:s.cart,tableError:null}));
+    if(withTransfer) this.toast(this.t("Đã chuyển giỏ hàng vào bàn 04","Your cart moved to table 04"));
+    this.armIdle();
+  }
+  armIdle(){
+    clearInterval(this.idleT);
+    if(this.state.rounds.length>0) return;
+  }
+  showIdlePrompt = ()=>{
+    if(this.state.rounds.length>0){ this.toast(this.t("Đã có lượt gọi — đồng hồ chờ không chạy nữa.","A round exists — the idle clock no longer runs.")); return; }
+    this.setState({route:"table",idleOpen:true,idleLeft:60});
+    clearInterval(this.idleT);
+    this.idleT=setInterval(()=>{
+      this.setState(s=>{
+        if(!s.idleOpen){ clearInterval(this.idleT); return null; }
+        if(s.idleLeft<=1){ clearInterval(this.idleT); return {idleOpen:false,idleLeft:0,tableCart:[],tableOpen:false,route:"home"}; }
+        return {idleLeft:s.idleLeft-1};
+      });
+    },1000);
+  };
+
+  tableUnit(row){
+    const m=this.lookup(row.id);
+    let n=m.price;
+    if(m.sizes&&row.size){ const s=m.sizes.find(x=>x[0]===row.size); if(s) n+=s[2]; }
+    (row.tops||[]).forEach(id=>{ const t=this.toppings.find(x=>x.id===id); if(t) n+=t.price; });
+    return n;
+  }
+  tableSubtotal(){ return this.state.tableCart.reduce((n,r)=>n+this.tableUnit(r)*r.qty,0); }
+  unpaid(){ return this.state.rounds.filter(r=>!r.paid).reduce((n,r)=>n+r.total,0); }
+
+  pushTable(item,size,sweet,ice,tops,note,qty){
+    const key=[item.id,size,sweet,ice,tops.slice().sort().join("+"),note].join("|");
+    this.setState(s=>{
+      const found=s.tableCart.find(r=>r.key===key&&r.by==="me");
+      if(found) return {tableCart:s.tableCart.map(r=>r===found?Object.assign({},r,{qty:r.qty+qty}):r),tableError:null};
+      return {tableCart:s.tableCart.concat([{id:item.id,key:key,rid:"tr"+Date.now(),size:size,sweet:sweet,ice:ice,tops:tops,note:note,qty:qty,by:"me"}]),tableError:null};
+    });
+  }
+  withPending(id,fn){
+    this.setState(s=>({pending:s.pending.concat([id]),tableError:null}));
+    const t=setTimeout(()=>{ fn(); this.setState(s=>({pending:s.pending.filter(x=>x!==id)})); },560);
+    this.pendT.push(t);
+  }
+  tableQty(row,delta){
+    if(this.state.tablePaymentPending) return;
+    this.withPending(row.rid,()=>this.setState(s=>({
+      tableCart:s.tableCart.map(r=>r.rid===row.rid?Object.assign({},r,{qty:r.qty+delta}):r).filter(r=>r.qty>0)})));
+  }
+  tableRemove(row){
+    if(this.state.tablePaymentPending) return;
+    this.withPending(row.rid,()=>this.setState(s=>({tableCart:s.tableCart.filter(r=>r.rid!==row.rid)})));
+  }
+  placeRound = ()=>{
+    const st=this.state;
+    if(!st.tableCart.length||st.placing||st.tablePaymentPending) return;
+    clearInterval(this.idleT);
+    this.setState({placing:true,tableError:null});
+    clearTimeout(this.placeT);
+    this.placeT=setTimeout(()=>{
+      const items=this.state.tableCart.map(r=>({id:r.id,qty:r.qty}));
+      const total=this.tableSubtotal();
+      this.setState(s=>({rounds:s.rounds.concat([{rid:"r"+Date.now(),items:items,total:total,status:"paid",paid:false}]),
+        tableCart:[],placing:false,tableTab:"order"}));
+      this.toast(this.t("Đã gửi lượt gọi tới quầy pha chế","Round sent to the barista station"));
+    },900);
+  };
+  simOtherDiner = ()=>{
+    const m=this.menu[4];
+    this.setState(s=>({tableCart:s.tableCart.concat([{id:m.id,key:"other"+Date.now(),rid:"to"+Date.now(),
+      size:m.sizes?m.sizes[0][0]:null,sweet:"70",ice:"normal",tops:[],note:"",qty:1,by:"other"}])}));
+    this.toast(this.t("Người cùng bàn vừa thêm ","Someone at the table added ")+this.itemName(m));
+  };
+  simConflict = ()=>{
+    this.setState({tableTab:"order",tableError:this.t("Một thiết bị khác vừa thay đổi món này. Giỏ đã được tải lại, vui lòng thử lại.","Someone else changed this item. The cart was refreshed; please try again.")});
+  };
+  applyBillPromo = ()=>{
+    const st=this.state;
+    if(st.billPromoState==="loading"||!st.billPromo.trim()||st.billSubmitting) return;
+    this.setState({billPromoState:"loading",billPromoMsg:null});
+    clearTimeout(this.billPromoT);
+    this.billPromoT=setTimeout(()=>{
+      const code=this.state.billPromo.trim().toUpperCase();
+      const OK={"BAN10":10,"PHADIN15":15};
+      if(OK[code]){
+        const pct=OK[code];
+        this.setState({billPromoState:"ok",billDiscount:Math.round(this.unpaid()*pct/100),
+          billPromoMsg:this.t("Đã áp mã "+code+" — giảm "+pct+"%","Code "+code+" applied — "+pct+"% off")});
+      } else {
+        const R=[this.t("Mã không tồn tại.","Code not found."),
+          this.t("Mã đã hết hạn.","This promotion has expired."),
+          this.t("Mã chưa tới ngày áp dụng.","This promotion hasn't started yet."),
+          this.t("Mã đã hết lượt sử dụng.","Usage limit reached."),
+          this.t("Chưa đạt mức chi tiêu tối thiểu.","Minimum spend not met.")];
+        this.setState({billPromoState:"error",billDiscount:0,billPromoMsg:R[code.length%R.length]});
+      }
+    },800);
+  };
+  confirmBill = ()=>{
+    const st=this.state;
+    if(!st.billMethod||st.billSubmitting) return;
+    this.setState({billSubmitting:true,billError:null,tablePaymentPending:true});
+    clearTimeout(this.billT);
+    if(st.billMethod==="cash"){
+      this.billT=setTimeout(()=>{
+        this.setState(s=>({billOpen:false,billSubmitting:false,billMethod:null,tablePaymentPending:false,
+          rounds:s.rounds.map(r=>Object.assign({},r,{paid:true,status:"completed"})),
+          billPromo:"",billPromoState:"idle",billPromoMsg:null,billDiscount:0}));
+        this.toast(this.t("Đã ghi nhận — nhân viên sẽ tới xác nhận tiền mặt","Recorded — staff will confirm the cash payment"));
+      },1100);
+    } else {
+      this.setState({billRedirect:st.billMethod});
+      this.billT=setTimeout(()=>{
+        this.setState({billError:this.t("Không thể xử lý thanh toán — vui lòng thử lại.","Couldn't process payment — please try again."),
+          billSubmitting:false,billRedirect:null,tablePaymentPending:false});
+      },2200);
+    }
+  };
+
+  renderVals(){
+    const st=this.state, self=this, t=(a,b)=>this.t(a,b);
+    const gridMode=(this.props.menuLayout ?? "List rows")==="Grid cards";
+    const p=this.product();
+    const points=68, goal=100;
+
+    const L={
+      greet:t("Chào buổi sáng","Good morning"),
+      promoTitle:t("Mua 1 Tặng 1 — Phin Sữa Đá","Buy one get one — Iced Milk Coffee"),
+      promoSub:t("Áp dụng đến 30/09 · chạm để đặt","Until 30/09 · tap to order"),
+      specials:t("Đặc biệt hôm nay","Today's specials"),
+      seeAll:t("Xem tất cả","See all"),
+      bestTitle:t("Bán chạy nhất","Best sellers"),
+      bestSub:t("Cuộn để xem từng món","Scroll to move through them"),
+      viewAll:t("Xem tất cả","View all"),
+      select:t("Chọn món này","Select this"),
+      dropPhoto:t("Kéo ảnh món vào đây","Drop a product photo here"),
+      quickReorder:t("Đặt lại nhanh","Quick reorder"),
+      reorder:t("Đặt lại","Reorder"),
+      trackHint:t("Chạm để theo dõi đơn","Tap to track your order"),
+      loyaltyTitle:t("Thẻ tích điểm PhaDin","PhaDin loyalty card"),
+      loyaltyBody:t("Còn "+(goal-points)+" điểm nữa là được một ly miễn phí.","You're "+(goal-points)+" points from a free cup."),
+      menuTitle:t("Thực đơn","Menu"),
+      searchPh:t("Tìm món...","Search the menu..."),
+      noResults:t("Không tìm thấy món nào","No matches"),
+      size:t("Kích cỡ","Size"),sweetness:t("Độ ngọt","Sweetness"),ice:t("Đá","Ice"),
+      addons:t("Thêm topping","Add-ons"),note:t("Ghi chú cho barista","Note for the barista"),
+      notePh:t("Ví dụ: ít sữa đặc","e.g. less condensed milk"),
+      total:t("Tổng","Total"),addToCart:t("Thêm vào giỏ","Add to cart"),
+      fullOptions:t("Tùy chọn đầy đủ","Full options"),
+      cartTitle:t("Giỏ hàng","Your cart"),
+      tableNote:t("Bàn số 04 · quét từ mã QR trên bàn","Table 04 · scanned from the table QR"),
+      emptyTitle:t("Giỏ còn trống","Your cart is empty"),
+      emptyBody:t("Chọn món từ thực đơn để bắt đầu.","Pick something from the menu to start."),
+      viewMenu:t("Xem thực đơn","Browse menu"),
+      promoPh:t("Mã giảm giá","Promo code"),apply:t("Áp dụng","Apply"),
+      subtotal:t("Tạm tính","Subtotal"),discount:t("Giảm giá","Discount"),grandTotal:t("Tổng cộng","Total"),
+      checkout:t("Thanh toán","Checkout"),checkoutTitle:t("Thanh toán","Checkout"),
+      pickupLabel:t("Nhận hàng","Pickup"),readyAt:t("Thời gian","Ready at"),
+      payMethod:t("Phương thức","Payment method"),summary:t("Đơn hàng","Order summary"),
+      placeOrder:t("Đặt đơn","Place order"),
+      orderLbl:t("Đơn hàng","Order"),live:t("Trực tiếp","Live"),mins:t("phút","min"),
+      items:t("Món đã đặt","Items"),history:t("Lịch sử đơn","Order history"),orderMore:t("Đặt thêm","Order more"),
+      ordersTitle:t("Đơn của bạn","Your orders"),
+      ordersSub:t("Chạm “Đặt lại” để thêm nguyên đơn vào giỏ.","Tap Reorder to put a past order back in your cart."),
+      done:t("Hoàn tất","Completed"),
+      profileTitle:t("Cá nhân","Profile"),member:t("Thành viên","Member"),points:t("điểm","points"),
+      language:t("Ngôn ngữ","Language"),theme:t("Chế độ tối","Dark mode"),
+      signout:t("Đăng xuất","Sign out"),
+      dineInTitle:t("Đặt tại bàn","Dine in"),
+      dineInSub:t("Quét mã QR trên bàn","Scan the QR on your table"),
+      pickupTitle:t("Mang đi","Pickup"),
+      pickupSub:t("Đặt trước, nhận tại quầy","Order ahead, collect at the counter"),
+      tableTitle:t("Bàn 04","Table 04"),
+      tableSub:t("Đặt món tại bàn · giỏ dùng chung","Dine-in ordering · shared cart"),
+      tableResumeHint:t("Chạm để mở lại phiên bàn","Tap to return to the table"),
+      draftCartTitle:t("Lượt Gọi Hiện Tại","Current Round"),
+      sharedTag:t("Giỏ chung của bàn","Shared with the table"),
+      emptyDraftCart:t("Thêm món từ thực đơn để bắt đầu lượt gọi này.","Add items from the menu to start this round."),
+      runningTabTitle:t("Sổ Gọi Món","Running Tab"),
+      noRoundsYet:t("Chưa có lượt gọi món nào.","No rounds ordered yet."),
+      unpaidTotalLabel:t("Tổng chưa thanh toán","Unpaid total"),
+      checkBillButton:t("Xem Hoá Đơn","Check Bill"),
+      orderMore:t("Gọi thêm món","Order more"),
+      addedByOther:t("Do người khác cùng bàn thêm","Added by someone else at the table"),
+      popularTag:t("Phổ Biến","Popular"),
+      soldOut:t("Tạm hết","Sold out"),
+      dropPhoto:t("Kéo ảnh vào","Drop a photo"),
+      decrease:t("Giảm số lượng","Decrease quantity"),
+      increase:t("Tăng số lượng","Increase quantity"),
+      removeItem:t("Xoá món","Remove item"),
+      close:t("Đóng","Close"),
+      retryButton:t("Thử lại","Retry"),
+      staleNotice:t("Đang hiển thị dữ liệu gần nhất — làm mới không thành công.","Showing the last known data — refresh failed."),
+      paymentInProgressNote:t("Bàn này đang thanh toán — vui lòng chờ đến khi hoàn tất mới gọi thêm món.","A payment is in progress for this table — ordering is paused until it finishes."),
+      idlePromptTitle:t("Bạn vẫn còn đó chứ?","Still there?"),
+      idlePromptBody:t("Lượt gọi món này chưa có thay đổi trong một lúc. Giữ lượt gọi này chứ?","This table's order hasn't changed in a while. Keep this round open?"),
+      idlePromptYes:t("Có, giữ lại","Yes, keep it open"),
+      idlePromptNo:t("Không, xoá đi","No, clear it"),
+      checkBillNothingToPay:t("Hiện chưa có gì cần thanh toán.","Nothing to pay right now."),
+      taxLabel:t("Thuế","Tax"),
+      totalToPay:t("Số tiền cần thanh toán","Total to pay"),
+      serverPriced:t("Số tiền cuối cùng do hệ thống quán tính toán khi thanh toán.","The final amount is calculated by the shop's system at payment time."),
+      billLockNote:t("Trong lúc thanh toán, bàn tạm dừng gọi thêm món.","While a payment is running, the table pauses new rounds."),
+      dineInCartHint:t("Quét mã QR để chuyển giỏ này vào bàn","Scan the table QR to move this cart to your table"),
+      simTitle:t("Giả lập (bản mẫu)","Simulate (prototype)"),
+      simAdd:t("Người khác thêm","Other diner"),
+      simConflict:t("Xung đột","Conflict"),
+      simIdle:t("Hỏi còn đó","Idle prompt"),
+    };
+
+    const q=st.q.trim().toLowerCase();
+    const decorate=(m)=>({
+      name:this.itemName(m),
+      sub:this.vn()?m.nameEn:m.nameVi,
+      popular:m.popular,
+      priceText:this.fmt(m.price),
+      icon:this.ico(this.catIcon(m.cat),gridMode?30:22),
+      plus:this.ico(this.P.plus,gridMode?13:15),
+      open:()=>self.openProduct(m), quick:(e)=>{e.stopPropagation();self.quickAdd(m);},
+      slotId:"bs-"+m.id,
+      soldOut:self.soldOut(m), tableAddable:!self.soldOut(m),
+      filter:self.soldOut(m)?"grayscale(1)":"none",
+      tableOp:self.soldOut(m)?"0.7":"1",
+      tableCursor:self.soldOut(m)?"not-allowed":"pointer",
+      tableAddBg:st.tablePaymentPending?"var(--muted-foreground)":"var(--primary)",
+      plusBig:self.ico(self.P.plus,17),
+      addTable:()=>self.quickAddTable(m),
+    });
+    const items=this.menu
+      .filter(m=>st.cat==="all"||m.cat===st.cat)
+      .filter(m=>!q||(m.nameVi+" "+m.nameEn).toLowerCase().indexOf(q)>=0)
+      .map(decorate);
+    const specials=this.menu.filter(m=>m.popular).map(m=>Object.assign(decorate(m),{icon:this.ico(this.catIcon(m.cat),30),plus:this.ico(this.P.plus,13)}));
+
+    const rows=st.cart.map(r=>{
+      const m=this.lookup(r.id);
+      return {name:this.itemName(m),qty:r.qty,optsText:this.optsText(r),
+        lineText:this.fmt(this.rowUnit(r)*r.qty),
+        summaryText:r.qty+"× "+this.itemName(m),
+        icon:this.ico(this.catIcon(m.cat),20),
+        plus:this.ico(this.P.plus,13),minus:this.ico(this.P.minus,13),
+        inc:()=>self.setState(s=>({cart:s.cart.map(x=>x.key===r.key?Object.assign({},x,{qty:x.qty+1}):x)})),
+        dec:()=>self.setState(s=>({cart:s.cart.map(x=>x.key===r.key?Object.assign({},x,{qty:x.qty-1}):x).filter(x=>x.qty>0)})),
+      };
+    });
+    const placed=st.placed;
+    const placedRows=(placed?placed.rows:[]).map(r=>{
+      const m=this.lookup(r.id);
+      return {summaryText:r.qty+"× "+this.itemName(m)+" · "+this.optsText(r),lineText:this.fmt(this.rowUnit(r)*r.qty)};
+    });
+    const STAGES=[
+      [t("Đã nhận đơn","Order received"),t("Quán đã nhận đơn của bạn và đưa vào hàng chờ.","We've got your order and queued it up.")],
+      [t("Đang pha","Brewing now"),t("Barista đang pha phin cho đơn của bạn.","Your barista is on the phin right now.")],
+      [t("Sẵn sàng","Ready for pickup"),t("Đơn đã xong — mời bạn ra quầy nhận.","It's done — come pick it up at the counter.")],
+      [t("Đã nhận hàng","Picked up"),t("Cảm ơn bạn. Hẹn gặp lại lần sau.","Thanks. See you next time.")],
+    ];
+    const PAY={momo:"MoMo",card:t("Thẻ ngân hàng","Bank card"),cash:t("Tiền mặt tại quầy","Cash at counter")};
+    const count=st.cart.reduce((n,r)=>n+r.qty,0);
+    const histRows=this.history.map(h=>({code:h.code,date:h.date,itemsText:t(h.vi,h.en),totalText:this.fmt(h.total),
+      icon:this.ico(this.catIcon(h.cat),18),reorder:()=>self.reorder(h)}));
+
+    const SCAN={
+      invalid:{icon:"circle-alert",title:t("Mã Bàn Không Hợp Lệ","Invalid Table Code"),
+        body:t("Vui lòng quét lại mã QR trên bàn hoặc nhờ nhân viên hỗ trợ.","Please scan the QR code on your table again or ask staff for help."),
+        actions:[[t("Quét lại","Scan again"),"neubrutal",false,"rescan"],[t("Về Thực Đơn","Back to Menu"),"ghost",false,"menu"]],
+        bg:"color-mix(in oklch, var(--destructive) 15%, transparent)",fg:"var(--destructive)"},
+      cleaning:{icon:"sparkles",title:t("Bàn Đang Được Dọn Dẹp","This Table Is Being Cleaned"),
+        body:t("Chúng tôi đang chuẩn bị bàn này cho khách tiếp theo. Vui lòng đợi trong giây lát.","We're getting this table ready for the next guest. Please wait a moment."),
+        actions:[[st.notified?t("Đã Báo Nhân Viên","Staff Notified"):t("Báo Nhân Viên","Notify Staff"),"neubrutal",st.notified,"notify"],[t("Về Trang Chủ","Back Home"),"ghost",false,"home"]],
+        bg:"color-mix(in oklch, var(--accent) 34%, transparent)",fg:"var(--secondary)"},
+      resolveError:{icon:"wifi-off",title:t("Không tải được thông tin bàn","Couldn't load this table"),
+        body:t("Kiểm tra kết nối và thử lại. Mã QR của bàn vẫn còn hiệu lực.","Check your connection and try again. The table's QR code is still valid."),
+        actions:[[t("Thử lại","Try again"),"neubrutal",false,"rescan"],[t("Về Trang Chủ","Back Home"),"ghost",false,"home"]],
+        bg:"color-mix(in oklch, var(--destructive) 15%, transparent)",fg:"var(--destructive)"},
+      transferFailed:{icon:"circle-alert",title:t("Không Thể Chuyển Giỏ Hàng","Couldn't Move Your Cart"),
+        body:t("Giỏ hàng cũ vẫn được giữ nguyên. Vui lòng thử lại.","Your original cart is still safe. Please try again."),
+        actions:[[t("Thử Lại","Try Again"),"neubrutal",false,"rescan"],[t("Quay Lại Giỏ","Back to Cart"),"ghost",false,"cart"]],
+        bg:"color-mix(in oklch, var(--destructive) 15%, transparent)",fg:"var(--destructive)"},
+    };
+    const scan=SCAN[st.scanPhase]||null;
+
+    const tableCount=st.tableCart.reduce((n,r)=>n+r.qty,0);
+    const tableSub=this.tableSubtotal();
+    const unpaidTotal=this.unpaid();
+    const tableRows=st.tableCart.map(r=>{
+      const m=this.lookup(r.id);
+      const pend=st.pending.indexOf(r.rid)>=0, locked=pend||st.tablePaymentPending;
+      return {name:this.itemName(m),opts:this.optsText(r),qty:r.qty,
+        lineText:this.fmt(this.tableUnit(r)*r.qty),
+        busy:pend?"true":"false", op:pend?"0.6":"1", cursor:locked?"not-allowed":"pointer",
+        byOther:r.by==="other",
+        minus:this.ico(this.P.minus,15),plus:this.ico(this.P.plus,15),trash:this.ico("trash-2",15),
+        inc:()=>{ if(!locked) self.tableQty(r,1); },
+        dec:()=>{ if(!locked) self.tableQty(r,-1); },
+        remove:()=>{ if(!locked) self.tableRemove(r); }};
+    });
+    const RSTATUS={paid:[t("Đã Xác Nhận","Order Confirmed"),"default"],
+      preparing:[t("Đang Pha Chế","Preparing"),"warning"],
+      ready:[t("Sẵn Sàng","Ready"),"success"],
+      served:[t("Đã Phục Vụ","Served"),"success"],
+      completed:[t("Hoàn Tất","Completed"),"secondary"]};
+    const roundRows=st.rounds.map((rd,i)=>{
+      const s=RSTATUS[rd.status]||RSTATUS.paid;
+      return {n:String(i+1),label:t("Lượt ","Round ")+(i+1),status:s[0],badgeVariant:s[1],
+        items:rd.items.map(ri=>({text:ri.qty+"× "+this.itemName(this.lookup(ri.id))})),
+        totalText:this.fmt(rd.total),
+        payLabel:rd.paid?t("Đã thanh toán","Paid"):t("Chưa thanh toán","Unpaid"),
+        payFg:rd.paid?"var(--success)":"var(--warn)"};
+    });
+    const billDiscount=st.billPromoState==="ok"?st.billDiscount:0;
+    const billTaxable=Math.max(unpaidTotal-billDiscount,0);
+    const billTax=Math.round(billTaxable*this.TAX/100);
+    const billTotal=billTaxable+billTax;
+
+    const pops=this.menu.filter(m=>m.popular);
+    const STEP=300;
+    const prog=Math.max(0,(st.sp||0))/STEP;
+    const frame=(u)=>{
+      const cu=Math.max(-1.8,Math.min(1.8,u));
+      const mag=Math.min(Math.abs(cu),1);
+      return {
+        tf:"translate("+(-cu*104).toFixed(1)+"px,"+(-cu*84).toFixed(1)+"px) rotate("+(-cu*6).toFixed(2)+"deg) scale("+(1-mag*0.26).toFixed(3)+")",
+        op:Math.abs(cu)>1.45?0:(1-mag*0.62).toFixed(2),
+        z:100-Math.round(Math.abs(cu)*12),
+        pe:Math.abs(cu)<0.55?"auto":"none",
+      };
+    };
+    const bsCards=pops.map((m,i)=>Object.assign({
+      isProduct:true,isPromo:false,
+      name:this.itemName(m),sub:this.vn()?m.nameEn:m.nameVi,priceText:this.fmt(m.price),
+      slotId:"bs-"+m.id,slotHint:t("Kéo ảnh vào","Drop a photo"),
+      arrow:this.ico(this.P.fwd,15),gift:null,
+      open:()=>self.openProduct(m),
+    },frame(prog-i))).concat([Object.assign({
+      isProduct:false,isPromo:true,name:"",sub:"",priceText:"",slotId:"bs-promo",slotHint:"",
+      arrow:null,gift:this.ico(this.P.gift,26),open:()=>self.openProduct(self.menu[0]),
+    },frame(prog-pops.length))]);
+
+    return {
+      shellClass: st.dark ? "dark" : "",
+      fullW:{style:{width:"100%"}},
+      L:L, route:st.route, locale:st.locale, setLocale:(v)=>this.setState({locale:v}),
+      isHome:st.route==="home",isMenu:st.route==="menu",isProduct:st.route==="product",isCart:st.route==="cart",
+      isCheckout:st.route==="checkout",isTracking:st.route==="tracking",isOrders:st.route==="orders",isProfile:st.route==="profile",
+      showTabs:["home","menu","cart","orders","profile"].indexOf(st.route)>=0,
+      isScan:st.route==="scan",isTable:st.route==="table",
+      startScan:this.startScan,goTable:()=>this.setState({route:"table"}),
+      hasTableSession:st.tableOpen&&st.route!=="table",
+      tableStatusText:st.rounds.length?t(st.rounds.length+" lượt đã gọi",st.rounds.length+" rounds placed"):t("Chưa gọi món","No rounds yet"),
+      icoQr:this.ico("qr-code",22),icoBagHome:this.ico(this.P.bag,22),
+      icoTableTop:this.ico("utensils",18),icoLock:this.ico("lock",15),
+      icoX:this.ico("x",16),icoBan:this.ico("ban",15),icoExternal:this.ico("external-link",15),
+
+      scanBusy:st.scanPhase==="resolving"||st.scanPhase==="transferring"||st.scanPhase==="ready",
+      scanBusyLabel:st.scanPhase==="transferring"?t("Đang chuyển giỏ hàng vào bàn…","Moving your cart to this table…"):t("Đang kiểm tra mã bàn…","Checking the table code…"),
+      scanBlocked:scan!==null,
+      scanIcon:scan?this.ico(scan.icon,34):null,
+      scanIconBg:scan?scan.bg:"var(--muted)",scanIconFg:scan?scan.fg:"var(--foreground)",
+      scanTitle:scan?scan.title:"",scanBody:scan?scan.body:"",
+      scanActions:(scan?scan.actions:[]).map(a=>({label:a[0],variant:a[1],disabled:a[2],
+        go:()=>{ if(a[3]==="notify"){ if(!st.notified){ self.setState({notified:true}); self.toast(t("Đã báo nhân viên","Staff notified")); } return; }
+          if(a[3]==="rescan"){ self.startScan(); return; }
+          self.setState({route:a[3]}); }})),
+
+      tableTabOpts:[{value:"menu",label:t("Thực Đơn","Menu")},
+        {value:"order",label:t("Lượt Gọi","Order")+(tableCount>0?" ("+tableCount+")":"")}],
+      tableTab:st.tableTab,setTableTab:(v)=>this.setState({tableTab:v}),
+      tableMenuDisplay:st.tableTab==="menu"?"flex":"none",
+      tableOrderDisplay:st.tableTab==="order"?"flex":"none",
+      goTableMenu:()=>this.setState({tableTab:"menu"}),
+      tableStale:st.tableStale,clearTableStale:()=>{ this.setState({tableStale:false}); this.toast(t("Đã cập nhật lại","Refreshed")); },
+      tablePaymentPending:st.tablePaymentPending,
+      tableError:st.tableError,clearTableError:()=>this.setState({tableError:null}),
+      tableRows:tableRows,tableDraftEmpty:st.tableCart.length===0,tableDraftFilled:st.tableCart.length>0,
+      placeLabel:st.placing?t("Đang đặt…","Placing…"):t("Đặt Món","Place Order")+" · "+this.fmt(tableSub),
+      placeDisabled:st.placing||st.tablePaymentPending,
+      placeRound:this.placeRound,
+      roundRows:roundRows,hasRounds:st.rounds.length>0,noRounds:st.rounds.length===0,
+      unpaidText:this.fmt(unpaidTotal),
+      billDisabled:unpaidTotal===0||st.tablePaymentPending,
+      openBill:()=>{ if(unpaidTotal>0&&!st.tablePaymentPending) this.setState({billOpen:true}); },
+      simOtherDiner:this.simOtherDiner,simConflict:this.simConflict,showIdlePrompt:this.showIdlePrompt,
+      simDisplay:(this.props.showSimControls ?? true)?"flex":"none",
+
+      idleOpen:st.idleOpen,
+      idleCountdown:t("Tự động xoá sau "+st.idleLeft+" giây nếu không trả lời.","Clears automatically in "+st.idleLeft+"s without an answer."),
+      stillHere:()=>{ clearInterval(this.idleT); this.setState({idleOpen:false}); this.toast(t("Đã giữ lượt gọi","Round kept open")); },
+      abandonTable:()=>{ clearInterval(this.idleT); this.setState({idleOpen:false,tableCart:[],tableOpen:false,route:"home"}); this.toast(t("Đã đóng phiên bàn — lượt đã gửi vẫn còn trên hoá đơn.","Table session closed — placed rounds stay on the bill.")); },
+
+      billOpen:st.billOpen,
+      closeBill:()=>{ if(!st.billSubmitting) this.setState({billOpen:false,billError:null,billMethod:null}); },
+      billBusyCursor:st.billSubmitting?"not-allowed":"pointer",
+      billNothing:unpaidTotal===0,billPayable:unpaidTotal>0,
+      billRounds:st.rounds.filter(r=>!r.paid).map((rd,i)=>({label:t("Lượt ","Round ")+(i+1),totalText:this.fmt(rd.total)})),
+      billPromo:st.billPromo,onBillPromo:(e)=>this.setState({billPromo:e.target.value,billPromoState:"idle",billPromoMsg:null,billDiscount:0}),
+      billPromoLabel:st.billPromoState==="loading"?t("Đang kiểm tra…","Checking…"):t("Áp dụng","Apply"),
+      billPromoDisabled:st.billPromoState==="loading"||st.billSubmitting,
+      applyBillPromo:this.applyBillPromo,
+      billPromoMsg:st.billPromoMsg,billPromoFg:st.billPromoState==="ok"?"var(--success)":"var(--destructive)",
+      billHasDiscount:billDiscount>0,billDiscountText:"−"+this.fmt(billDiscount),
+      billTaxText:this.fmt(billTax),billTotalText:this.fmt(billTotal),
+      billMethods:[["cash",t("Tiền mặt","Cash"),"banknote"],["stripe",t("Thẻ","Card"),"credit-card"],["vnpay","VNPay","qr-code"]].map(m=>{
+        const on=st.billMethod===m[0];
+        return {label:m[1],icon:this.ico(m[2],22),on:on?"true":"false",
+          bg:on?"var(--primary)":"var(--card)",fg:on?"#fff":"var(--muted-foreground)",
+          op:st.billSubmitting?"0.5":"1",cursor:st.billSubmitting?"not-allowed":"pointer",
+          pick:()=>{ if(!st.billSubmitting) self.setState({billMethod:m[0],billError:null}); }};
+      }),
+      billError:st.billError,
+      billRedirecting:!!st.billRedirect,
+      billRedirectMsg:st.billRedirect==="vnpay"?t("Đang chuyển sang VNPay để thanh toán…","Handing off to VNPay to complete payment…"):t("Đang chuyển sang cổng thanh toán thẻ…","Handing off to the card payment page…"),
+      billConfirmLabel:st.billSubmitting?t("Đang xử lý…","Processing…"):t("Xác Nhận","Confirm")+(st.billMethod?" · "+this.fmt(billTotal):""),
+      billConfirmDisabled:!st.billMethod||st.billSubmitting,
+      confirmBill:this.confirmBill,
+      gridMode:gridMode,listMode:!gridMode,
+      q:st.q,onSearch:(e)=>this.setState({q:e.target.value}),
+      cats:[["all",t("Tất cả","All")],["coffee",t("Cà Phê","Coffee")],["tea",t("Trà","Tea")],["pastry",t("Bánh Ngọt","Pastries")]]
+        .map(c=>({label:c[1],cls:st.cat===c[0]?"nb-border nb-shadow-sm":"nb-border-sm",pick:()=>this.setState({cat:c[0]})})),
+      items:items,noResults:items.length===0,specials:specials,recent:histRows.slice(0,2),history:histRows,
+      scrollRef:this.scrollRef,bsRef:this.bsRef,
+      hasPopular:pops.length>0,motionOn:!st.reduce,motionOff:!!st.reduce,
+      bsHeight:(330 + pops.length*300 + 170) + "px",
+      bsCards:bsCards,
+      popularStatic:pops.map(m=>({name:this.itemName(m),sub:this.vn()?m.nameEn:m.nameVi,priceText:this.fmt(m.price),
+        slotId:"bs-"+m.id,slotHint:t("Kéo ảnh vào","Drop a photo"),
+        arrow:this.ico(this.P.fwd,16),open:()=>self.openProduct(m)})),
+      catLinks:[["coffee",t("Cà Phê","Coffee")],["tea",t("Trà","Tea")],["pastry",t("Bánh Ngọt","Pastries")]]
+        .map(c=>({label:c[1],go:()=>this.setState({cat:c[0],route:"menu"})})),
+      heroSlotId:"hero-"+p.id,
+      goPromo:()=>this.openProduct(this.menu[0]),
+      toggleDark:()=>this.setState(s=>({dark:!s.dark})),
+      switchBg:st.dark?"var(--primary)":"var(--muted)",switchJustify:st.dark?"flex-end":"flex-start",
+      icoTheme:st.dark?this.ico(this.P.sun,17):this.ico(this.P.moon,17),
+      icoSearch:this.ico(this.P.search,18),icoGift:this.ico(this.P.gift,28),
+      icoBack:this.ico(this.P.back,19),icoForward:this.ico(this.P.fwd,18),icoHeart:this.ico(this.P.heart,17),
+      icoPlus:this.ico(this.P.plus,13),icoMinus:this.ico(this.P.minus,13),icoPin:this.ico(this.P.pin,18),
+      icoCheck:this.ico(this.P.check,16),icoBagBig:this.ico(this.P.bag,40),
+      icoUser:this.ico(this.P.user,24),icoGlobe:this.ico(this.P.globe,18),
+      pName:this.itemName(p),pSub:this.vn()?p.nameEn:p.nameVi,pDesc:t(p.descVi,p.descEn),
+      pIconBig:this.ico(this.catIcon(p.cat),76),sheetIcon:this.ico(this.catIcon(p.cat),22),
+      hasSizes:!!p.sizes,
+      sizeOpts:(p.sizes||[]).map(s=>({value:s[0],label:s[2]?s[1]+" +"+(s[2]/1000)+"k":s[1]})),
+      size:st.size,setSize:(v)=>this.setState({size:v}),
+      sweetOpts:[{value:"30",label:"30%"},{value:"50",label:"50%"},{value:"70",label:"70%"},{value:"100",label:"100%"}],
+      sweet:st.sweet,setSweet:(v)=>this.setState({sweet:v}),
+      iceOpts:[{value:"none",label:t("Không đá","No ice")},{value:"less",label:t("Ít đá","Less")},{value:"normal",label:t("Bình thường","Normal")}],
+      ice:st.ice,setIce:(v)=>this.setState({ice:v}),
+      topOpts:this.toppings.map(tp=>{
+        const on=st.tops.indexOf(tp.id)>=0;
+        return {label:t(tp.vi,tp.en),priceText:"+"+this.fmt(tp.price),icon:this.ico(tp.icon,19),
+          cls:on?"nb-border nb-shadow-sm nb-press-sm":"nb-border-sm",
+          boxBg:on?"var(--primary)":"transparent",
+          check:on?this.ico(this.P.check,13):"",
+          toggle:()=>this.setState(s=>({tops:on?s.tops.filter(x=>x!==tp.id):s.tops.concat([tp.id])})),
+        };
+      }),
+      note:st.note,onNote:(e)=>this.setState({note:e.target.value}),
+      qty:st.qty,incQty:()=>this.setState(s=>({qty:s.qty+1})),decQty:()=>this.setState(s=>({qty:Math.max(1,s.qty-1)})),
+      configTotalText:this.fmt(this.unitPrice()*st.qty),
+      addConfigured:this.addConfigured,
+      toggleFav:()=>this.setState(s=>({fav:s.fav.indexOf(p.id)>=0?s.fav.filter(x=>x!==p.id):s.fav.concat([p.id])})),
+      back:()=>this.setState({route:"menu"}),
+      sheetOpen:st.sheet,closeSheet:()=>this.setState({sheet:false}),stop:(e)=>e.stopPropagation(),
+      openFull:()=>this.setState({sheet:false,route:"product"}),
+      sheetCta:t("Thêm · ","Add · ")+this.fmt(this.unitPrice()*st.qty),
+      rows:rows,cartEmpty:st.cart.length===0,cartFilled:st.cart.length>0,
+      countText:count===1?t("1 món","1 item"):count+t(" món"," items"),
+      modeOpts:[{value:"pickup",label:t("Mang đi","Pickup")},{value:"dinein",label:t("Tại quán","Dine-in")}],
+      mode:st.mode,setMode:(v)=>this.setState({mode:v}),dineIn:st.mode==="dinein",
+      modeLabel:st.mode==="dinein"?t("Phục vụ tại bàn 04","Served at table 04"):t("Nhận tại quầy mang đi","Collect at the takeaway counter"),
+      promo:st.promo,onPromo:(e)=>this.setState({promo:e.target.value}),
+      applyPromo:()=>{ if(st.promo.trim()){ this.setState({promoOn:true}); this.toast(t("Đã áp mã "+st.promo.trim().toUpperCase()+" — giảm 10%","Code "+st.promo.trim().toUpperCase()+" applied — 10% off")); } },
+      promoOn:st.promoOn,
+      subtotalText:this.fmt(this.subtotal()),discountText:"−"+this.fmt(this.discount()),totalText:this.fmt(this.total()),
+      goCheckout:()=>this.setState({route:"checkout"}),goCart:()=>this.setState({route:"cart"}),
+      goMenu:()=>this.setState({route:"menu"}),goOrders:()=>this.setState({route:"orders"}),
+      goTracking:()=>this.setState({route:"tracking"}),goProfile:()=>this.setState({route:"profile"}),
+      timeOpts:[{value:"asap",label:t("Sớm nhất","ASAP")},{value:"15",label:t("15 phút","15 min")},{value:"30",label:t("30 phút","30 min")}],
+      pickupTime:st.pickupTime,setTime:(v)=>this.setState({pickupTime:v}),
+      payOpts:[
+        {id:"momo",label:"MoMo",hint:t("Ví điện tử · liên kết sẵn","E-wallet · already linked"),icon:this.P.wallet},
+        {id:"card",label:t("Thẻ ngân hàng","Bank card"),hint:"Visa · Mastercard · NAPAS",icon:this.P.card},
+        {id:"cash",label:t("Tiền mặt tại quầy","Cash at counter"),hint:t("Trả khi nhận đơn","Pay when you collect"),icon:this.P.cash},
+      ].map(o=>({label:o.label,hint:o.hint,icon:this.ico(o.icon,19),
+        cls:st.pay===o.id?"nb-border nb-shadow-sm nb-press-sm":"nb-border-sm",
+        dotBg:st.pay===o.id?"var(--primary)":"transparent",
+        pick:()=>this.setState({pay:o.id})})),
+      payLabel:PAY[placed?placed.pay:st.pay],
+      payViaText:t("Thanh toán qua ","Pay with ")+PAY[st.pay],
+      placeOrder:this.placeOrder,
+      orderCode:placed?placed.code:"—",
+      placedRows:placedRows,placedTotalText:this.fmt(placed?placed.total:0),
+      stage:st.stage,stagePct:[25,60,100,100][st.stage],
+      ringSize:132,ringSize2:72,loyaltyRing:56,ringStroke:8,
+      etaMins:[8,4,0,0][st.stage],
+      stageTitle:STAGES[st.stage][0],stageBody:STAGES[st.stage][1],
+      steps:[
+        {key:"recv",label:t("Đã nhận","Received"),icon:this.ico(this.P.receipt,17)},
+        {key:"brew",label:t("Đang pha","Brewing"),icon:this.ico(this.P.coffee,17)},
+        {key:"ready",label:t("Sẵn sàng","Ready"),icon:this.ico(this.P.bell,17)},
+        {key:"done",label:t("Xong","Done"),icon:this.ico(this.P.check,17)},
+      ],
+      hasLive:!!placed && st.stage<3,
+      points:points,loyaltyPct:Math.round(points/goal*100),
+      profileRows:[
+        {label:t("Món yêu thích","Favourites"),value:String(st.fav.length),icon:this.P.heart,go:()=>this.setState({route:"menu"})},
+        {label:t("Phương thức thanh toán","Payment methods"),value:"MoMo",icon:this.P.wallet,go:()=>this.setState({route:"checkout"})},
+        {label:t("Lịch sử đơn","Order history"),value:String(this.history.length),icon:this.P.receipt,go:()=>this.setState({route:"orders"})},
+        {label:t("Thông báo","Notifications"),value:t("Bật","On"),icon:this.P.bell,go:()=>{}},
+        {label:t("Trợ giúp","Help & support"),value:"",icon:this.P.headphones,go:()=>{}},
+      ].map(r=>({label:r.label,value:r.value,icon:this.ico(r.icon,18),chev:this.ico(this.P.fwd,16),go:r.go})),
+      signOut:()=>this.toast(t("Đây là bản mẫu — chưa đăng xuất thật.","Prototype only — no real sign-out.")),
+      toast:st.toast,
+      tabItems:[
+        {href:"home",label:t("Trang chủ","Home"),icon:this.ico(this.P.home,19)},
+        {href:"menu",label:t("Thực đơn","Menu"),icon:this.ico(this.P.coffee,19)},
+        {href:"cart",label:t("Giỏ","Cart"),icon:this.ico(this.P.bag,19),badge:count},
+        {href:"orders",label:t("Đơn","Orders"),icon:this.ico(this.P.receipt,19)},
+        {href:"profile",label:t("Tôi","You"),icon:this.ico(this.P.user,19)},
+      ],
+      nav:this.nav,
+    };
+  }
+}
+</script>
+</body>
+</html>
