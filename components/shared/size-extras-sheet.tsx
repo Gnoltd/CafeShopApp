@@ -94,7 +94,10 @@ export function SizeExtrasSheet({
               layoutId="size-extras-sheet-size-pill"
               value={selectedSizeId ?? ""}
               onChange={setSelectedSizeId}
-              options={item.sizes.map((size) => ({ value: size.id, label: size.name }))}
+              options={item.sizes.map((size) => ({
+                value: size.id,
+                label: size.priceDelta > 0 ? `${size.name} +${formatVND(size.priceDelta)}` : size.name,
+              }))}
             />
           </div>
         )}

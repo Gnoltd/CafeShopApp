@@ -141,7 +141,10 @@ export function ProductDetail({ item }: { item: MenuItem }) {
                 layoutId="product-size-pill"
                 value={selectedSizeId ?? ""}
                 onChange={setSelectedSizeId}
-                options={item.sizes.map((size) => ({ value: size.id, label: size.name }))}
+                options={item.sizes.map((size) => ({
+                  value: size.id,
+                  label: size.priceDelta > 0 ? `${size.name} +${formatVND(size.priceDelta)}` : size.name,
+                }))}
               />
             </section>
           )}
