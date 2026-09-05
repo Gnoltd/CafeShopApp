@@ -2,7 +2,7 @@ import { ROLE_HOME } from "@/lib/roles"
 
 export const ADMIN_ONLY_PREFIXES = ["/admin/staff", "/admin/settings"]
 
-export const AUTH_REQUIRED_EXACT_PATHS = ["/profile", "/profile/settings", "/profile/addresses", "/orders", "/loyalty", "/loyalty/redemptions"]
+export const AUTH_REQUIRED_EXACT_PATHS = ["/home", "/profile", "/profile/settings", "/profile/addresses", "/orders", "/loyalty", "/loyalty/redemptions"]
 
 export const ROUTE_GROUP_ROLES: { prefix: string; roles: string[] }[] = [
   { prefix: "/staff", roles: ["staff", "manager", "admin"] },

@@ -30,6 +30,7 @@
     "homeButton": "Về trang chủ"
   },
   "Nav": {
+    "home": "Trang Chủ",
     "menu": "Thực Đơn",
     "cart": "Giỏ Hàng",
     "orders": "Đơn Hàng",
@@ -136,6 +137,7 @@
   },
   "Customer": {
     "back": "Quay Lại",
+    "homeTitle": "Trang Chủ",
     "menuTitle": "Thực Đơn",
     "cartTitle": "Giỏ Hàng",
     "checkoutTitle": "Thanh Toán",
@@ -147,6 +149,20 @@
     "profileTitle": "Cá Nhân",
     "loyaltyTitle": "Điểm Tích Lũy",
     "settingsTitle": "Cài Đặt"
+  },
+  "Home": {
+    "greeting": "Chào mừng bạn trở lại",
+    "dineInTitle": "Đặt tại bàn",
+    "dineInSub": "Quét mã QR trên bàn",
+    "pickupTitle": "Mang đi",
+    "pickupSub": "Đặt trước, nhận tại quầy",
+    "scanError": "Không thể mở giỏ hàng tại bàn — vui lòng thử lại.",
+    "trackHint": "Chạm để theo dõi đơn hàng",
+    "bestsellersTitle": "Bán chạy nhất",
+    "viewAll": "Xem tất cả",
+    "quickReorderTitle": "Đặt lại nhanh",
+    "loyaltyCardTitle": "Thẻ tích điểm PhaDin",
+    "loadError": "Không thể tải trang chủ — vui lòng thử lại."
   },
   "RoleNav": {
     "badgeGuest": "Khách",

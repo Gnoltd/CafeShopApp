@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Coffee, ChevronLeft, UtensilsCrossed, ShoppingBasket, ReceiptText, Star, User } from "lucide-react"
+import { Coffee, ChevronLeft, Home, UtensilsCrossed, ShoppingBasket, ReceiptText, Star, User } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { Link, usePathname, useRouter } from "@/i18n/navigation"
 import { cn } from "@/lib/utils"
@@ -9,6 +9,7 @@ import { useCart } from "@/hooks/useCart"
 import { useHeaderActionsClearance } from "@/hooks/useHeaderActionsClearance"
 
 const DESKTOP_NAV = [
+  { href: "/home", labelKey: "home", icon: Home },
   { href: "/menu", labelKey: "menu", icon: UtensilsCrossed },
   { href: "/cart", labelKey: "cart", icon: ShoppingBasket },
   { href: "/orders", labelKey: "orders", icon: ReceiptText },

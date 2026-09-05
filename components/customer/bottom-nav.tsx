@@ -1,16 +1,16 @@
 "use client"
 
 import { useTranslations } from "next-intl"
-import { UtensilsCrossed, ShoppingBasket, ReceiptText, User, Star } from "lucide-react"
+import { Home, UtensilsCrossed, ShoppingBasket, ReceiptText, User } from "lucide-react"
 import { Link, usePathname } from "@/i18n/navigation"
 import { useCart } from "@/hooks/useCart"
 import { AnimatedTabBar, type TabItem } from "@/components/motion/animated-tab-bar"
 
 const NAV_ITEMS = [
+  { href: "/home", labelKey: "home", icon: Home } as const,
   { href: "/menu", labelKey: "menu", icon: UtensilsCrossed } as const,
   { href: "/cart", labelKey: "cart", icon: ShoppingBasket } as const,
   { href: "/orders", labelKey: "orders", icon: ReceiptText } as const,
-  { href: "/loyalty", labelKey: "loyalty", icon: Star } as const,
   { href: "/profile", labelKey: "profile", icon: User } as const,
 ]
 

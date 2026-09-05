@@ -30,6 +30,7 @@
     "homeButton": "Go home"
   },
   "Nav": {
+    "home": "Home",
     "menu": "Menu",
     "cart": "Cart",
     "orders": "Orders",
@@ -136,6 +137,7 @@
   },
   "Customer": {
     "back": "Back",
+    "homeTitle": "Home",
     "menuTitle": "Menu",
     "cartTitle": "Cart",
     "checkoutTitle": "Checkout",
@@ -147,6 +149,20 @@
     "profileTitle": "Profile",
     "loyaltyTitle": "Loyalty Points",
     "settingsTitle": "Settings"
+  },
+  "Home": {
+    "greeting": "Welcome back",
+    "dineInTitle": "Dine-in",
+    "dineInSub": "Scan the QR code on your table",
+    "pickupTitle": "Pickup",
+    "pickupSub": "Order ahead, pick up at the counter",
+    "scanError": "Couldn't open your table's cart — please try again.",
+    "trackHint": "Tap to track your order",
+    "bestsellersTitle": "Bestsellers",
+    "viewAll": "View all",
+    "quickReorderTitle": "Quick reorder",
+    "loyaltyCardTitle": "PhaDin loyalty card",
+    "loadError": "Couldn't load your home page — please try again."
   },
   "RoleNav": {
     "badgeGuest": "Guest",
