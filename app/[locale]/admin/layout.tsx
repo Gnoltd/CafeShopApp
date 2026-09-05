@@ -34,5 +34,5 @@ export default async function AdminLayout({
     redirect(`/${locale}${role ? (ROLE_HOME[role] ?? "/menu") : "/login"}`)
   }
 
-  return <AdminLayoutClient>{children}</AdminLayoutClient>
+  return <AdminLayoutClient role={role}>{children}</AdminLayoutClient>
 }

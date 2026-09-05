@@ -1,14 +1,20 @@
 "use client"
 
 import { useTranslations } from "next-intl"
-import { Coffee, Menu } from "lucide-react"
-import { Link } from "@/i18n/navigation"
+import { Menu } from "lucide-react"
+import { usePathname } from "@/i18n/navigation"
 import { useHeaderActionsClearance } from "@/hooks/useHeaderActionsClearance"
+import { ADMIN_NAV_ITEMS } from "@/components/admin/admin-nav-items"
 
-export function AdminMobileHeader({ onOpenMenu }: { onOpenMenu: () => void }) {
+export function AdminMobileHeader({ onOpenMenu, role }: { onOpenMenu: () => void; role: string | null }) {
   const tBrand = useTranslations("Brand")
   const tNav = useTranslations("Nav")
+  const tRole = useTranslations("RoleNav")
   const clearance = useHeaderActionsClearance()
+  const pathname = usePathname()
+
+  const pageTitleKey = ADMIN_NAV_ITEMS.find((item) => item.href === pathname)?.labelKey
+  const roleLabel = role === "staff" ? tRole("badgeStaff") : tRole("badgeAdmin")
 
   return (
     <header
@@ -23,10 +29,14 @@ export function AdminMobileHeader({ onOpenMenu }: { onOpenMenu: () => void }) {
       >
         <Menu className="h-5 w-5" />
       </button>
-      <Link href="/" className="flex min-w-0 items-center gap-1.5 font-bold text-primary">
-        <Coffee className="h-5 w-5 shrink-0" />
-        <span className="truncate">{tBrand("name")}</span>
-      </Link>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-extrabold leading-tight text-card-foreground">
+          {pageTitleKey ? tNav(pageTitleKey) : tBrand("name")}
+        </p>
+        <p className="truncate text-[10px] font-semibold leading-tight text-muted-foreground">
+          {tBrand("name")} · {roleLabel}
+        </p>
+      </div>
     </header>
   )
 }

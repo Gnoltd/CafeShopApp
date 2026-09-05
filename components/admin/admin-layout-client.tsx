@@ -9,12 +9,12 @@ import { AdminMobileHeader } from "@/components/admin/admin-mobile-header"
 // via a route-level layout.tsx instead of every admin page (menu,
 // food-cost, promotions, staff, settings included) paying for fetches and
 // Realtime subscriptions it never uses. See daily.md Task 4.
-export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
+export function AdminLayoutClient({ children, role }: { children: React.ReactNode; role: string | null }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden md:flex-row">
-      <AdminMobileHeader onOpenMenu={() => setIsDrawerOpen(true)} />
+      <AdminMobileHeader onOpenMenu={() => setIsDrawerOpen(true)} role={role} />
       <AdminSidebar open={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
       <main className="flex-1 overflow-y-auto bg-muted/30 p-6 md:pt-16">{children}</main>
     </div>

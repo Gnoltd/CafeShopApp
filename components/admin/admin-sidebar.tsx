@@ -2,41 +2,12 @@
 
 import { AnimatePresence } from "framer-motion"
 import { useTranslations } from "next-intl"
-import {
-  Coffee,
-  LayoutDashboard,
-  UtensilsCrossed,
-  Package,
-  Table2,
-  Users,
-  Calculator,
-  Settings,
-  ShoppingCart,
-  CookingPot,
-  Wallet,
-  Ticket,
-} from "lucide-react"
+import { Coffee } from "lucide-react"
 import { Link, usePathname } from "@/i18n/navigation"
 import { cn } from "@/lib/utils"
 import { SideDrawer } from "@/components/motion/side-drawer"
 import { DialogTitle } from "@/components/ui/dialog"
-
-const NAV_ITEMS = [
-  { href: "/admin/dashboard", labelKey: "dashboard", icon: LayoutDashboard },
-  { href: "/admin/menu", labelKey: "menu", icon: UtensilsCrossed },
-  { href: "/admin/inventory", labelKey: "inventory", icon: Package },
-  { href: "/admin/tables", labelKey: "tables", icon: Table2 },
-  { href: "/admin/staff", labelKey: "staff", icon: Users },
-  { href: "/admin/food-cost", labelKey: "foodCost", icon: Calculator },
-  { href: "/admin/shift", labelKey: "shift", icon: Wallet },
-  { href: "/admin/promotions", labelKey: "promotions", icon: Ticket },
-  { href: "/admin/settings", labelKey: "settings", icon: Settings },
-] as const
-
-const FULFILLMENT_NAV_ITEMS = [
-  { href: "/staff/pos", labelKey: "pos", icon: ShoppingCart },
-  { href: "/staff/orders", labelKey: "kitchenDisplay", icon: CookingPot },
-] as const
+import { ADMIN_NAV_ITEMS as NAV_ITEMS, ADMIN_FULFILLMENT_NAV_ITEMS as FULFILLMENT_NAV_ITEMS } from "@/components/admin/admin-nav-items"
 
 function AdminNavContent({ onNavigate }: { onNavigate?: () => void }) {
   const tBrand = useTranslations("Brand")
