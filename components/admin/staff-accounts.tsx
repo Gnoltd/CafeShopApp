@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslations } from "next-intl"
-import { User, Lock, LockOpen, Plus, Pencil, Users, UserCheck, UserX } from "lucide-react"
+import { User, Lock, LockOpen, Plus, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
@@ -121,6 +121,14 @@ export function StaffAccounts() {
   const roleLabel = (role: StaffRole) =>
     role === "admin" ? t("roleAdmin") : role === "manager" ? t("roleManager") : t("roleStaff")
 
+  const initialsFor = (fullName: string) =>
+    fullName
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("")
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -159,37 +167,125 @@ export function StaffAccounts() {
         />
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="nb-border-sm nb-shadow-sm flex items-center gap-3 rounded-xl bg-card p-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <Users className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">{t("totalStaff")}</p>
-            <p className="text-xl font-bold text-card-foreground">{staff.length}</p>
-          </div>
+      {/* A 3-up row with an icon+label side by side (like every other admin
+          stat row) doesn't leave enough width per cell at mobile widths --
+          measured overflow on "Disabled" during live verification. Centered
+          number-over-label (matching the reference) fits at every width
+          without needing a 4th/5th breakpoint just for this one row. */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="nb-border-sm nb-shadow-sm rounded-xl bg-card p-3 text-center">
+          <p className="text-lg font-extrabold text-card-foreground">{staff.length}</p>
+          <p className="mt-1 text-[10px] font-semibold text-muted-foreground">{t("totalStaff")}</p>
         </div>
-        <div className="nb-border-sm nb-shadow-sm flex items-center gap-3 rounded-xl bg-card p-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-700">
-            <UserCheck className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">{t("activeCount")}</p>
-            <p className="text-xl font-bold text-card-foreground">{activeCount}</p>
-          </div>
+        <div className="nb-border-sm nb-shadow-sm rounded-xl bg-card p-3 text-center">
+          <p className="text-lg font-extrabold text-green-700">{activeCount}</p>
+          <p className="mt-1 text-[10px] font-semibold text-muted-foreground">{t("activeCount")}</p>
         </div>
-        <div className="nb-border-sm nb-shadow-sm flex items-center gap-3 rounded-xl bg-card p-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <UserX className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">{t("inactiveCount")}</p>
-            <p className="text-xl font-bold text-card-foreground">{staff.length - activeCount}</p>
+        <div className="nb-border-sm nb-shadow-sm rounded-xl bg-card p-3 text-center">
+          <p className="text-lg font-extrabold text-muted-foreground">{staff.length - activeCount}</p>
+          <p className="mt-1 text-[10px] font-semibold text-muted-foreground">{t("inactiveCount")}</p>
+        </div>
+      </div>
+
+      {/* Desktop: full table. Mobile: a stacked card list matching the
+          reference (avatar initials, role badge, active/disable toggle). */}
+      <div className="flex flex-col gap-3 md:hidden">
+        {isLoading ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">{t("loading")}</p>
+        ) : (
+          pagedStaff.map((member) => (
+            <div
+              key={member.id}
+              className={cn(
+                "nb-border-sm nb-shadow-sm flex items-center gap-3 rounded-lg bg-card p-3",
+                !member.isActive && "opacity-60"
+              )}
+            >
+              <button
+                type="button"
+                onClick={() => setFormMode({ type: "edit", member })}
+                className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                aria-label={t("edit")}
+              >
+                <span className="nb-border-sm flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-chip text-sm font-extrabold text-secondary">
+                  {initialsFor(member.fullName)}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-extrabold text-card-foreground">{member.fullName}</p>
+                  <p className="truncate text-[10px] font-semibold text-muted-foreground">{member.email}</p>
+                </div>
+              </button>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <span
+                  className={cn(
+                    "nb-border-sm rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide",
+                    ROLE_STYLES[member.role]
+                  )}
+                >
+                  {roleLabel(member.role)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => toggleActive(member)}
+                  disabled={member.id === currentUserId}
+                  title={member.id === currentUserId ? t("cannotDisableSelf") : undefined}
+                  className={cn(
+                    "text-[10px] font-extrabold underline underline-offset-2 disabled:pointer-events-none disabled:text-muted-foreground/50",
+                    member.isActive ? "text-destructive" : "text-success"
+                  )}
+                >
+                  {member.isActive ? t("disabled") : t("active")}
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+
+        <div className="flex flex-col items-center justify-between gap-3 rounded-xl border bg-muted/40 px-4 py-3">
+          <span className="text-xs text-muted-foreground">
+            {t("showingItems", {
+              start: staff.length === 0 ? 0 : pageStart + 1,
+              end: Math.min(pageStart + PAGE_SIZE, staff.length),
+              total: staff.length,
+            })}
+          </span>
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={visiblePage === 1}
+              className="nb-border-sm nb-press-sm rounded-lg bg-card px-3 py-1 text-xs font-extrabold text-muted-foreground disabled:pointer-events-none disabled:opacity-40"
+            >
+              {t("previous")}
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                type="button"
+                onClick={() => setCurrentPage(page)}
+                className={cn(
+                  "nb-border-sm nb-press-sm rounded-lg px-3 py-1 text-xs font-extrabold",
+                  page === visiblePage
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card text-muted-foreground"
+                )}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={visiblePage === totalPages}
+              className="nb-border-sm nb-press-sm rounded-lg bg-card px-3 py-1 text-xs font-extrabold text-muted-foreground disabled:pointer-events-none disabled:opacity-40"
+            >
+              {t("next")}
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="nb-border-sm nb-shadow-sm overflow-x-auto rounded-xl bg-card">
+      <div className="nb-border-sm nb-shadow-sm hidden overflow-x-auto rounded-xl bg-card md:block">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b text-left text-muted-foreground">
