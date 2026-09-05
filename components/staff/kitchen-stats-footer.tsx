@@ -51,7 +51,7 @@ export function KitchenStatsFooter({ orders, now }: { orders: KdsOrder[]; now: n
   const clock = formatKitchenClock(now, locale)
 
   return (
-    <footer className="nb-border-sm flex shrink-0 flex-col gap-2 rounded-xl bg-card px-4 py-3 md:h-12 md:flex-row md:items-center md:gap-8 md:px-6 md:py-0">
+    <footer className="nb-border-sm flex shrink-0 flex-col gap-2 rounded-xl bg-card px-4 py-3 md:min-h-12 md:flex-row md:items-center md:gap-6 md:px-6 md:py-2">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="text-sm font-bold text-muted-foreground">{t("currentLoad")}:</span>
@@ -72,6 +72,9 @@ export function KitchenStatsFooter({ orders, now }: { orders: KdsOrder[]; now: n
         </span>
       </div>
       <span className="ml-auto hidden text-lg font-bold text-primary md:block">{clock}</span>
+      <p className="w-full text-[11px] font-semibold text-muted-foreground md:order-first md:w-auto md:flex-1">
+        {t("footerHint")}
+      </p>
     </footer>
   )
 }
