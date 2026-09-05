@@ -2,7 +2,7 @@
 
 import { memo, useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
-import { Bell, CircleCheck, Sparkles, User, Utensils, Wallet } from "lucide-react"
+import { Bell, CircleCheck, Sparkles, User, Utensils, Wallet, LayoutGrid } from "lucide-react"
 import { ConfirmDialog } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { useTables } from "@/hooks/useTables"
@@ -54,21 +54,23 @@ function KitchenTablesColumnComponent({ active }: { active: boolean }) {
   return (
     <section
       className={cn(
-        "nb-border-sm min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-muted",
+        "nb-border-sm min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-muted/60 xl:rounded-none xl:border-y-0 xl:border-r-0 xl:rounded-r-xl",
         active ? "flex" : "hidden",
         "md:h-full md:flex"
       )}
     >
-      <header className="flex shrink-0 items-center justify-between bg-zinc-600 p-4 text-white">
-        <h2 className="flex items-center gap-2 text-lg font-bold">
+      <header className="flex shrink-0 items-center justify-between border-b-2 border-ink bg-chip px-4 py-3">
+        <h2 className="flex items-center gap-2 text-sm font-extrabold text-card-foreground">
+          <span className="size-2.5 rounded-sm bg-secondary" />
           {t("columnTables")}
-          <span className="rounded bg-white/20 px-2 py-0.5 text-sm">{tables.length}</span>
+          <span className="nb-border-sm rounded-full bg-card px-2 py-0.5 text-xs">{tables.length}</span>
         </h2>
+        <LayoutGrid className="h-4 w-4 text-secondary" />
       </header>
       {error && (
         <p className="mx-3 mt-2 shrink-0 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
       )}
-      <div className="grid flex-1 auto-rows-min grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-2 overflow-y-auto p-3">
+      <div className="grid flex-1 auto-rows-min grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-3 overflow-y-auto p-3">
         {tables.map((table) => {
           const location = locale === "vi" ? table.locationVi : table.locationEn
           const tableOrders = orders.filter((o) => o.tableId === table.id)
@@ -91,10 +93,10 @@ function KitchenTablesColumnComponent({ active }: { active: boolean }) {
             <div
               key={table.id}
               className={cn(
-                "nb-border-sm flex flex-wrap items-start justify-between gap-2 rounded-lg p-3",
-                table.status === "available" && "bg-green-50 dark:bg-green-950/20",
-                table.status === "occupied" && "bg-red-50 dark:bg-red-950/20",
-                table.status === "cleaning" && "bg-amber-50 dark:bg-amber-950/20"
+                "nb-border-sm nb-shadow-sm flex flex-wrap items-start justify-between gap-2 rounded-xl bg-card p-3",
+                table.status === "available" && "border-green-600/50",
+                table.status === "occupied" && "border-primary/50",
+                table.status === "cleaning" && "border-amber-600/50"
               )}
             >
               <div className="min-w-0">
@@ -118,9 +120,9 @@ function KitchenTablesColumnComponent({ active }: { active: boolean }) {
                   }
                   className={cn(
                     "nb-border-sm nb-shadow-sm nb-press-sm inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-extrabold",
-                    table.status === "available" && "bg-green-100 text-green-700 hover:bg-green-200",
-                    table.status === "occupied" && "bg-red-100 text-red-700 hover:bg-red-200",
-                    table.status === "cleaning" && "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                    table.status === "available" && "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-950/40",
+                    table.status === "occupied" && "bg-primary/10 text-primary hover:bg-primary/20",
+                    table.status === "cleaning" && "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-950/40"
                   )}
                 >
                   {table.status === "available" && <CircleCheck className="h-4 w-4" />}

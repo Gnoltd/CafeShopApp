@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
-import { CheckCircle2, PackageCheck, Utensils, ShoppingBag, ListTodo, RefreshCw, CheckCheck } from "lucide-react"
+import { CheckCircle2, PackageCheck, Utensils, ShoppingBag, ListTodo, RefreshCw, CheckCheck, Coffee } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { formatOrderId } from "@/lib/format"
 import { SegmentedControl } from "@/components/motion/segmented-control"
@@ -11,14 +11,20 @@ import type { KdsStatus, KdsOrder } from "@/hooks/useKitchenOrders"
 
 const COLUMNS: {
   status: KdsStatus
-  headerClass: string
+  dotClass: string
+  iconClass: string
   labelKey: "columnNew" | "columnPreparing" | "columnReady"
   icon: typeof ListTodo
-  iconClass?: string
 }[] = [
-  { status: "paid", headerClass: "bg-zinc-500", labelKey: "columnNew", icon: ListTodo },
-  { status: "preparing", headerClass: "bg-amber-600", labelKey: "columnPreparing", icon: RefreshCw, iconClass: "animate-spin [animation-duration:3s]" },
-  { status: "ready", headerClass: "bg-green-600", labelKey: "columnReady", icon: CheckCheck },
+  { status: "paid", dotClass: "bg-primary", iconClass: "text-primary", labelKey: "columnNew", icon: ListTodo },
+  {
+    status: "preparing",
+    dotClass: "bg-amber-600",
+    iconClass: "animate-spin text-amber-600 [animation-duration:3s]",
+    labelKey: "columnPreparing",
+    icon: RefreshCw,
+  },
+  { status: "ready", dotClass: "bg-green-600", iconClass: "text-green-600", labelKey: "columnReady", icon: CheckCheck },
 ]
 
 type BoardColumnKey = "paid" | "preparing" | "ready" | "tables"
@@ -67,7 +73,7 @@ export function KitchenBoard({
   const [activeColumn, setActiveColumn] = useState<BoardColumnKey>("paid")
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-hidden p-3 sm:p-4 md:grid md:grid-cols-2 md:grid-rows-2 md:gap-3 xl:grid-cols-4 xl:grid-rows-1 xl:gap-4">
+    <div className="flex h-full flex-col gap-3 overflow-hidden md:grid md:grid-cols-2 md:grid-rows-2 md:gap-3 xl:grid-cols-4 xl:grid-rows-1 xl:gap-0">
       <SegmentedControl
         variant="tabs"
         layoutId="kds-column-pill"
@@ -88,38 +94,42 @@ export function KitchenBoard({
           <section
             key={column.status}
             className={cn(
-              "nb-border-sm min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-muted",
+              "nb-border-sm min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-muted/60 xl:rounded-none xl:border-y-0 xl:border-l-0 xl:first:rounded-l-xl xl:last:rounded-r-xl",
               activeColumn === column.status ? "flex" : "hidden",
               "md:h-full md:flex"
             )}
           >
-            <header className={cn("flex shrink-0 items-center justify-between p-4 text-white", column.headerClass)}>
-              <h2 className="flex items-center gap-2 text-lg font-bold">
+            <header className="flex shrink-0 items-center justify-between border-b-2 border-ink bg-chip px-4 py-3">
+              <h2 className="flex items-center gap-2 text-sm font-extrabold text-card-foreground">
+                <span className={cn("size-2.5 rounded-sm", column.dotClass)} />
                 {t(column.labelKey)}
-                <span className="rounded bg-white/20 px-2 py-0.5 text-sm">{columnOrders.length}</span>
+                <span className="nb-border-sm rounded-full bg-card px-2 py-0.5 text-xs">{columnOrders.length}</span>
               </h2>
-              <Icon className={cn("h-5 w-5", column.iconClass)} />
+              <Icon className={cn("h-4 w-4", column.iconClass)} />
             </header>
             <div className="flex-1 space-y-3 overflow-y-auto p-3">
               {columnOrders.length === 0 && (
-                <p className="py-8 text-center text-sm text-muted-foreground">{t("empty")}</p>
+                <div className="flex flex-col items-center gap-2 border-2 border-dashed border-border px-3 py-8 text-center text-sm font-semibold text-muted-foreground">
+                  <Coffee className="h-5 w-5" />
+                  <p>{t("empty")}</p>
+                </div>
               )}
               {columnOrders.map((order) => {
                 const isReady = column.status === "ready"
                 const urgency = isReady ? "normal" : urgencyLevelFor(order.createdAt, now)
                 return (
-                  <div key={order.id} className="nb-border-sm nb-shadow-sm rounded-xl bg-card">
+                  <article key={order.id} className="nb-border-sm nb-shadow-sm rounded-xl bg-card p-3">
                     <div
                       className={cn(
-                        "flex items-start justify-between gap-2 border-b p-3",
-                        isReady && "bg-green-50 dark:bg-green-950/20"
+                        "flex items-start justify-between gap-2 pb-3",
+                        isReady && "border-b border-green-600/20"
                       )}
                     >
                       <div className="min-w-0">
                         <h3 className="truncate text-xl font-black text-card-foreground">#{formatOrderId(order.id)}</h3>
                         <span
                           className={cn(
-                            "mt-1 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold",
+                            "nb-border-sm mt-1 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold",
                             order.orderType === "pickup"
                               ? "bg-primary text-primary-foreground"
                               : "border bg-muted text-card-foreground"
@@ -154,11 +164,11 @@ export function KitchenBoard({
                         )}
                       </div>
                     </div>
-                    <div className="space-y-2 p-3">
+                    <div className="space-y-2 border-t pt-3">
                       {order.items.map((item) => (
                         <div key={item.id} className="flex flex-wrap items-center justify-between gap-2">
                           <div className="flex min-w-0 items-start gap-3">
-                            <div className="nb-border-sm flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-chip text-sm font-bold text-card-foreground">
+                            <div className="nb-border-sm flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-chip text-sm font-bold text-card-foreground">
                               {item.quantity}x
                             </div>
                             <div className="min-w-0">
@@ -183,7 +193,7 @@ export function KitchenBoard({
                               onClick={() => onAdvanceItem(order.id, item.id)}
                               disabled={isItemPending(order.id, item.id)}
                               className={cn(
-                                "nb-press-sm nb-border-sm nb-shadow-sm ml-auto flex h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-extrabold text-white disabled:pointer-events-none disabled:opacity-40",
+                                "nb-press-sm nb-border-sm nb-shadow-sm ml-auto flex h-10 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-extrabold text-white disabled:pointer-events-none disabled:opacity-40",
                                 item.status === "preparing" && "bg-amber-600",
                                 item.status === "ready" && "bg-green-600"
                               )}
@@ -199,7 +209,7 @@ export function KitchenBoard({
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </article>
                 )
               })}
             </div>
