@@ -90,6 +90,8 @@ file independently and haven't been merged against each other yet.
 | `0079` | **CRITICAL** — `increment_table_scan_count`/`notify_table_cleaning` (`return`ed the whole `tables` row, `qr_code_token` included) let any anon caller recover a table's QR token via `tables.id` despite the column having zero direct SELECT grant (see root `CLAUDE.md`'s "`SECURITY DEFINER` returning a full row" gotcha) |
 | `0080` | `confirm_table_cash_payment` also touches `table_sessions` so a guest's existing Realtime subscription picks up staff cash confirmation |
 | `0090` | `menu_item_categories` join table replaces `menu_items.category_id` (many-to-many categories) |
+| `0091` | `confirm_table_payment(table_id, method)` replaces the cash-hardcoded `confirm_table_cash_payment` — KDS can confirm a table's unpaid balance as paid via any method, matched on `orders.table_id` directly (not just table-session orders) |
+| `0092` | Revoked the same platform auto-re-grant on `confirm_table_payment` (anon) |
 
 **Live-grant auto-re-grant gotcha, worth remembering:** a migration's own
 `revoke all ... from public; grant execute ... to X;` does NOT reliably
