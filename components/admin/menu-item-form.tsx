@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { useLocale, useTranslations } from "next-intl"
-import { UploadCloud, X, Plus, Pencil, ChevronUp, ChevronDown } from "lucide-react"
+import { UploadCloud, X, Plus, Pencil, ChevronUp, ChevronDown, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FormDialog } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -43,7 +43,9 @@ export function MenuItemForm({
 
   const [nameVi, setNameVi] = useState(initialItem?.nameVi ?? "")
   const [nameEn, setNameEn] = useState(initialItem?.nameEn ?? "")
-  const [categoryId, setCategoryId] = useState(initialItem?.categoryId ?? categories[0]?.id ?? "")
+  const [categoryIds, setCategoryIds] = useState<string[]>(
+    initialItem?.categoryIds ?? (categories[0] ? [categories[0].id] : [])
+  )
   const [price, setPrice] = useState(initialItem ? String(initialItem.basePrice) : "")
   const [descriptionVi, setDescriptionVi] = useState(initialItem?.descriptionVi ?? "")
   const [descriptionEn, setDescriptionEn] = useState(initialItem?.descriptionEn ?? "")
@@ -246,7 +248,7 @@ export function MenuItemForm({
 
   async function handleSave() {
     const parsedPrice = Number(price)
-    if (!nameVi.trim() || !nameEn.trim() || !categoryId || !Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+    if (!nameVi.trim() || !nameEn.trim() || categoryIds.length === 0 || !Number.isFinite(parsedPrice) || parsedPrice <= 0) {
       setError(t("requiredFieldsError"))
       return
     }
@@ -299,7 +301,7 @@ export function MenuItemForm({
     // Escape/backdrop guard, not branch on success/failure itself.
     Promise.resolve(onSave(
       {
-        categoryId,
+        categoryIds,
         nameVi: nameVi.trim(),
         nameEn: nameEn.trim(),
         descriptionVi: descriptionVi.trim(),
@@ -350,19 +352,34 @@ export function MenuItemForm({
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">{t("categoryLabel")}</label>
-          <select
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            className="nb-border-sm h-10 w-full rounded-lg bg-card px-3 text-sm text-card-foreground focus:outline-none"
-          >
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.nameVi} / {category.nameEn}
-              </option>
-            ))}
-          </select>
+        <div className="space-y-1.5 sm:col-span-2">
+          <div className="flex items-baseline justify-between gap-2">
+            <label className="text-xs font-medium text-muted-foreground">{t("categoryLabel")}</label>
+            <span className="text-[11px] font-medium text-muted-foreground">{t("multiCategoryHint")}</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((category) => {
+              const isOn = categoryIds.includes(category.id)
+              return (
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() =>
+                    setCategoryIds((prev) =>
+                      isOn ? prev.filter((id) => id !== category.id) : [...prev, category.id]
+                    )
+                  }
+                  className={cn(
+                    "nb-border-sm flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-bold transition-colors",
+                    isOn ? "bg-primary text-primary-foreground" : "bg-card text-card-foreground"
+                  )}
+                >
+                  {isOn && <Check className="h-3.5 w-3.5" />}
+                  {category.nameVi} / {category.nameEn}
+                </button>
+              )
+            })}
+          </div>
         </div>
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-muted-foreground">{t("priceLabel")}</label>

@@ -813,6 +813,7 @@
     "nameViLabel": "Tên (Tiếng Việt)",
     "nameEnLabel": "Tên (English)",
     "categoryLabel": "Danh Mục",
+    "multiCategoryHint": "chọn nhiều được",
     "priceLabel": "Giá Cơ Bản (VNĐ)",
     "descriptionViLabel": "Mô Tả (Tiếng Việt)",
     "descriptionEnLabel": "Mô Tả (English)",

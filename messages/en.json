@@ -813,6 +813,7 @@
     "nameViLabel": "Name (Vietnamese)",
     "nameEnLabel": "Name (English)",
     "categoryLabel": "Category",
+    "multiCategoryHint": "pick more than one",
     "priceLabel": "Base Price (VND)",
     "descriptionViLabel": "Description (Vietnamese)",
     "descriptionEnLabel": "Description (English)",
