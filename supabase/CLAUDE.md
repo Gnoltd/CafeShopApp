@@ -89,6 +89,7 @@ file independently and haven't been merged against each other yet.
 | `0078` | Missing FK indexes on `table_cart_items` (performance) |
 | `0079` | **CRITICAL** — `increment_table_scan_count`/`notify_table_cleaning` (`return`ed the whole `tables` row, `qr_code_token` included) let any anon caller recover a table's QR token via `tables.id` despite the column having zero direct SELECT grant (see root `CLAUDE.md`'s "`SECURITY DEFINER` returning a full row" gotcha) |
 | `0080` | `confirm_table_cash_payment` also touches `table_sessions` so a guest's existing Realtime subscription picks up staff cash confirmation |
+| `0090` | `menu_item_categories` join table replaces `menu_items.category_id` (many-to-many categories) |
 
 **Live-grant auto-re-grant gotcha, worth remembering:** a migration's own
 `revoke all ... from public; grant execute ... to X;` does NOT reliably
