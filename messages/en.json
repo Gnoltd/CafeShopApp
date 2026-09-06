@@ -801,6 +801,7 @@
     "editItemTitle": "Edit Item",
     "searchPlaceholder": "Search items...",
     "allCategories": "All",
+    "filteringCategoriesCount": "Filtering {count} categories",
     "item": "Item",
     "price": "Price",
     "available": "Status",

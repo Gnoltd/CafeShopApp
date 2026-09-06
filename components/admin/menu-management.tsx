@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import Image from "next/image"
 import { useLocale, useTranslations } from "next-intl"
-import { Coffee, CupSoda, Cookie, Milk, Search, Plus, Pencil, Trash2 } from "lucide-react"
+import { Coffee, CupSoda, Cookie, Milk, Search, Plus, Pencil, Trash2, Check } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/dialog"
@@ -50,7 +50,7 @@ export function MenuManagement({
 
   const [items, setItems] = useState(initialItems)
   const [categoryList, setCategoryList] = useState(categories)
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [formMode, setFormMode] = useState<FormMode>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -68,19 +68,22 @@ export function MenuManagement({
 
   const itemCountByCategory = useMemo(() => {
     const counts: Record<string, number> = {}
-    for (const item of items) counts[item.categoryId] = (counts[item.categoryId] ?? 0) + 1
+    for (const item of items) {
+      for (const categoryId of item.categoryIds) counts[categoryId] = (counts[categoryId] ?? 0) + 1
+    }
     return counts
   }, [items])
 
   const visibleItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
     return items.filter((item) => {
-      const matchesCategory = !selectedCategory || item.categoryId === selectedCategory
+      const matchesCategory =
+        selectedCategoryIds.length === 0 || item.categoryIds.some((id) => selectedCategoryIds.includes(id))
       const matchesQuery =
         query === "" || item.nameVi.toLowerCase().includes(query) || item.nameEn.toLowerCase().includes(query)
       return matchesCategory && matchesQuery
     })
-  }, [items, selectedCategory, searchQuery])
+  }, [items, selectedCategoryIds, searchQuery])
 
   const totalPages = Math.max(1, Math.ceil(visibleItems.length / PAGE_SIZE))
   const visiblePage = Math.min(currentPage, totalPages)
@@ -91,7 +94,7 @@ export function MenuManagement({
     setError(null)
     try {
       const updated = await updateMenuItem(supabase, item.id, {
-        categoryId: item.categoryId,
+        categoryIds: item.categoryIds,
         nameVi: item.nameVi,
         nameEn: item.nameEn,
         descriptionVi: item.descriptionVi,
@@ -212,37 +215,46 @@ export function MenuManagement({
         <button
           type="button"
           onClick={() => {
-            setSelectedCategory(null)
+            setSelectedCategoryIds([])
             setCurrentPage(1)
           }}
           className={cn(
             "nb-border-sm nb-shadow-sm nb-press-sm shrink-0 rounded-lg px-3 py-1.5 text-sm font-extrabold",
-            selectedCategory === null
+            selectedCategoryIds.length === 0
               ? "bg-primary text-primary-foreground"
               : "bg-card text-muted-foreground"
           )}
         >
           {t("allCategories")}
         </button>
-        {categoryList.map((category) => (
-          <button
-            key={category.id}
-            type="button"
-            onClick={() => {
-              setSelectedCategory(category.id)
-              setCurrentPage(1)
-            }}
-            className={cn(
-              "nb-border-sm nb-shadow-sm nb-press-sm shrink-0 rounded-lg px-3 py-1.5 text-sm font-extrabold",
-              selectedCategory === category.id
-                ? "bg-primary text-primary-foreground"
-                : "bg-card text-muted-foreground"
-            )}
-          >
-            {locale === "vi" ? category.nameVi : category.nameEn}
-          </button>
-        ))}
+        {categoryList.map((category) => {
+          const isOn = selectedCategoryIds.includes(category.id)
+          return (
+            <button
+              key={category.id}
+              type="button"
+              onClick={() => {
+                setSelectedCategoryIds((prev) =>
+                  isOn ? prev.filter((id) => id !== category.id) : [...prev, category.id]
+                )
+                setCurrentPage(1)
+              }}
+              className={cn(
+                "nb-border-sm nb-shadow-sm nb-press-sm flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-extrabold",
+                isOn ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
+              )}
+            >
+              {isOn && <Check className="h-3.5 w-3.5" />}
+              {locale === "vi" ? category.nameVi : category.nameEn}
+            </button>
+          )
+        })}
       </div>
+      {selectedCategoryIds.length > 1 && (
+        <p className="text-xs font-semibold text-muted-foreground">
+          {t("filteringCategoriesCount", { count: selectedCategoryIds.length })}
+        </p>
+      )}
 
       <div className="flex flex-col gap-3 md:hidden">
         {pagedItems.map((item) => {
@@ -283,9 +295,16 @@ export function MenuManagement({
               </div>
 
               <div className="flex items-center justify-between gap-2">
-                <span className={cn("nb-border-sm rounded-full px-2.5 py-1 text-xs font-extrabold", CATEGORY_BADGE_STYLE)}>
-                  {categoryLabel(item.categoryId)}
-                </span>
+                <div className="flex flex-wrap gap-1">
+                  {item.categoryIds.map((categoryId) => (
+                    <span
+                      key={categoryId}
+                      className={cn("nb-border-sm rounded-full px-2.5 py-1 text-xs font-extrabold", CATEGORY_BADGE_STYLE)}
+                    >
+                      {categoryLabel(categoryId)}
+                    </span>
+                  ))}
+                </div>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
@@ -416,9 +435,16 @@ export function MenuManagement({
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={cn("nb-border-sm rounded-full px-2.5 py-1 text-xs font-extrabold", CATEGORY_BADGE_STYLE)}>
-                      {categoryLabel(item.categoryId)}
-                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {item.categoryIds.map((categoryId) => (
+                        <span
+                          key={categoryId}
+                          className={cn("nb-border-sm rounded-full px-2.5 py-1 text-xs font-extrabold", CATEGORY_BADGE_STYLE)}
+                        >
+                          {categoryLabel(categoryId)}
+                        </span>
+                      ))}
+                    </div>
                   </td>
                   <td className="px-4 py-3 font-bold text-primary">{formatVND(item.basePrice)}</td>
                   <td className="px-4 py-3">

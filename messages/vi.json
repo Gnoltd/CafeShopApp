@@ -801,6 +801,7 @@
     "editItemTitle": "Sửa Món",
     "searchPlaceholder": "Tìm kiếm món...",
     "allCategories": "Tất Cả",
+    "filteringCategoriesCount": "Đang lọc {count} danh mục",
     "item": "Món",
     "price": "Giá",
     "available": "Trạng Thái",
