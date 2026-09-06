@@ -126,13 +126,16 @@ export function DashboardView({ locale }: { locale: string }) {
             {isStatsLoading ? t("loadingStats") : hasStatsError ? "—" : stats.loyaltyIssuedToday}
           </h3>
         </div>
-        <div className="nb-border-sm nb-shadow-sm rounded-xl border-destructive bg-destructive/5 p-5">
+        <Link
+          href="/admin/inventory"
+          className="nb-border-sm nb-shadow-sm nb-press-sm rounded-xl border-destructive bg-destructive/5 p-5"
+        >
           <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
             <TriangleAlert className="h-5 w-5" />
           </div>
           <p className="mb-1 text-sm text-destructive">{t("lowStockAlerts")}</p>
           <h3 className="text-xl font-bold text-destructive">{lowStock.length}</h3>
-        </div>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
