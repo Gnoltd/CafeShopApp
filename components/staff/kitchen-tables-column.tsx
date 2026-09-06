@@ -3,10 +3,10 @@
 import { memo, useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import { Bell, CircleCheck, Sparkles, User, Utensils, Wallet, LayoutGrid } from "lucide-react"
-import { ConfirmDialog } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { useTables } from "@/hooks/useTables"
 import { useKitchenOrders } from "@/hooks/useKitchenOrders"
+import { PaymentMethodPicker } from "@/components/staff/payment-method-picker"
 
 // Memoized: its only prop (`active`) rarely changes, so this skips
 // re-rendering when the sibling order columns re-render on the KDS board's
@@ -21,16 +21,10 @@ function KitchenTablesColumnComponent({ active }: { active: boolean }) {
   const {
     orders,
     serveTable,
-    confirmTableCashPayment,
-    markTableCashPayment,
+    confirmTablePayment,
   } = useKitchenOrders()
   const [error, setError] = useState<string | null>(null)
-  // Same reasoning as the pending-payment strip: confirming cash settles the
-  // table's whole tab with no undo here, so it goes through a confirmation.
-  const [tablePendingCashConfirm, setTablePendingCashConfirm] = useState<{ id: string; number: string } | null>(
-    null
-  )
-  // Keyed "<tableId>:serve" / "<tableId>:cash" -- disables only the tapped
+  // Keyed "<tableId>:serve" / "<tableId>:pay" -- disables only the tapped
   // table's own action button while its mutation is in flight, so a
   // double-tap can't fire two concurrent RPCs for the same table.
   const [pendingActionKeys, setPendingActionKeys] = useState<Set<string>>(new Set())
@@ -87,7 +81,6 @@ function KitchenTablesColumnComponent({ active }: { active: boolean }) {
           // guest never taps it, this badge is the only signal staff
           // have that money is owed on this table at all.
           const awaitingPaymentOrders = tableOrders.filter((o) => o.paymentStatus === "pending")
-          const awaitingPaymentMethod = awaitingPaymentOrders[0]?.paymentMethod ?? null
 
           return (
             <div
@@ -157,54 +150,20 @@ function KitchenTablesColumnComponent({ active }: { active: boolean }) {
                     {t("markServed")}
                   </button>
                 )}
-                {awaitingPaymentOrders.length > 0 && awaitingPaymentMethod === null && (
-                  <button
-                    type="button"
-                    onClick={() => void runTableAction(`${table.id}:cash`, () => markTableCashPayment(table.id))}
-                    disabled={pendingActionKeys.has(`${table.id}:cash`)}
-                    className="nb-border-sm nb-shadow-sm nb-press-sm min-h-10 rounded-lg bg-secondary px-3 py-2 text-xs font-extrabold text-secondary-foreground disabled:opacity-60"
-                  >
-                    {t("markCash")}
-                  </button>
-                )}
-                {awaitingPaymentMethod === "cash" && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setTablePendingCashConfirm({ id: table.id, number: table.number })
+                {awaitingPaymentOrders.length > 0 && (
+                  <PaymentMethodPicker
+                    className="w-full"
+                    disabled={pendingActionKeys.has(`${table.id}:pay`)}
+                    onSelect={(method) =>
+                      void runTableAction(`${table.id}:pay`, () => confirmTablePayment(table.id, method))
                     }
-                    className="nb-border-sm nb-shadow-sm nb-press-sm min-h-10 rounded-lg bg-secondary px-3 py-2 text-xs font-extrabold text-secondary-foreground"
-                  >
-                    {t("confirmCashReceived")}
-                  </button>
+                  />
                 )}
               </div>
             </div>
           )
         })}
       </div>
-
-      <ConfirmDialog
-        open={tablePendingCashConfirm !== null}
-        onOpenChange={(open) => {
-          if (!open) setTablePendingCashConfirm(null)
-        }}
-        title={t("confirmCashTitle")}
-        description={t("confirmTableCashBody", { table: tablePendingCashConfirm?.number ?? "" })}
-        confirmLabel={t("confirmCashReceived")}
-        onConfirm={async () => {
-          if (!tablePendingCashConfirm) return
-          setError(null)
-          try {
-            await confirmTableCashPayment(tablePendingCashConfirm.id)
-          } catch (err) {
-            setError(t("updateError"))
-            // Rethrow so ConfirmDialog's own catch keeps the dialog open
-            // and shows the failure, instead of closing as if it worked.
-            throw err
-          }
-        }}
-      />
     </section>
   )
 }

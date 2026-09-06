@@ -44,16 +44,17 @@ describe("urgencyLevelFor", () => {
 
 describe("paymentActionForOrder", () => {
   const base = { id: "o", orderType: "dine-in" as const, status: "served" as const, paymentStatus: "pending", paymentMethod: null, createdAt: 0, items: [], total: 0, tableId: "t" }
-  it("routes an unselected table tab through Mark Cash then Confirm Cash", () => {
-    expect(paymentActionForOrder(base)).toBe("mark-table-cash")
-    expect(paymentActionForOrder({ ...base, paymentMethod: "cash" })).toBe("confirm-table-cash")
+  it("offers the full method picker for any served-and-unpaid order, regardless of type or pre-picked method", () => {
+    expect(paymentActionForOrder(base)).toBe("confirm-payment")
+    expect(paymentActionForOrder({ ...base, paymentMethod: "cash" })).toBe("confirm-payment")
+    expect(paymentActionForOrder({ ...base, paymentMethod: "stripe" })).toBe("confirm-payment")
+    expect(paymentActionForOrder({ ...base, orderType: "pickup", tableId: undefined })).toBe("confirm-payment")
   })
-  it("keeps gateway payments staff-read-only and permits pickup cash confirmation", () => {
-    expect(paymentActionForOrder({ ...base, paymentMethod: "stripe" })).toBeNull()
-    expect(paymentActionForOrder({ ...base, orderType: "pickup", paymentMethod: "cash", tableId: undefined })).toBe("confirm-pickup-cash")
-  })
-  it("requires confirmation before a pending pickup cash order enters the kitchen", () => {
+  it("requires cash confirmation before a pending pickup cash order enters the kitchen", () => {
     expect(paymentActionForOrder({ ...base, orderType: "pickup", status: "pending_payment", paymentMethod: "cash", tableId: undefined })).toBe("confirm-pickup-cash")
+  })
+  it("shows no payment action once it's already paid", () => {
+    expect(paymentActionForOrder({ ...base, paymentStatus: "paid" })).toBeNull()
   })
 })
 

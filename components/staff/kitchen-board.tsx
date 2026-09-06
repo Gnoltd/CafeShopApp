@@ -8,6 +8,8 @@ import { formatOrderId } from "@/lib/format"
 import { SegmentedControl } from "@/components/motion/segmented-control"
 import { PREV_ITEM_STATUS } from "@/hooks/useKitchenOrders"
 import type { KdsStatus, KdsOrder } from "@/hooks/useKitchenOrders"
+import type { RealPaymentMethod } from "@/lib/supabase/orders-data"
+import { PaymentMethodPicker } from "@/components/staff/payment-method-picker"
 
 const COLUMNS: { status: KdsStatus; key: "columnNew" | "columnPreparing" | "columnReady"; dot: string }[] = [
   { status: "paid", key: "columnNew", dot: "bg-primary" },
@@ -27,17 +29,14 @@ export function urgencyLevelFor(createdAt: number, now: number): UrgencyLevel {
   return minutes >= 15 ? "critical" : minutes >= 10 ? "warning" : "normal"
 }
 
-export type PaymentAction = "mark-table-cash" | "confirm-table-cash" | "confirm-pickup-cash" | null
+export type PaymentAction = "confirm-pickup-cash" | "confirm-payment" | null
 
 export function paymentActionForOrder(order: KdsOrder): PaymentAction {
   if (order.status === "pending_payment" && order.orderType === "pickup" && order.paymentMethod === "cash") {
     return "confirm-pickup-cash"
   }
-  if (order.status !== "served" || order.paymentStatus !== "pending") return null
-  if (order.orderType === "dine-in") {
-    return order.paymentMethod === "cash" ? "confirm-table-cash" : order.paymentMethod === null ? "mark-table-cash" : null
-  }
-  return order.paymentMethod === "cash" ? "confirm-pickup-cash" : null
+  if (order.status === "served" && order.paymentStatus === "pending") return "confirm-payment"
+  return null
 }
 
 // The item furthest along the preparing->ready->served sequence -- the one
@@ -63,7 +62,7 @@ export function KitchenBoard({
   onRegressItem,
   onHandOver,
   isItemPending,
-  onPaymentAction,
+  onConfirmPayment,
 }: {
   orders: KdsOrder[]
   now: number
@@ -71,7 +70,7 @@ export function KitchenBoard({
   onRegressItem: (orderId: string, itemId: string) => void
   onHandOver: (orderId: string) => void
   isItemPending: (orderId: string, itemId: string) => boolean
-  onPaymentAction: (order: KdsOrder, action: PaymentAction) => void
+  onConfirmPayment: (order: KdsOrder, method: RealPaymentMethod) => void
 }) {
   const t = useTranslations("KitchenDisplay")
   const locale = useLocale()
@@ -126,7 +125,7 @@ export function KitchenBoard({
                     onRegressItem={onRegressItem}
                     onHandOver={onHandOver}
                     isItemPending={isItemPending}
-                    onPaymentAction={onPaymentAction}
+                    onConfirmPayment={onConfirmPayment}
                   />
                 ))}
               </div>
@@ -146,7 +145,7 @@ function Ticket({
   onRegressItem,
   onHandOver,
   isItemPending,
-  onPaymentAction,
+  onConfirmPayment,
 }: {
   order: KdsOrder
   now: number
@@ -155,7 +154,7 @@ function Ticket({
   onRegressItem: (orderId: string, itemId: string) => void
   onHandOver: (orderId: string) => void
   isItemPending: (orderId: string, itemId: string) => boolean
-  onPaymentAction: (order: KdsOrder, action: PaymentAction) => void
+  onConfirmPayment: (order: KdsOrder, method: RealPaymentMethod) => void
 }) {
   const t = useTranslations("KitchenDisplay")
   // First item still awaiting its own one-tap (preparing -> ready) --
@@ -245,14 +244,16 @@ function Ticket({
         })}
       </div>
 
-      {paymentAction ? (
+      {paymentAction === "confirm-pickup-cash" ? (
         <button
           type="button"
-          onClick={() => onPaymentAction(order, paymentAction)}
+          onClick={() => onConfirmPayment(order, "cash")}
           className="nb-border nb-shadow nb-press h-10 rounded-lg bg-secondary text-xs font-extrabold uppercase tracking-wide text-secondary-foreground"
         >
-          {paymentAction === "mark-table-cash" ? t("markCash") : t("confirmCashReceived")}
+          {t("confirmCashReceived")}
         </button>
+      ) : paymentAction === "confirm-payment" ? (
+        <PaymentMethodPicker onSelect={(method) => onConfirmPayment(order, method)} />
       ) : order.status === "ready" ? (
         // Every item is "ready" -- the one deliberate tap that hands the
         // whole order over (and, if already paid, is what actually
@@ -303,8 +304,6 @@ function Ticket({
             {order.status === "paid" ? t("startPreparing") : t("markReady")}
           </button>
         </div>
-      ) : order.status === "served" && order.paymentStatus === "pending" ? (
-        <p className="rounded-md bg-warn/15 px-2 py-2 text-center text-xs font-bold text-warn">{t("awaitingGatewayPayment")}</p>
       ) : null}
     </article>
   )

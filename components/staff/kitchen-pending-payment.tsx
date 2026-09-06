@@ -4,9 +4,10 @@ import { memo, useState } from "react"
 import { useTranslations } from "next-intl"
 import { Banknote } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { ConfirmDialog } from "@/components/ui/dialog"
 import { formatOrderId } from "@/lib/format"
 import type { KdsOrder } from "@/hooks/useKitchenOrders"
+import type { RealPaymentMethod } from "@/lib/supabase/orders-data"
+import { PaymentMethodPicker } from "@/components/staff/payment-method-picker"
 
 // Memoized: doesn't depend on the KDS board's once-a-second `now` tick, so
 // this should skip re-rendering on every tick as long as its parent passes
@@ -16,12 +17,26 @@ function KitchenPendingPaymentComponent({
   onConfirm,
 }: {
   orders: KdsOrder[]
-  onConfirm: (orderId: string) => Promise<void>
+  onConfirm: (orderId: string, method: RealPaymentMethod) => Promise<void>
 }) {
   const t = useTranslations("KitchenDisplay")
-  // Confirming cash marks the order paid with no staff-facing undo on this
-  // surface, so the tap only stages the order and the dialog commits it.
-  const [orderPendingConfirm, setOrderPendingConfirm] = useState<KdsOrder | null>(null)
+  // A single tap confirms payment immediately (no confirm dialog) --
+  // tracked per order so a double-tap can't fire two concurrent
+  // confirmations for the same order.
+  const [pendingOrderIds, setPendingOrderIds] = useState<Set<string>>(new Set())
+
+  async function handleConfirm(orderId: string, method: RealPaymentMethod) {
+    setPendingOrderIds((prev) => new Set(prev).add(orderId))
+    try {
+      await onConfirm(orderId, method)
+    } finally {
+      setPendingOrderIds((prev) => {
+        const next = new Set(prev)
+        next.delete(orderId)
+        return next
+      })
+    }
+  }
 
   return (
     <aside className="nb-border-sm shrink-0 rounded-xl border-amber-500 bg-amber-50 p-3 dark:bg-amber-950/20">
@@ -30,33 +45,25 @@ function KitchenPendingPaymentComponent({
         {t("awaitingPaymentTitle", { count: orders.length })}
       </h3>
       <div className="flex flex-wrap gap-2">
-        {orders.map((order) => (
-          <div key={order.id} className="nb-border-sm nb-shadow-sm flex items-center gap-2 rounded-lg bg-card px-3 py-2 text-sm">
-            <span className="font-bold">#{formatOrderId(order.id)}</span>
-            <span className="text-muted-foreground">
-              {order.orderType === "pickup" ? t("pickup") : t("table", { table: order.table ?? "" })}
-            </span>
-            <Button variant="neubrutal" onClick={() => setOrderPendingConfirm(order)}>
-              {t("confirmCashReceived")}
-            </Button>
-          </div>
-        ))}
-      </div>
-
-      <ConfirmDialog
-        open={orderPendingConfirm !== null}
-        onOpenChange={(open) => {
-          if (!open) setOrderPendingConfirm(null)
-        }}
-        title={t("confirmCashTitle")}
-        description={t("confirmCashBody", {
-          order: orderPendingConfirm ? formatOrderId(orderPendingConfirm.id) : "",
+        {orders.map((order) => {
+          const busy = pendingOrderIds.has(order.id)
+          return (
+            <div key={order.id} className="nb-border-sm nb-shadow-sm flex items-center gap-2 rounded-lg bg-card px-3 py-2 text-sm">
+              <span className="font-bold">#{formatOrderId(order.id)}</span>
+              <span className="text-muted-foreground">
+                {order.orderType === "pickup" ? t("pickup") : t("table", { table: order.table ?? "" })}
+              </span>
+              {order.status === "served" ? (
+                <PaymentMethodPicker onSelect={(method) => void handleConfirm(order.id, method)} disabled={busy} />
+              ) : (
+                <Button variant="neubrutal" disabled={busy} onClick={() => void handleConfirm(order.id, "cash")}>
+                  {t("confirmCashReceived")}
+                </Button>
+              )}
+            </div>
+          )
         })}
-        confirmLabel={t("confirmCashReceived")}
-        onConfirm={async () => {
-          if (orderPendingConfirm) await onConfirm(orderPendingConfirm.id)
-        }}
-      />
+      </div>
     </aside>
   )
 }

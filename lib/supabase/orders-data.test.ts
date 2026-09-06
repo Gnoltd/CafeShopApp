@@ -6,7 +6,7 @@ import {
   getMyOrders,
   getKitchenOrders,
   confirmCashPayment,
-  confirmServedCashPayment,
+  confirmServedPayment,
   payExistingOrder,
   setOrderPaymentMethodCash,
   changeOrderPaymentMethod,
@@ -362,16 +362,20 @@ describe("getOrderHistoryDetail", () => {
   })
 })
 
-describe("confirmServedCashPayment", () => {
-  it("updates only payment_status, not status", async () => {
-    const eqSpy = vi.fn(() => Promise.resolve({ error: null }))
-    const updateSpy = vi.fn(() => ({ eq: eqSpy }))
+describe("confirmServedPayment", () => {
+  it("sets the payment method and marks paid, not the order status", async () => {
+    const eq2 = vi.fn(() => Promise.resolve({ error: null }))
+    const eq1 = vi.fn(() => ({ eq: eq2 }))
+    const eq0 = vi.fn(() => ({ eq: eq1 }))
+    const updateSpy = vi.fn(() => ({ eq: eq0 }))
     const supabase = { from: () => ({ update: updateSpy }) } as unknown as SupabaseClient
 
-    await confirmServedCashPayment(supabase, "order-1")
+    await confirmServedPayment(supabase, "order-1", "vnpay")
 
-    expect(updateSpy).toHaveBeenCalledWith({ payment_status: "paid" })
-    expect(eqSpy).toHaveBeenCalledWith("id", "order-1")
+    expect(updateSpy).toHaveBeenCalledWith({ payment_method: "vnpay", payment_status: "paid" })
+    expect(eq0).toHaveBeenCalledWith("id", "order-1")
+    expect(eq1).toHaveBeenCalledWith("status", "served")
+    expect(eq2).toHaveBeenCalledWith("payment_status", "pending")
   })
 })
 

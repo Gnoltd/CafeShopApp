@@ -110,33 +110,38 @@ export async function confirmCashPayment(supabase: SupabaseClient, orderId: stri
   if (error) throw error
 }
 
-export async function confirmServedCashPayment(supabase: SupabaseClient, orderId: string): Promise<void> {
-  const { error } = await supabase.from("orders").update({ payment_status: "paid" }).eq("id", orderId)
-  if (error) throw error
-}
-
-export async function confirmTableCashPayment(supabase: SupabaseClient, tableId: string): Promise<number> {
-  const { data, error } = await supabase.rpc("confirm_table_cash_payment", { p_table_id: tableId })
-  if (error) throw error
-  return data as number
-}
-
-// I-3: a table round placed via the shared-table-ordering flow starts
-// with payment_method null and only gets one once someone taps Check
-// Bill. If guests never tap it, staff had no way to settle the table
-// from KDS at all. Plain multi-row update, not an RPC -- verified live
-// that orders_update_staff RLS already allows staff/manager/admin to
-// UPDATE orders directly, matching the existing single-order
-// setOrderPaymentMethodCash (order-tracking.ts) which does exactly
-// this pattern for one order.
-export async function markTableCashPayment(supabase: SupabaseClient, tableId: string): Promise<void> {
+// A served pickup order's deferred payment can be confirmed as paid via
+// whichever method the customer actually used, not just cash -- staff picks
+// the method in the KDS UI and this records both in one write. Scoped to
+// status='served' AND payment_status='pending' so a stale/duplicate tap
+// can't overwrite an order a gateway webhook already settled independently.
+export async function confirmServedPayment(
+  supabase: SupabaseClient,
+  orderId: string,
+  method: RealPaymentMethod
+): Promise<void> {
   const { error } = await supabase
     .from("orders")
-    .update({ payment_method: "cash" })
-    .eq("table_id", tableId)
+    .update({ payment_method: method, payment_status: "paid" })
+    .eq("id", orderId)
+    .eq("status", "served")
     .eq("payment_status", "pending")
-    .is("payment_method", null)
   if (error) throw error
+}
+
+// Confirms a table's whole unpaid balance as paid via whichever method the
+// customer actually used -- replaces the old cash-only RPC and the separate
+// "set method with no method chosen yet" step (markTableCashPayment): this
+// covers both a round that never had a method chosen and one where the
+// customer's own pick needs correcting, in one action.
+export async function confirmTablePayment(
+  supabase: SupabaseClient,
+  tableId: string,
+  method: RealPaymentMethod
+): Promise<number> {
+  const { data, error } = await supabase.rpc("confirm_table_payment", { p_table_id: tableId, p_method: method })
+  if (error) throw error
+  return data as number
 }
 
 // Undo a mistaken "Đã Giao Khách" tap. recall_last_completed_order (migration

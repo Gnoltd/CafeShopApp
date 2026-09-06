@@ -6,14 +6,14 @@ import { Coffee, Timer } from "lucide-react"
 import { SegmentedControl } from "@/components/motion/segmented-control"
 import { KitchenStatsFooter } from "@/components/staff/kitchen-stats-footer"
 import { formatKitchenClock } from "@/components/staff/kitchen-clock"
-import { KitchenBoard, type PaymentAction } from "@/components/staff/kitchen-board"
+import { KitchenBoard } from "@/components/staff/kitchen-board"
 import { useKitchenOrders } from "@/hooks/useKitchenOrders"
-import { NOTHING_TO_RECALL_ERROR } from "@/lib/supabase/orders-data"
+import { NOTHING_TO_RECALL_ERROR, type RealPaymentMethod } from "@/lib/supabase/orders-data"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { LanguageSwitcher } from "@/components/shared/language-switcher"
 
 export function KitchenDisplay() {
-  const { orders, pendingPaymentOrders, advanceItem, regressItem, isItemPending, serveTable, confirmCashPayment, confirmTableCashPayment, markTableCashPayment, recallLastOrder, completedCount, avgTimeLabel } = useKitchenOrders()
+  const { orders, pendingPaymentOrders, advanceItem, regressItem, isItemPending, serveTable, confirmPayment, confirmTablePayment, recallLastOrder, completedCount, avgTimeLabel } = useKitchenOrders()
   const t = useTranslations("KitchenDisplay")
   const locale = useLocale()
   const [now, setNow] = useState(0)
@@ -68,14 +68,20 @@ export function KitchenDisplay() {
       setError(err?.message === NOTHING_TO_RECALL_ERROR ? t("recallNothingError") : t("updateError"))
     })
   }, [recallLastOrder, t])
-  const handlePaymentAction = useCallback(async (order: (typeof orders)[number], action: PaymentAction) => {
+  // Dine-in's deferred payment settles the whole table's tab in one RPC
+  // (confirmTablePayment); pickup -- whether it's the pre-serve pending_payment
+  // cash confirm or a served order's deferred payment -- always settles just
+  // this one order (confirmPayment).
+  const handleConfirmPayment = useCallback(async (order: (typeof orders)[number], method: RealPaymentMethod) => {
     setError(null)
     try {
-      if (action === "confirm-pickup-cash") await confirmCashPayment(order.id)
-      if (action === "mark-table-cash" && order.tableId) await markTableCashPayment(order.tableId)
-      if (action === "confirm-table-cash" && order.tableId) await confirmTableCashPayment(order.tableId)
+      if (order.orderType === "dine-in" && order.status === "served" && order.tableId) {
+        await confirmTablePayment(order.tableId, method)
+      } else {
+        await confirmPayment(order.id, method)
+      }
     } catch { setError(t("updateError")) }
-  }, [confirmCashPayment, confirmTableCashPayment, markTableCashPayment, t])
+  }, [confirmPayment, confirmTablePayment, t])
 
   const visibleOrders = useMemo(() => {
     const all = [...orders, ...pendingPaymentOrders.filter((pending) => !orders.some((order) => order.id === pending.id))]
@@ -140,7 +146,7 @@ export function KitchenDisplay() {
               onRegressItem={handleRegressItem}
               onHandOver={handleHandOver}
               isItemPending={isItemPending}
-              onPaymentAction={handlePaymentAction}
+              onConfirmPayment={handleConfirmPayment}
             />
           </div>
           <KitchenStatsFooter orders={orders} now={now} onRecall={handleRecall} />

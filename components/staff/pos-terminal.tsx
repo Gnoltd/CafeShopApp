@@ -48,7 +48,7 @@ export function PosTerminal({ categories, items }: { categories: MenuCategory[];
   const t = useTranslations("Pos")
   const [supabase] = useState(() => createClient())
   const { tables } = useTables()
-  const { pendingPaymentOrders, confirmCashPayment } = useKitchenOrders()
+  const { pendingPaymentOrders, confirmPayment } = useKitchenOrders()
   const { isShiftOpen } = useShift()
 
   const [selectedCategory, setSelectedCategory] = useState(categories[0]?.id ?? "")
@@ -185,7 +185,7 @@ export function PosTerminal({ categories, items }: { categories: MenuCategory[];
 
         {pendingPaymentOrders.length > 0 && (
           <div className="px-4 pt-4">
-            <KitchenPendingPayment orders={pendingPaymentOrders} onConfirm={confirmCashPayment} />
+            <KitchenPendingPayment orders={pendingPaymentOrders} onConfirm={confirmPayment} />
           </div>
         )}
 

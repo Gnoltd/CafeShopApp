@@ -8,17 +8,15 @@ import {
   advanceOrderItemStatus,
   markOrderItemsServed,
   confirmCashPayment as confirmCashPaymentQuery,
-  confirmServedCashPayment as confirmServedCashPaymentQuery,
-  confirmTableCashPayment as confirmTableCashPaymentQuery,
-  markTableCashPayment as markTableCashPaymentQuery,
+  confirmServedPayment as confirmServedPaymentQuery,
+  confirmTablePayment as confirmTablePaymentQuery,
   getKitchenOrders,
   getPendingPaymentOrders,
-  setOrderPaymentMethodCash,
-  changeOrderPaymentMethod,
   recallLastCompletedOrder as recallLastCompletedOrderQuery,
   type KdsOrderRow,
   type OrderItemStatus,
   type RealOrderStatus,
+  type RealPaymentMethod,
 } from "@/lib/supabase/orders-data"
 
 // Derived from the real order_status enum (not hand-typed) so it can never
@@ -229,11 +227,8 @@ type KitchenOrdersContextValue = {
   regressItem: (orderId: string, itemId: string) => Promise<void>
   isItemPending: (orderId: string, itemId: string) => boolean
   serveTable: (orderIds: string[]) => Promise<void>
-  confirmCashPayment: (orderId: string) => Promise<void>
-  confirmTableCashPayment: (tableId: string) => Promise<void>
-  markTableCashPayment: (tableId: string) => Promise<void>
-  markCashPayment: (orderId: string) => Promise<void>
-  undoCashPayment: (orderId: string) => Promise<void>
+  confirmPayment: (orderId: string, method: RealPaymentMethod) => Promise<void>
+  confirmTablePayment: (tableId: string, method: RealPaymentMethod) => Promise<void>
   recallLastOrder: () => Promise<void>
   completedCount: number
   avgTimeLabel: string
@@ -343,7 +338,7 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
     // complete_order_when_served_and_paid only fires when payment is
     // already settled. A Pay Later order that's still payment_status
     // "pending" correctly stays on the board (KitchenBoard's own
-    // "awaitingGatewayPayment" branch), so it must not tick the
+    // "confirm-payment" method-picker branch), so it must not tick the
     // completedCount/avgTimeLabel KPIs -- those numbers are meant to
     // describe orders that actually left the board, not every tap of
     // this button.
@@ -357,29 +352,22 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
     )
   }
 
-  async function confirmCashPayment(orderId: string) {
+  // A pre-serve pending_payment order (Pay Now, cash chosen at checkout)
+  // only ever reaches here as cash -- the method param is meaningless for
+  // that branch and ignored, matching confirmCashPaymentQuery's own
+  // cash-only shape. A served order's deferred payment can genuinely be
+  // any method, which the caller-picked `method` records.
+  async function confirmPayment(orderId: string, method: RealPaymentMethod) {
     const order = orders.find((o) => o.id === orderId) ?? pendingPaymentOrders.find((o) => o.id === orderId)
     if (order?.status === "served") {
-      await confirmServedCashPaymentQuery(supabase, orderId)
+      await confirmServedPaymentQuery(supabase, orderId, method)
     } else {
       await confirmCashPaymentQuery(supabase, orderId)
     }
   }
 
-  async function confirmTableCashPayment(tableId: string) {
-    await confirmTableCashPaymentQuery(supabase, tableId)
-  }
-
-  async function markTableCashPayment(tableId: string) {
-    await markTableCashPaymentQuery(supabase, tableId)
-  }
-
-  async function markCashPayment(orderId: string) {
-    await setOrderPaymentMethodCash(supabase, orderId)
-  }
-
-  async function undoCashPayment(orderId: string) {
-    await changeOrderPaymentMethod(supabase, orderId, null)
+  async function confirmTablePayment(tableId: string, method: RealPaymentMethod) {
+    await confirmTablePaymentQuery(supabase, tableId, method)
   }
 
   // No optimistic status update -- which order (if any) is eligible lives
@@ -418,11 +406,8 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
         regressItem,
         isItemPending,
         serveTable,
-        confirmCashPayment,
-        confirmTableCashPayment,
-        markTableCashPayment,
-        markCashPayment,
-        undoCashPayment,
+        confirmPayment,
+        confirmTablePayment,
         recallLastOrder,
         completedCount,
         avgTimeLabel,

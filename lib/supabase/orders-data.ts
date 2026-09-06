@@ -32,9 +32,8 @@ export {
   advanceOrderItemStatus,
   markOrderItemsServed,
   confirmCashPayment,
-  confirmServedCashPayment,
-  confirmTableCashPayment,
-  markTableCashPayment,
+  confirmServedPayment,
+  confirmTablePayment,
   recallLastCompletedOrder,
   NOTHING_TO_RECALL_ERROR,
 } from "./order-kds"
