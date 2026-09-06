@@ -8,6 +8,7 @@ import { createModifierGroup } from "./menu-data"
 import { setItemModifierGroups } from "./menu-data"
 import { updateModifierGroup } from "./menu-data"
 import { setItemSizes } from "./menu-data"
+import { setItemCategories } from "./menu-data"
 
 function fakeSupabase(rows: unknown[]) {
   return {
@@ -128,7 +129,7 @@ describe("createMenuItem", () => {
     const supabase = { from: () => ({ insert: insertSpy }) } as unknown as SupabaseClient
 
     const result = await createMenuItem(supabase, {
-      categoryId: "cat-1",
+      categoryIds: ["cat-1"],
       nameVi: "Trà Đào",
       nameEn: "Peach Tea",
       descriptionVi: "mô tả",
@@ -141,7 +142,6 @@ describe("createMenuItem", () => {
     })
 
     expect(insertSpy).toHaveBeenCalledWith({
-      category_id: "cat-1",
       name_vi: "Trà Đào",
       name_en: "Peach Tea",
       description_vi: "mô tả",
@@ -316,6 +316,43 @@ describe("setItemSizes", () => {
     } as unknown as SupabaseClient
 
     await setItemSizes(supabase, "item-1", [])
+
+    expect(deleteEqSpy).toHaveBeenCalledWith("menu_item_id", "item-1")
+    expect(insertSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe("setItemCategories", () => {
+  it("deletes existing links then inserts one row per category id", async () => {
+    const deleteEqSpy = vi.fn(() => Promise.resolve({ error: null }))
+    const insertSpy = vi.fn(() => Promise.resolve({ error: null }))
+    const supabase = {
+      from: () => ({
+        delete: () => ({ eq: deleteEqSpy }),
+        insert: insertSpy,
+      }),
+    } as unknown as SupabaseClient
+
+    await setItemCategories(supabase, "item-1", ["cat-a", "cat-b"])
+
+    expect(deleteEqSpy).toHaveBeenCalledWith("menu_item_id", "item-1")
+    expect(insertSpy).toHaveBeenCalledWith([
+      { menu_item_id: "item-1", category_id: "cat-a" },
+      { menu_item_id: "item-1", category_id: "cat-b" },
+    ])
+  })
+
+  it("skips the insert call when categoryIds is empty", async () => {
+    const deleteEqSpy = vi.fn(() => Promise.resolve({ error: null }))
+    const insertSpy = vi.fn(() => Promise.resolve({ error: null }))
+    const supabase = {
+      from: () => ({
+        delete: () => ({ eq: deleteEqSpy }),
+        insert: insertSpy,
+      }),
+    } as unknown as SupabaseClient
+
+    await setItemCategories(supabase, "item-1", [])
 
     expect(deleteEqSpy).toHaveBeenCalledWith("menu_item_id", "item-1")
     expect(insertSpy).not.toHaveBeenCalled()

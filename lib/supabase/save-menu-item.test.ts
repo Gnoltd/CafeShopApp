@@ -5,6 +5,7 @@ vi.mock("./menu-data", () => ({
   createMenuItem: vi.fn(),
   updateMenuItem: vi.fn(),
   setItemModifierGroups: vi.fn(),
+  setItemCategories: vi.fn(),
   setItemSizes: vi.fn(),
   getMenuItemById: vi.fn(),
 }))
@@ -13,14 +14,14 @@ vi.mock("./inventory-data", () => ({
   setMenuItemIngredients: vi.fn(),
 }))
 
-import { createMenuItem, updateMenuItem, setItemModifierGroups, setItemSizes, getMenuItemById, type MenuItem } from "./menu-data"
+import { createMenuItem, updateMenuItem, setItemModifierGroups, setItemCategories, setItemSizes, getMenuItemById, type MenuItem } from "./menu-data"
 import { setMenuItemIngredients } from "./inventory-data"
 import { saveMenuItem } from "./save-menu-item"
 
 const supabase = {} as SupabaseClient
 
 const ITEM_INPUT = {
-  categoryId: "cat-1",
+  categoryIds: ["cat-1"],
   nameVi: "Cà Phê",
   nameEn: "Coffee",
   descriptionVi: "",
@@ -34,7 +35,7 @@ const ITEM_INPUT = {
 
 const SAVED_ITEM: MenuItem = {
   id: "item-1",
-  categoryId: "cat-1",
+  categoryIds: ["cat-1"],
   nameVi: "Cà Phê",
   nameEn: "Coffee",
   descriptionVi: "",
@@ -71,6 +72,7 @@ describe("saveMenuItem", () => {
     expect(createMenuItem).toHaveBeenCalledWith(supabase, ITEM_INPUT)
     expect(updateMenuItem).not.toHaveBeenCalled()
     expect(setItemModifierGroups).toHaveBeenCalledWith(supabase, "item-1", ["grp-1"])
+    expect(setItemCategories).toHaveBeenCalledWith(supabase, "item-1", ["cat-1"])
     expect(setMenuItemIngredients).toHaveBeenCalledWith(supabase, "item-1", [{ ingredientId: "ing-1", quantityUsed: 2 }])
     expect(setItemSizes).toHaveBeenCalledWith(supabase, "item-1", [{ name: "M", priceDelta: 0 }])
     expect(result).toEqual(REFETCHED_ITEM)

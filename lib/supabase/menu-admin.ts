@@ -32,9 +32,10 @@ export async function updateCategory(
   if (error) throw error
 }
 
-// Blocked at the DB level by menu_items_category_id_fkey (ON DELETE
-// RESTRICT) whenever a menu item still references this category -- callers
-// must catch and show a friendly error rather than a raw FK violation.
+// Blocked at the DB level by menu_item_categories_category_id_fkey (ON
+// DELETE RESTRICT) whenever a menu item still references this category --
+// callers must catch and show a friendly error rather than a raw FK
+// violation.
 export async function deleteCategory(supabase: SupabaseClient, id: string): Promise<void> {
   const { error } = await supabase.from("categories").delete().eq("id", id)
   if (error) throw error
@@ -46,7 +47,7 @@ export type MenuItemSizeInput = {
 }
 
 export type MenuItemInput = {
-  categoryId: string
+  categoryIds: string[]
   nameVi: string
   nameEn: string
   descriptionVi: string
@@ -61,7 +62,6 @@ export type MenuItemInput = {
 
 function toRow(input: MenuItemInput) {
   return {
-    category_id: input.categoryId,
     name_vi: input.nameVi,
     name_en: input.nameEn,
     description_vi: input.descriptionVi,
@@ -221,6 +221,25 @@ export async function setItemModifierGroups(
   const { error: insertError } = await supabase
     .from("menu_item_modifier_groups")
     .insert(groupIds.map((groupId) => ({ menu_item_id: itemId, modifier_group_id: groupId })))
+  if (insertError) throw insertError
+}
+
+export async function setItemCategories(
+  supabase: SupabaseClient,
+  itemId: string,
+  categoryIds: string[]
+): Promise<void> {
+  const { error: deleteError } = await supabase
+    .from("menu_item_categories")
+    .delete()
+    .eq("menu_item_id", itemId)
+  if (deleteError) throw deleteError
+
+  if (categoryIds.length === 0) return
+
+  const { error: insertError } = await supabase
+    .from("menu_item_categories")
+    .insert(categoryIds.map((categoryId) => ({ menu_item_id: itemId, category_id: categoryId })))
   if (insertError) throw insertError
 }
 

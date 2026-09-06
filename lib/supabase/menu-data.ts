@@ -19,6 +19,7 @@ export {
   createModifierGroup,
   updateModifierGroup,
   setItemModifierGroups,
+  setItemCategories,
   setItemSizes,
   createCategory,
   updateCategory,
