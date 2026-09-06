@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { formatVND } from "@/lib/format"
 import { createClient } from "@/lib/supabase/client"
 import { LandingHeroSettingsCard } from "@/components/admin/landing-hero-settings-card"
 import {
@@ -245,6 +246,14 @@ export function SettingsView() {
             </button>
           </CardTitle>
         </CardHeader>
+        <p className="px-6 pb-2 text-xs text-muted-foreground">
+          {loyaltyDraft.enabled
+            ? t("loyaltyEnabledHint", {
+                earnRate: formatVND(Number(loyaltyDraft.earnRate) || 0),
+                redeemRate: formatVND(Number(loyaltyDraft.redeemRate) || 0),
+              })
+            : t("loyaltyDisabledHint")}
+        </p>
         <CardContent className={cn("space-y-4 transition-opacity", !loyaltyDraft.enabled && "opacity-50")}>
           <div className="space-y-2">
             <Label htmlFor="earn-rate">{t("earnRate")}</Label>

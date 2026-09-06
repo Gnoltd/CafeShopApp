@@ -1010,6 +1010,8 @@
     "taxRateError": "Nhập thuế suất từ 0 đến 100.",
     "loyaltySettings": "Cài Đặt Tích Điểm",
     "loyaltyEnabled": "Kích Hoạt Chương Trình",
+    "loyaltyEnabledHint": "Tích 1 điểm mỗi {earnRate} · {redeemRate} = 1 điểm khi đổi thưởng",
+    "loyaltyDisabledHint": "Chương trình đang tắt — khách không tích hoặc đổi điểm được.",
     "earnRate": "Tỷ Lệ Tích Điểm (VNĐ / 1 điểm)",
     "earnRateError": "Nhập số nguyên lớn hơn 0.",
     "redeemRate": "Tỷ Lệ Quy Đổi (VNĐ / 1 điểm)",

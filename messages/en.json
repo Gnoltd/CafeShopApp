@@ -1010,6 +1010,8 @@
     "taxRateError": "Enter a tax rate from 0 to 100.",
     "loyaltySettings": "Loyalty Settings",
     "loyaltyEnabled": "Enable Program",
+    "loyaltyEnabledHint": "Earn 1 point per {earnRate} · {redeemRate} = 1 point redeemed",
+    "loyaltyDisabledHint": "The programme is off — guests can't earn or redeem points.",
     "earnRate": "Earn Rate (VND / 1 point)",
     "earnRateError": "Enter a whole number greater than 0.",
     "redeemRate": "Redeem Rate (VND / 1 point)",
