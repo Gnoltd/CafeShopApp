@@ -157,10 +157,6 @@ function Ticket({
   onConfirmPayment: (order: KdsOrder, method: RealPaymentMethod) => void
 }) {
   const t = useTranslations("KitchenDisplay")
-  // First item still awaiting its own one-tap (preparing -> ready) --
-  // once every item is "ready", `next` is undefined and the whole ticket's
-  // CTA switches to the single "Đã Phục Vụ" hand-over tap below.
-  const next = order.items.find((item) => item.status === "preparing")
   const done = order.items.filter((item) => item.status !== "preparing").length
   const late = now - order.createdAt >= 600000
   const paymentAction = paymentActionForOrder(order)
@@ -281,29 +277,24 @@ function Ticket({
             {t("markServed")}
           </button>
         </div>
-      ) : next ? (
-        <div className="flex items-center gap-2">
-          {regressTarget && (
-            <button
-              type="button"
-              onClick={() => onRegressItem(order.id, regressTarget.id)}
-              disabled={isItemPending(order.id, regressTarget.id)}
-              aria-label={t("undoItem")}
-              title={t("undoItem")}
-              className="nb-border nb-shadow-sm nb-press flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-card text-muted-foreground disabled:opacity-40"
-            >
-              <CornerUpLeft className="size-4" />
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => onAdvanceItem(order.id, next.id)}
-            disabled={isItemPending(order.id, next.id)}
-            className="nb-border nb-shadow nb-press h-10 flex-1 rounded-lg bg-primary text-xs font-extrabold uppercase tracking-wide text-white disabled:opacity-40"
-          >
-            {order.status === "paid" ? t("startPreparing") : t("markReady")}
-          </button>
-        </div>
+      ) : regressTarget ? (
+        // Some items are still "preparing" -- each item's own row above is
+        // the only way to advance it (tapping it directly). This ticket-level
+        // control is undo-only here on purpose: a bottom-of-card "advance"
+        // button used to silently tick whichever item happened to be first
+        // in line, which looked like "move this order to Preparing" but
+        // actually marked a specific, arbitrary drink done -- a real bug,
+        // not a shortcut worth keeping.
+        <button
+          type="button"
+          onClick={() => onRegressItem(order.id, regressTarget.id)}
+          disabled={isItemPending(order.id, regressTarget.id)}
+          aria-label={t("undoItem")}
+          title={t("undoItem")}
+          className="nb-border nb-shadow-sm nb-press flex h-10 w-10 shrink-0 items-center justify-center self-start rounded-lg bg-card text-muted-foreground disabled:opacity-40"
+        >
+          <CornerUpLeft className="size-4" />
+        </button>
       ) : null}
     </article>
   )

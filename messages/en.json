@@ -539,8 +539,6 @@
     "updateError": "Failed to update. Try again.",
     "pickup": "Pickup",
     "table": "Table {table}",
-    "startPreparing": "Start Brewing",
-    "markReady": "Mark Ready",
     "complete": "Complete",
     "empty": "No orders.",
     "filterAll": "All Tickets",
