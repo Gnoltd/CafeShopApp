@@ -366,6 +366,7 @@ the network-enabled rerun compiled successfully.)
 - Remove the dead `VNPAY_RETURN_URL` variable if confirmed unused, and later migrate deprecated `middleware.ts` to Next.js `proxy.ts` as a separate low-risk cleanup.
 - Legacy table-session rows with `table_session_id is null` remain a data-migration-only edge case; cover them only if production data contains such rows.
 - Root `AGENTS.md` refers to `components/customer/AGENTS.md`, `components/staff/AGENTS.md`, and `components/admin/AGENTS.md`, but those files are absent in this checkout; restore them or correct the structural map before the next area-specific agent task.
+- `shop_settings.landing_hero_base_images` has a stray `https://images.unsplash.com/...` entry live in production (pre-existing, not from any admin upload — `LandingHeroSettingsCard` only ever writes Supabase Storage URLs, so this predates that feature). It was crashing the entire `/admin/settings` page (`next/image` only allow-lists the Supabase storage host in `next.config.ts`); the code side is already fixed (falls back to a plain `<img>` for any non-Supabase URL, `redesign/manager-app` merge, 2026-09-06) so the page no longer crashes, but the stray URL itself is still sitting in the live row. Needs a one-line `UPDATE shop_settings SET landing_hero_base_images = ...` to drop it — held back because doing it required a production DB write outside that session's approved scope.
 
 ## Completion gate
 
