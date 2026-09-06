@@ -287,19 +287,24 @@ export function SettingsView() {
 
       <LandingHeroSettingsCard />
 
+      {/* A full-width banner above the buttons (matching the reference)
+          rather than inline text next to them -- at mobile widths, two
+          fixed-width buttons plus an inline "saved" message overflowed the
+          row (measured with the Vietnamese strings, which run longer). */}
+      {justSaved && (
+        <p role="status" className="flex items-center gap-1.5 rounded-lg bg-success/15 px-3 py-2 text-sm font-semibold text-success">
+          <Check className="h-4 w-4 shrink-0" />
+          {t("savedMessage")}
+        </p>
+      )}
+
       <div className="flex items-center gap-3">
-        <Button variant="neubrutal" className="h-11 bg-card px-6 text-foreground" onClick={handleCancel} disabled={isSaving}>
+        <Button variant="neubrutal" className="h-11 flex-1 bg-card text-foreground" onClick={handleCancel} disabled={isSaving}>
           {t("cancel")}
         </Button>
-        <Button variant="neubrutal" onClick={handleSave} disabled={isSaving} className="h-11 px-6">
+        <Button variant="neubrutal" onClick={handleSave} disabled={isSaving} className="h-11 flex-1">
           {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : t("saveChanges")}
         </Button>
-        {justSaved && (
-          <span className="flex items-center gap-1.5 text-sm font-medium text-green-600">
-            <Check className="h-4 w-4" />
-            {t("savedMessage")}
-          </span>
-        )}
       </div>
     </div>
   )
