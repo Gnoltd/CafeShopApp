@@ -35,7 +35,7 @@ describe("getMenuItems", () => {
   it("flattens nested sizes and modifier groups into camelCase", async () => {
     const row = {
       id: "item-1",
-      category_id: "cat-1",
+      menu_item_categories: [{ category_id: "cat-1" }],
       name_vi: "Phin Sữa Đá",
       name_en: "Iced Milk Coffee",
       description_vi: "mô tả",
@@ -76,7 +76,7 @@ describe("getMenuItems", () => {
     expect(result).toEqual([
       {
         id: "item-1",
-        categoryId: "cat-1",
+        categoryIds: ["cat-1"],
         nameVi: "Phin Sữa Đá",
         nameEn: "Iced Milk Coffee",
         descriptionVi: "mô tả",
@@ -106,7 +106,7 @@ describe("createMenuItem", () => {
   it("inserts snake_case columns and returns the mapped row", async () => {
     const insertedRow = {
       id: "item-new",
-      category_id: "cat-1",
+      menu_item_categories: [{ category_id: "cat-1" }],
       name_vi: "Trà Đào",
       name_en: "Peach Tea",
       description_vi: "mô tả",

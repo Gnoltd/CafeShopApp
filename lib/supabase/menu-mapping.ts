@@ -24,7 +24,7 @@ export type MenuModifierGroup = {
 
 export type MenuItem = {
   id: string
-  categoryId: string
+  categoryIds: string[]
   nameVi: string
   nameEn: string
   descriptionVi: string
@@ -67,7 +67,7 @@ export type ModifierGroupLinkRow = {
 
 export type MenuItemRow = {
   id: string
-  category_id: string
+  menu_item_categories: { category_id: string }[] | null
   name_vi: string
   name_en: string
   description_vi: string
@@ -83,8 +83,9 @@ export type MenuItemRow = {
 }
 
 export const MENU_ITEM_SELECT = `
-  id, category_id, name_vi, name_en, description_vi, description_en,
+  id, name_vi, name_en, description_vi, description_en,
   base_price, icon, is_available, is_popular, image_url, has_size_options,
+  menu_item_categories ( category_id ),
   menu_item_sizes ( id, name, price_delta, sort_order ),
   menu_item_modifier_groups (
     modifier_groups ( id, name_vi, name_en, is_required, modifiers ( id, name_vi, name_en, price_delta ) )
@@ -94,7 +95,7 @@ export const MENU_ITEM_SELECT = `
 export function mapMenuItemRow(row: MenuItemRow): MenuItem {
   return {
     id: row.id,
-    categoryId: row.category_id,
+    categoryIds: (row.menu_item_categories ?? []).map((c) => c.category_id),
     nameVi: row.name_vi,
     nameEn: row.name_en,
     descriptionVi: row.description_vi,
