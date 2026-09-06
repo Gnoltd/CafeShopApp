@@ -25,7 +25,7 @@ export function ShiftReportDetail({ report, locale }: { report: ShiftReport; loc
     <div className="flex flex-col gap-4">
       <section className="nb-border-sm nb-shadow-sm rounded-xl bg-card p-5">
         <p className="mb-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Clock className="h-4 w-4" />
+          {report.closedAt === null ? <span className="live-pulse-dot" /> : <Clock className="h-4 w-4" />}
           {t("openedAtLabel")}: {formatDateTime(report.openedAt, locale)}
           {report.openedByName && <> ({report.openedByName})</>}
           {report.closedAt !== null && (

@@ -244,6 +244,24 @@
     transform: translate(2px, 2px);
     box-shadow: 0 0 0 var(--ink);
   }
+  .live-pulse-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    background: var(--success);
+    animation: livePulse 2s ease-in-out infinite;
+  }
+}
+@keyframes livePulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .nb-press,
@@ -251,5 +269,8 @@
   .nb-press-sm,
   .nb-press-sm:active {
     transition: none;
+  }
+  .live-pulse-dot {
+    animation: none;
   }
 }

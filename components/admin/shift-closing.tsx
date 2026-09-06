@@ -97,13 +97,13 @@ export function ShiftClosing() {
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-2xl font-bold text-card-foreground">{t("title")}</h2>
         <div className="nb-border-sm nb-shadow-sm flex gap-1 rounded-xl bg-card p-1">
           <button
             type="button"
             onClick={() => setTab("current")}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-extrabold ${
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-extrabold ${
               tab === "current" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
             }`}
           >
@@ -116,7 +116,7 @@ export function ShiftClosing() {
               setTab("history")
               setSelectedShift(null)
             }}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-extrabold ${
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-extrabold ${
               tab === "history" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
             }`}
           >
