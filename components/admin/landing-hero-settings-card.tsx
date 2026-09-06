@@ -15,6 +15,20 @@ import {
 
 const MAX_SIZE_BYTES = 8 * 1024 * 1024
 
+// next/image throws a hard render error (crashing this whole card, and the
+// rest of the Settings page with it) for any hostname not in next.config.ts's
+// remotePatterns -- confirmed live with a stray non-Supabase URL left over in
+// landing_hero_base_images. Every real upload here comes from this app's own
+// Supabase Storage bucket, so any other host is unexpected data, not a case
+// to crash on -- fall back to a plain <img> instead.
+function isOptimizableImageUrl(url: string): boolean {
+  try {
+    return new URL(url).hostname === new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").hostname
+  } catch {
+    return false
+  }
+}
+
 type SlotKey = "base0" | "base1" | "base2" | "reveal"
 const SLOTS: { key: SlotKey; labelKey: string }[] = [
   { key: "base0", labelKey: "landingHeroBasePhoto1" },
@@ -147,7 +161,12 @@ export function LandingHeroSettingsCard() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={pendingPreview} alt="" className="h-full w-full object-cover" />
                   ) : uploadedUrl ? (
-                    <Image src={uploadedUrl} alt="" fill sizes="(max-width: 640px) 45vw, 200px" className="object-cover" />
+                    isOptimizableImageUrl(uploadedUrl) ? (
+                      <Image src={uploadedUrl} alt="" fill sizes="(max-width: 640px) 45vw, 200px" className="object-cover" />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={uploadedUrl} alt="" className="h-full w-full object-cover" />
+                    )
                   ) : (
                     <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-muted-foreground">
                       <ImageIcon className="h-6 w-6" />
