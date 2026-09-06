@@ -53,7 +53,7 @@ export function MenuBrowser({
   const visibleItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
     return items.filter((item) => {
-      const matchesCategory = selectedCategory === ALL_CATEGORY || item.categoryId === selectedCategory
+      const matchesCategory = selectedCategory === ALL_CATEGORY || item.categoryIds.includes(selectedCategory)
       const matchesQuery =
         query === "" ||
         item.nameVi.toLowerCase().includes(query) ||

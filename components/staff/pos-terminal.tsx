@@ -80,7 +80,7 @@ export function PosTerminal({ categories, items }: { categories: MenuCategory[];
   const visibleItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
     return items.filter((item) => {
-      const matchesCategory = item.categoryId === selectedCategory
+      const matchesCategory = item.categoryIds.includes(selectedCategory)
       const matchesQuery =
         query === "" || item.nameVi.toLowerCase().includes(query) || item.nameEn.toLowerCase().includes(query)
       return item.isAvailable && matchesCategory && matchesQuery
