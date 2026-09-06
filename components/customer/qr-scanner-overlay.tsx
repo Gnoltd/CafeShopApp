@@ -26,7 +26,7 @@ export function QrScannerOverlay({
   onClose: () => void
   onScan?: (token: string) => void
 }) {
-  const t = useTranslations("Landing")
+  const t = useTranslations("QrScanner")
   const router = useRouter()
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)

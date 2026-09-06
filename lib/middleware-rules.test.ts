@@ -17,12 +17,8 @@ describe("resolveRedirect — auth-required exact paths", () => {
     expect(resolveRedirect("/loyalty", null)).toBe("/login")
   })
 
-  it("redirects an anonymous guest away from /home", () => {
-    expect(resolveRedirect("/home", null)).toBe("/login")
-  })
-
-  it("allows a logged-in customer to reach /home", () => {
-    expect(resolveRedirect("/home", "customer")).toBeNull()
+  it("does not gate the root home page for an anonymous guest", () => {
+    expect(resolveRedirect("/", null)).toBeNull()
   })
 
   it("allows a logged-in customer to reach /profile", () => {
@@ -72,11 +68,11 @@ describe("resolveRedirect — existing /staff and /admin behavior unaffected", (
   })
 
   it("still redirects a customer away from /admin/dashboard", () => {
-    expect(resolveRedirect("/admin/dashboard", "customer")).toBe("/home")
+    expect(resolveRedirect("/admin/dashboard", "customer")).toBe("/")
   })
 
   it("redirects non-manager customers away from admin settings", () => {
-    expect(resolveRedirect("/admin/settings", "customer")).toBe("/home")
+    expect(resolveRedirect("/admin/settings", "customer")).toBe("/")
   })
 })
 

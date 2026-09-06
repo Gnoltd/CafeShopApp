@@ -9,7 +9,7 @@ import { useCart } from "@/hooks/useCart"
 import { useHeaderActionsClearance } from "@/hooks/useHeaderActionsClearance"
 
 const DESKTOP_NAV = [
-  { href: "/home", labelKey: "home", icon: Home },
+  { href: "/", labelKey: "home", icon: Home },
   { href: "/menu", labelKey: "menu", icon: UtensilsCrossed },
   { href: "/cart", labelKey: "cart", icon: ShoppingBasket },
   { href: "/orders", labelKey: "orders", icon: ReceiptText },
@@ -35,8 +35,8 @@ export function CustomerHeader({ showBack = false }: { showBack?: boolean }) {
         className="mx-auto flex h-14 max-w-7xl items-center gap-2 pl-4 md:h-16"
         style={{ paddingRight: actionsClearance }}
       >
-        {/* Back button — mobile only when showBack */}
-        {showBack && (
+        {/* Back button — mobile only when showBack, never on the home root itself */}
+        {showBack && pathname !== "/" && (
           <button
             type="button"
             onClick={() => router.back()}
@@ -61,7 +61,7 @@ export function CustomerHeader({ showBack = false }: { showBack?: boolean }) {
           {DESKTOP_NAV.map((item) => {
             const isActive =
               item.href === pathname ||
-              (item.href !== "/menu" && pathname.startsWith(item.href))
+              (item.href !== "/menu" && item.href !== "/" && pathname.startsWith(item.href))
             const Icon = item.icon
 
             return (

@@ -7,7 +7,7 @@ import { useCart } from "@/hooks/useCart"
 import { AnimatedTabBar, type TabItem } from "@/components/motion/animated-tab-bar"
 
 const NAV_ITEMS = [
-  { href: "/home", labelKey: "home", icon: Home } as const,
+  { href: "/", labelKey: "home", icon: Home } as const,
   { href: "/menu", labelKey: "menu", icon: UtensilsCrossed } as const,
   { href: "/cart", labelKey: "cart", icon: ShoppingBasket } as const,
   { href: "/orders", labelKey: "orders", icon: ReceiptText } as const,

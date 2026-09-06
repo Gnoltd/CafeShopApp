@@ -16,6 +16,7 @@ import {
 } from "@/lib/table-cart-transfer"
 import { createClient } from "@/lib/supabase/client"
 import { importTableCart } from "@/lib/supabase/table-session-data"
+import { saveActiveTable } from "@/lib/active-table-storage"
 import type { MenuCategory, MenuItem } from "@/lib/supabase/menu-data"
 import { AsyncRetryError, AsyncSkeleton } from "@/components/shared/async-state"
 import { useLatestRefetch, type LoadContext } from "@/hooks/useLatestRefetch"
@@ -68,6 +69,13 @@ export function TableLanding({
   useEffect(() => {
     void runTableResolve()
   }, [qrToken, runTableResolve])
+
+  useEffect(() => {
+    // Home's resume banner re-validates this against get_table_session on
+    // every visit, so it's safe to remember optimistically here rather than
+    // wait for a full session (cart items etc.) to exist.
+    if (resolvedTable && resolvedTable.status !== "cleaning") saveActiveTable(qrToken)
+  }, [resolvedTable, qrToken])
 
   function handleRetryResolve() {
     setResolvedTable(undefined)

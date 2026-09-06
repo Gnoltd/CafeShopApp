@@ -78,13 +78,12 @@ Original mockup source: `design/stitch-exports/`.
 ## Route map
 
 Relative to the locale prefix, under `app/[locale]/`:
-- `(marketing)` — `/`
 - `(auth)` — `/login`, `/signup`, `/callback` (Google OAuth), `/reset-password`
   (route group, contributes no URL segment — bare paths)
-- `(customer)` — `/menu`, `/menu/[itemId]`, `/cart`, `/checkout`,
-  `/orders`, `/orders/[orderId]`, `/table/[qrToken]`, `/profile`,
-  `/profile/settings`, `/profile/addresses`, `/loyalty`,
-  `/loyalty/redemptions`
+- `(customer)` — `/` (Home — merged marketing+dashboard, see below), `/menu`,
+  `/menu/[itemId]`, `/cart`, `/checkout`, `/orders`, `/orders/[orderId]`,
+  `/table/[qrToken]`, `/profile`, `/profile/settings`, `/profile/addresses`,
+  `/loyalty`, `/loyalty/redemptions`
 - `staff` — `/staff/pos`, `/staff/orders`, `/staff/orders/history`,
   `/staff/orders/history/[orderId]`, `/staff/rewards` (real URL
   segments, not route groups — a route group would collide with
@@ -98,6 +97,34 @@ under Vitest) gates `/staff/*` (staff|manager|admin) and `/admin/*`
 (manager|admin), plus exact-path gating on `/profile`/`/orders`/`/loyalty`
 for logged-out guests (not `/orders/[id]`, reachable by guest checkout).
 Fails open to anonymous on Supabase errors rather than crashing.
+
+**Home (`/`) merge, 2026-09-06:** the old `(marketing)` route group (a
+separate public landing page at `/`, `CoffeeCupHero` +
+`BestSellersGallery`'s full-viewport scroll-jacked arc + `BestSellersMarquee`)
+and the old auth-gated `/home` dashboard tab were merged into one page,
+rebuilt from an imported Claude Design canvas mockup rather than adapted
+from either predecessor. `/` now lives in `(customer)` (gets the real
+`CustomerHeader`/`BottomNav`/Cart+Orders+Tables providers everyone else
+already has) and renders for everyone: guests see the hero/best-sellers/
+store-info content with no personalized sections; logged-in customers
+additionally get the greeting hero's quick-add suggestion, dine-in/pickup
+tiles, a rewards banner (linking to the real `/loyalty/redemptions`
+catalog — the mockup's promo copy was fabricated, not backed by real
+data), a table-session-resume banner (new: `lib/active-table-storage.ts`
+persists the joined `qrToken` client-side, re-validated on load via the
+existing guest-safe `get_table_session` RPC), the live-order banner,
+quick reorder, and the loyalty progress card. `ROLE_HOME.customer` is now
+`"/"`. The bestsellers section (`components/customer/best-sellers-stack.tsx`)
+reimplements the old arc gallery's scroll-linked-transform technique at a
+much smaller scale (a compact sticky card stack sized to fit inline
+between other sections, not a 320vh page-dominating hijack), with a
+static-list fallback under `prefers-reduced-motion`. Left deliberately
+untouched: the Admin Settings "Landing Hero" image card
+(`components/admin/landing-hero-settings-card.tsx`) and its
+`landing-hero-images` bucket/`shop_settings` columns (migrations
+`0051`–`0052`) — nothing customer-facing consumes those images anymore
+now that `CoffeeCupHero` is gone; flagged here rather than removed since
+that's an admin-facing feature outside this change's scope.
 
 ## Cross-cutting conventions & gotchas
 
