@@ -17,7 +17,7 @@ import { useCart, type AddToCartInput } from "@/hooks/useCart"
 import { useOrders, type OrderForTracking, type OrderStatus } from "@/hooks/useOrders"
 import { QrScannerOverlay } from "@/components/customer/qr-scanner-overlay"
 import { QuickAddPopup } from "@/components/customer/quick-add-popup"
-import { BestSellersStack } from "@/components/customer/best-sellers-stack"
+import { BestSellersArc } from "@/components/customer/best-sellers-arc"
 import { ProgressRing } from "@/components/motion/progress-ring"
 import { AsyncSkeleton, AsyncRetryError, StaleNotice } from "@/components/shared/async-state"
 import type { MenuItem } from "@/lib/supabase/menu-data"
@@ -316,20 +316,7 @@ export function HomeView({ items, shopSettings }: { items: MenuItem[]; shopSetti
         )}
       </div>
 
-      {popularItems.length > 0 && (
-        <section className="mt-5">
-          <div className="flex items-baseline justify-between gap-2 px-4 pb-1 md:px-8">
-            <div>
-              <p className="text-sm font-extrabold text-card-foreground">{t("bestTitle")}</p>
-              <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">{t("bestSub")}</p>
-            </div>
-            <Link href="/menu" className="nb-border-sm rounded-full bg-card px-3 py-1.5 text-[11px] font-extrabold text-foreground">
-              {t("viewAll")}
-            </Link>
-          </div>
-          <BestSellersStack items={popularItems} />
-        </section>
-      )}
+      {popularItems.length > 0 && <BestSellersArc items={popularItems} />}
 
       <div className="mt-5 flex flex-col gap-4 px-4 md:px-8">
         <section>

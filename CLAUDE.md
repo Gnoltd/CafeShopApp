@@ -114,11 +114,28 @@ data), a table-session-resume banner (new: `lib/active-table-storage.ts`
 persists the joined `qrToken` client-side, re-validated on load via the
 existing guest-safe `get_table_session` RPC), the live-order banner,
 quick reorder, and the loyalty progress card. `ROLE_HOME.customer` is now
-`"/"`. The bestsellers section (`components/customer/best-sellers-stack.tsx`)
-reimplements the old arc gallery's scroll-linked-transform technique at a
-much smaller scale (a compact sticky card stack sized to fit inline
-between other sections, not a 320vh page-dominating hijack), with a
-static-list fallback under `prefers-reduced-motion`. Left deliberately
+`"/"`. **Revised 2026-09-07:** the bestsellers section
+(`components/customer/best-sellers-arc.tsx`) went through two wrong builds
+before matching its actual source — first a flat swipe-carousel, then a
+full-viewport dark scroll-jacked arc ported from the old deleted
+`(marketing)` route's `BestSellersGallery`. Neither was "the ref": the
+real source is the Claude Design canvas Home was rebuilt from
+(`PhaDinCafe Customer App.dc.html`, imported live via the design MCP —
+see its `bsCards`/`frame()` logic), which defines a much smaller, plainer
+technique — a `min(360px, 100%)` sticky box (normal `nb-border`/light
+card styling, no dark takeover) where cards stack at one spot and each
+slides diagonally, rotates ±6°, scales, and fades as scroll passes its
+own 300px window (`frame(u)`, `u = scrollProgress - cardIndex`); section
+height is `360 + count*300 + 144` px, not viewport-relative. Ported
+1:1 including the exact transform formula and the mockup card's
+`Home.selectThis` CTA copy (was already a real, unused translation key —
+evidence this was the intended build all along). The one deliberate deviation: the mockup's trailing card is
+a fabricated "Buy 1 Get 1" promo with category-filter chips; this build's
+trailing card is the same real rewards card (→ `/loyalty/redemptions`)
+used throughout Home instead, since that promo copy isn't backed by real
+data (same reasoning as the hero's promo banner, below). A static-list
+`prefers-reduced-motion` fallback (not present in the mockup) is kept as
+a real accessibility fix. Left deliberately
 untouched: the Admin Settings "Landing Hero" image card
 (`components/admin/landing-hero-settings-card.tsx`) and its
 `landing-hero-images` bucket/`shop_settings` columns (migrations
