@@ -9,7 +9,8 @@ import { ItemImage } from "@/components/customer/item-image"
 import { formatVND } from "@/lib/format"
 import type { MenuItem } from "@/lib/supabase/menu-data"
 
-const STEP = 300
+const STEP = 210
+const TAIL_BUFFER = 144
 const CARD_WIDTH = 244
 
 /** Ported from the Claude Design canvas mockup Home was built from
@@ -152,7 +153,7 @@ export function BestSellersArc({ items }: { items: MenuItem[] }) {
   }
 
   const prog = Math.max(0, sp) / STEP
-  const height = 360 + items.length * 300 + 144
+  const height = 360 + items.length * STEP + TAIL_BUFFER
 
   return (
     <section className="mt-5">
