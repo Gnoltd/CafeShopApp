@@ -61,7 +61,7 @@ Vitest.
 ### Task 1: Remove the shift-open ordering gate; zero out tax
 
 **Files:**
-- Create: `supabase/migrations/0093_remove_shift_gate_and_tax.sql`
+- Create: `supabase/migrations/0094_remove_shift_gate_and_tax.sql`
 
 **Interfaces:**
 - Produces: `place_order_legacy(...)` (same signature, same name — body
@@ -141,7 +141,7 @@ Vitest.
 - [ ] **Step 6: Commit**
 
   ```bash
-  git add supabase/migrations/0093_remove_shift_gate_and_tax.sql
+  git add supabase/migrations/0094_remove_shift_gate_and_tax.sql
   git commit -m "db: remove shift-open gate from ordering, zero out tax rate"
   ```
 
@@ -210,28 +210,39 @@ out first so nothing customer-surviving imports from the doomed file.
   Change `import type { CartModifier } from "@/hooks/useCart"` to
   `import type { CartModifier } from "@/lib/menu-selection-types"`.
 
-- [ ] **Step 4: Update `quick-add-popup.tsx`**
+- [ ] **Step 4: Update `quick-add-popup.tsx`'s type import only**
 
   Change `import { useCart, type AddToCartInput } from "@/hooks/useCart"`
-  to `import type { AddToCartInput } from "@/lib/menu-selection-types"`
-  (the `useCart` value import is removed here — Task 3 makes `onAdd`
-  required so this file no longer calls the hook at all).
+  to:
+  ```typescript
+  import { useCart } from "@/hooks/useCart"
+  import type { AddToCartInput } from "@/lib/menu-selection-types"
+  ```
+  Keep the `useCart` value import and every line that uses it
+  (`const { addItem } = useCart()`, `const add = onAdd ?? addItem`)
+  exactly as they are — Task 4 removes them fully once `onAdd` becomes
+  required. This step only changes where the *type* comes from.
 
-- [ ] **Step 5: Update `menu-browser.tsx`'s type import**
+- [ ] **Step 5: Update `menu-browser.tsx`'s type import only**
 
   Change `import { useCart, type AddToCartInput } from "@/hooks/useCart"`
-  to `import type { AddToCartInput } from "@/lib/menu-selection-types"`
-  (the `useCart` value import is removed here too — done fully in Task 3).
+  to:
+  ```typescript
+  import { useCart } from "@/hooks/useCart"
+  import type { AddToCartInput } from "@/lib/menu-selection-types"
+  ```
+  Keep the `useCart` value import and its usage
+  (`const { addItem, itemCount, subtotal } = useCart()` and the two
+  fallback lines below it) exactly as they are — Task 3 removes them
+  fully. This step only changes where the *type* comes from.
 
 - [ ] **Step 6: Build to confirm nothing broke**
 
   Run: `npm run build`
-  Expected: succeeds (this step only moved type re-exports; behavior is
-  unchanged so far — Steps 3-5 above are completed together with Task 3
-  in practice since `menu-browser.tsx`/`quick-add-popup.tsx` still call
-  `useCart()` as a value until that task lands; if building this task in
-  isolation, leave the `useCart` value import in place in Steps 4-5 and
-  only change the type import, then let Task 3/4 remove the value usage).
+  Expected: succeeds — this task only moved type re-exports and added a
+  second import line to two files; no runtime behavior changed, and both
+  files still compile with `useCart` imported as a value exactly as
+  before.
 
 - [ ] **Step 7: Commit**
 
@@ -331,9 +342,13 @@ out first so nothing customer-surviving imports from the doomed file.
 
 - [ ] **Step 3: Implement**
 
-  In `components/customer/menu-browser.tsx`:
-  - Remove `import { useCart, type AddToCartInput } from "@/hooks/useCart"`
-    entirely; import `type { AddToCartInput } from "@/lib/menu-selection-types"`.
+  In `components/customer/menu-browser.tsx` (after Task 2's split, this
+  file currently has two import lines: `import { useCart } from
+  "@/hooks/useCart"` and `import type { AddToCartInput } from
+  "@/lib/menu-selection-types"` — only the first is touched here):
+  - Remove the `import { useCart } from "@/hooks/useCart"` line entirely.
+    Leave the `AddToCartInput` type import from `@/lib/menu-selection-types`
+    as-is.
   - Change the props signature to:
     ```typescript
     export function MenuBrowser({
@@ -422,9 +437,13 @@ out first so nothing customer-surviving imports from the doomed file.
   the parent behavior; Task 3 already conditions the popup's render on
   `canOrder`, so a required `onAdd` cannot be reached with no handler)**
 
-  In `components/customer/quick-add-popup.tsx`:
-  - Remove `import { useCart, type AddToCartInput } from "@/hooks/useCart"`;
-    add `import type { AddToCartInput } from "@/lib/menu-selection-types"`.
+  In `components/customer/quick-add-popup.tsx` (after Task 2's split,
+  this file currently has two import lines: `import { useCart } from
+  "@/hooks/useCart"` and `import type { AddToCartInput } from
+  "@/lib/menu-selection-types"` — only the first is touched here):
+  - Remove the `import { useCart } from "@/hooks/useCart"` line entirely.
+    Leave the `AddToCartInput` type import from `@/lib/menu-selection-types`
+    as-is.
   - Change the props type to make `onAdd` required:
     ```typescript
     export function QuickAddPopup({
@@ -477,23 +496,20 @@ out first so nothing customer-surviving imports from the doomed file.
   Task 1's research to already short-circuit to a no-gateway path for
   `method = 'cash'`).
 
-- [ ] **Step 1: Verify the RPC is safely anon-callable before wiring a
-  direct client call to it**
+- [ ] **Step 1: RPC grants already verified — no action needed**
 
-  Via `mcp__supabase__execute_sql`:
+  Already confirmed live (controller ran this exact query during the
+  pre-Task-1 migration reconciliation — see the ledger's "Task 1:
+  BLOCKED" entry and its follow-up): `checkout_table_session` (both the
+  3-arg `(text, payment_method, text)` and 4-arg
+  `(text, payment_method, text, uuid)` overloads) already has `EXECUTE`
+  granted to both `anon` and `authenticated`. No new grant migration is
+  needed for this task. If you want to re-confirm before proceeding:
   ```sql
   select grantee, privilege_type
   from information_schema.role_routine_grants
   where routine_name = 'checkout_table_session';
   ```
-  Confirm `anon` (or `authenticated`, whichever this app's browser client
-  uses for guests) has `EXECUTE`. If not, add a migration
-  (`supabase/migrations/0094_grant_checkout_table_session_anon.sql`)
-  granting it, matching the grant pattern already used for
-  `add_cart_item`/`place_table_round` (guest-safe RPCs keyed on
-  `qr_token`, per this project's guest-safe RPC convention) — check
-  those functions' existing grants first with the same query
-  (`routine_name = 'add_cart_item'`) and mirror them exactly.
 
 - [ ] **Step 2: Replace the function**
 
@@ -1014,7 +1030,7 @@ out first so nothing customer-surviving imports from the doomed file.
   value, delete `lib/supabase/orders-data.ts` entirely and update its
   remaining importers (`components/staff/kitchen-board.tsx`,
   `kitchen-display.tsx`, `kitchen-pending-payment.tsx` — deleted in Task
-  12 anyway, `payment-method-picker.tsx`, `hooks/useKitchenOrders.tsx`) to
+  13 anyway, `payment-method-picker.tsx`, `hooks/useKitchenOrders.tsx`) to
   import directly from `@/lib/supabase/order-kds` instead. Prefer
   deleting the barrel — it's simpler and this project's convention
   doesn't otherwise use barrel files for this directory.
@@ -2137,7 +2153,7 @@ silently.
     only payment" note, Shift closing, most of Shared table ordering
     session stays since it survives — update its description to drop
     the promo-code-in-Check-Bill and Stripe/VNPay mentions).
-  - **Database** table: add a row for `0093`.
+  - **Database** table: add a row for `0093`-`0094`.
   - **Edge Functions** section: update to reflect only
     `create-staff-account` remains.
   - **Building the rest**: rewrite to reflect the minimal app's status.
