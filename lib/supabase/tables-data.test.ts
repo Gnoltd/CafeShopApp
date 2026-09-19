@@ -9,6 +9,7 @@ import {
   getTableByToken,
   setTableStatus,
   notifyTableCleaning,
+  getActiveSessionTableIds,
 } from "./tables-data"
 
 describe("getTables", () => {
@@ -186,6 +187,22 @@ describe("setTableStatus", () => {
 
     expect(updateSpy).toHaveBeenCalledWith({ status: "cleaning" })
     expect(result.status).toBe("cleaning")
+  })
+})
+
+describe("getActiveSessionTableIds", () => {
+  it("queries table_sessions filtered to status = active and returns just the table ids", async () => {
+    const eqSpy = vi.fn(() =>
+      Promise.resolve({ data: [{ table_id: "tbl-1" }, { table_id: "tbl-2" }], error: null })
+    )
+    const selectSpy = vi.fn(() => ({ eq: eqSpy }))
+    const supabase = { from: () => ({ select: selectSpy }) } as unknown as SupabaseClient
+
+    const result = await getActiveSessionTableIds(supabase)
+
+    expect(selectSpy).toHaveBeenCalledWith("table_id")
+    expect(eqSpy).toHaveBeenCalledWith("status", "active")
+    expect(result).toEqual(["tbl-1", "tbl-2"])
   })
 })
 

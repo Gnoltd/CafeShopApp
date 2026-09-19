@@ -143,3 +143,16 @@ export async function getTableByToken(supabase: SupabaseClient, token: string): 
   if (error) throw error
   return data ? mapTableRow(data as TableRow) : null
 }
+
+// Staff-facing binary "has an open session" signal (rebuild Decision 12) --
+// `table_sessions` carries a partial unique index on (table_id) WHERE status
+// = 'active' (migration 0070), so at most one row per table can ever be
+// 'active' at once; this just reads which table ids currently have one.
+// `table_sessions_select_all` is a public/no-auth SELECT policy (same as the
+// customer-facing get_table_session RPC's underlying table), so this plain
+// client-side query needs no new RPC.
+export async function getActiveSessionTableIds(supabase: SupabaseClient): Promise<string[]> {
+  const { data, error } = await supabase.from("table_sessions").select("table_id").eq("status", "active")
+  if (error) throw error
+  return ((data ?? []) as { table_id: string }[]).map((row) => row.table_id)
+}

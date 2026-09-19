@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useRealtimeChannel } from "@/hooks/useRealtimeChannel"
 import {
   createTable as createTableQuery,
+  getActiveSessionTableIds,
   getTableByToken,
   getTables,
   getTablesWithQrTokens,
@@ -30,6 +31,13 @@ type TablesContextValue = {
   updateLocation: (id: string, locationVi: string, locationEn: string) => Promise<void>
   setStatus: (id: string, status: TableOccupancyStatus) => Promise<void>
   notifyCleaning: (id: string) => Promise<void>
+  // Binary "has an open session" signal (rebuild Decision 12) -- the set of
+  // table ids that currently have an active `table_sessions` row. Kept
+  // alongside `tables`/`status` (still the 3-state DB enum, untouched)
+  // rather than folded into TableRecord itself: `table_sessions` is a
+  // separate table with its own Realtime stream, and TableRecord is also
+  // consumed by admin surfaces that still read the 3-state `status` field.
+  openSessionTableIds: Set<string>
   regenerateToken: (id: string) => Promise<TableRecord>
   // Admin/staff-only: fetches every table's qrToken via the role-gated
   // get_tables_admin RPC (see tables-data.ts) -- the general `tables` list
@@ -47,6 +55,7 @@ const ACTIVE_TABLE_STORAGE_KEY = "phadincafe-active-table"
 export function TablesProvider({ children }: { children: ReactNode }) {
   const [supabase] = useState(() => createClient())
   const [tables, setTables] = useState<TableRecord[]>([])
+  const [openSessionTableIds, setOpenSessionTableIds] = useState<Set<string>>(new Set())
   const [activeTable, setActiveTable] = useState<TableRecord | null>(null)
   const [hydrated, setHydrated] = useState(false)
 
@@ -92,6 +101,18 @@ export function TablesProvider({ children }: { children: ReactNode }) {
     }
   }, [supabase])
 
+  useEffect(() => {
+    let cancelled = false
+
+    getActiveSessionTableIds(supabase).then((ids) => {
+      if (!cancelled) setOpenSessionTableIds(new Set(ids))
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [supabase])
+
   useRealtimeChannel(supabase, "tables-changes", [
     {
       table: "tables",
@@ -107,6 +128,22 @@ export function TablesProvider({ children }: { children: ReactNode }) {
         setTables((prev) =>
           prev.some((t) => t.id === mapped.id) ? prev.map((t) => (t.id === mapped.id ? mapped : t)) : [...prev, mapped]
         )
+      },
+    },
+    {
+      // Unfiltered refetch, matching this project's Realtime convention
+      // (a server-side `filter` doesn't reliably combine with RLS-gated
+      // Realtime) -- table_sessions opening/closing is low-frequency, so a
+      // full re-list on any change is cheap and simplest to reason about.
+      table: "table_sessions",
+      event: "*",
+      onChange: () => {
+        getActiveSessionTableIds(supabase)
+          .then((ids) => setOpenSessionTableIds(new Set(ids)))
+          .catch(() => {
+            // A missed refresh just leaves the badge briefly stale until
+            // the next change event corrects it -- not worth surfacing.
+          })
       },
     },
   ])
@@ -167,6 +204,7 @@ export function TablesProvider({ children }: { children: ReactNode }) {
         updateLocation,
         setStatus,
         notifyCleaning,
+        openSessionTableIds,
         regenerateToken,
         getQrTokens,
         activeTable,

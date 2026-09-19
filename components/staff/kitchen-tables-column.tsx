@@ -2,7 +2,7 @@
 
 import { memo, useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
-import { Bell, CircleCheck, Sparkles, User, Utensils, Wallet, LayoutGrid } from "lucide-react"
+import { CircleCheck, User, Utensils, Wallet, LayoutGrid } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTables } from "@/hooks/useTables"
 import { useKitchenOrders } from "@/hooks/useKitchenOrders"
@@ -17,7 +17,7 @@ import { ConfirmCashPayment } from "@/components/staff/confirm-cash-payment"
 function KitchenTablesColumnComponent({ active }: { active: boolean }) {
   const locale = useLocale()
   const t = useTranslations("KitchenDisplay")
-  const { tables, setStatus } = useTables()
+  const { tables, openSessionTableIds } = useTables()
   const {
     orders,
     serveTable,
@@ -81,15 +81,14 @@ function KitchenTablesColumnComponent({ active }: { active: boolean }) {
           // guest never taps it, this badge is the only signal staff
           // have that money is owed on this table at all.
           const awaitingPaymentOrders = tableOrders.filter((o) => o.paymentStatus === "pending")
+          const hasOpenSession = openSessionTableIds.has(table.id)
 
           return (
             <div
               key={table.id}
               className={cn(
                 "nb-border-sm nb-shadow-sm flex flex-wrap items-start justify-between gap-2 rounded-xl bg-card p-3",
-                table.status === "available" && "border-green-600/50",
-                table.status === "occupied" && "border-primary/50",
-                table.status === "cleaning" && "border-amber-600/50"
+                hasOpenSession ? "border-primary/50" : "border-green-600/50"
               )}
             >
               <div className="min-w-0">
@@ -97,42 +96,17 @@ function KitchenTablesColumnComponent({ active }: { active: boolean }) {
                 {location && <p className="break-words text-xs text-muted-foreground">{location}</p>}
               </div>
               <div className="ml-auto flex shrink-0 flex-col items-end gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setError(null)
-                    const next = table.status === "available" ? "occupied" : table.status === "occupied" ? "cleaning" : "available"
-                    setStatus(table.id, next).catch(() => setError(t("updateError")))
-                  }}
-                  title={
-                    table.status === "available"
-                      ? t("markOccupied")
-                      : table.status === "occupied"
-                        ? t("markCleaning")
-                        : t("cleaningDone")
-                  }
+                <span
                   className={cn(
-                    "nb-border-sm nb-shadow-sm nb-press-sm inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-extrabold",
-                    table.status === "available" && "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-950/40",
-                    table.status === "occupied" && "bg-primary/10 text-primary hover:bg-primary/20",
-                    table.status === "cleaning" && "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-950/40"
+                    "nb-border-sm nb-shadow-sm inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-extrabold",
+                    hasOpenSession
+                      ? "bg-primary/10 text-primary"
+                      : "bg-green-100 text-green-700 dark:bg-green-950/40"
                   )}
                 >
-                  {table.status === "available" && <CircleCheck className="h-4 w-4" />}
-                  {table.status === "occupied" && <User className="h-4 w-4" />}
-                  {table.status === "cleaning" && <Sparkles className="h-4 w-4" />}
-                  {table.status === "available"
-                    ? t("tableAvailable")
-                    : table.status === "occupied"
-                      ? t("tableOccupied")
-                      : t("tableCleaning")}
-                </button>
-                {table.status === "cleaning" && table.cleaningNotifiedAt && (
-                  <span className="flex items-center gap-1 text-[10px] font-bold text-destructive">
-                    <Bell className="h-3 w-3 animate-pulse" />
-                    {t("guestNotified")}
-                  </span>
-                )}
+                  {hasOpenSession ? <User className="h-4 w-4" /> : <CircleCheck className="h-4 w-4" />}
+                  {hasOpenSession ? t("tableInService") : t("tableAvailable")}
+                </span>
                 {awaitingPaymentOrders.length > 0 && (
                   <span className="flex items-center gap-1 text-[10px] font-bold text-amber-700">
                     <Wallet className="h-3 w-3" />

@@ -4,7 +4,6 @@ import { KitchenTablesColumn } from "./kitchen-tables-column"
 
 const mocks = vi.hoisted(() => ({
   serveTable: vi.fn(),
-  setStatus: vi.fn(),
   confirmTablePayment: vi.fn(),
 }))
 
@@ -18,7 +17,9 @@ vi.mock("@/hooks/useTables", () => ({
       id: "table-1", number: "T1", locationVi: "", locationEn: "Patio", status: "occupied",
       scanCount: 0, cleaningNotifiedAt: null,
     }],
-    setStatus: mocks.setStatus,
+    // Binary open-session signal (rebuild Decision 12) replaces the old
+    // 3-state `setStatus` cycle button this component used to render.
+    openSessionTableIds: new Set(["table-1"]),
   }),
 }))
 vi.mock("@/hooks/useKitchenOrders", () => ({
@@ -35,7 +36,6 @@ vi.mock("@/hooks/useKitchenOrders", () => ({
 describe("KitchenTablesColumn mutation guard", () => {
   beforeEach(() => {
     mocks.serveTable.mockReset()
-    mocks.setStatus.mockReset()
     mocks.confirmTablePayment.mockReset()
   })
 
@@ -59,7 +59,6 @@ describe("KitchenTablesColumn mutation guard", () => {
 describe("KitchenTablesColumn cash confirmation", () => {
   beforeEach(() => {
     mocks.serveTable.mockReset()
-    mocks.setStatus.mockReset()
     mocks.confirmTablePayment.mockReset()
   })
 
