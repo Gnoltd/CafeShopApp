@@ -875,7 +875,20 @@ out first so nothing customer-surviving imports from the doomed file.
 
 ## Part 4 — Delete the personal cart, checkout, and customer-account surfaces
 
-### Task 8: Delete personal cart + checkout
+### Task 8: Delete the personal cart/checkout routes (not `hooks/useCart.tsx` itself yet)
+
+**Revised during execution:** the original version of this task also
+deleted `hooks/useCart.tsx` and removed `CartProvider` from the customer
+layout. That's wrong at this point in the sequence — three files that
+are only cleaned up in *later* tasks (`components/customer/order-history.tsx`
+and `components/customer/home-view.tsx`, both deleted whole in Tasks 9/10;
+`components/customer/product-detail.tsx`, whose cart button is removed in
+Task 11) still call `useCart()` for real, and all three render somewhere
+under `app/[locale]/(customer)/layout.tsx`, so deleting the hook or its
+provider now would break them out of order. Task 8 now deletes only the
+routes/components that have zero other dependents; **Task 8B** (new,
+inserted after Task 11 below) finishes the job once nothing else calls
+`useCart()`.
 
 **Files:**
 - Delete:
@@ -885,22 +898,22 @@ out first so nothing customer-surviving imports from the doomed file.
   - `components/customer/cart-view.component.test.tsx`
   - `components/customer/checkout-view.tsx`
   - `components/customer/checkout-view.component.test.tsx`
-  - `hooks/useCart.tsx`
   - `lib/table-cart-transfer.ts`
   - `lib/table-cart-transfer.test.ts`
-- Modify: `app/[locale]/(customer)/layout.tsx` (remove `CartProvider`),
-  `components/customer/bottom-nav.tsx`, `components/customer/header.tsx`
+- Modify: `components/customer/bottom-nav.tsx`, `components/customer/header.tsx`
   (drop cart-link/cart-count UI — grep each first)
 
-- [ ] **Step 1: Confirm nothing outside this deletion set still imports
-  the doomed files**
+- [ ] **Step 1: Confirm `lib/table-cart-transfer.ts` has no dependents
+  left outside this deletion set**
 
   Run:
   ```bash
-  grep -rln "hooks/useCart\|table-cart-transfer" app/ components/ hooks/ lib/ | grep -v -E "cart-view|checkout-view|table-cart-transfer\.(ts|test\.ts)$"
+  grep -rln "table-cart-transfer" app/ components/ hooks/ lib/ | grep -v -E "cart-view|table-cart-transfer\.(ts|test\.ts)$"
   ```
-  Expected: empty (Tasks 2-4 already removed every survivor's dependency
-  on `useCart`). If anything prints, stop and resolve it before deleting.
+  Expected: empty (Task 7 already removed `table-landing.tsx`'s only use
+  of it; `hooks/useCart.tsx` itself still imports a type from it, which
+  is fine and expected — `useCart.tsx` is not deleted by this task). If
+  anything else prints, stop and resolve it before deleting.
 
 - [ ] **Step 2: Delete the files**
 
@@ -909,40 +922,45 @@ out first so nothing customer-surviving imports from the doomed file.
   git rm app/\[locale\]/\(customer\)/checkout/page.tsx
   git rm components/customer/cart-view.tsx components/customer/cart-view.component.test.tsx
   git rm components/customer/checkout-view.tsx components/customer/checkout-view.component.test.tsx
-  git rm hooks/useCart.tsx
   git rm lib/table-cart-transfer.ts lib/table-cart-transfer.test.ts
   ```
 
-- [ ] **Step 3: Remove `CartProvider` from the customer layout**
-
-  In `app/[locale]/(customer)/layout.tsx`, remove the `CartProvider`
-  import and its wrapping JSX (keep `TablesProvider` and, until Task 9,
-  `OrdersProvider`).
-
-- [ ] **Step 4: Clean up `bottom-nav.tsx` and `header.tsx`**
+- [ ] **Step 3: Clean up `bottom-nav.tsx` and `header.tsx`**
 
   Read both files, remove any cart icon/badge/link that pointed at
-  `/cart` (grep `href="/cart"` and `useCart` in both first — the header's
-  cart badge specifically reads `useCart().itemCount`, which no longer
-  exists).
+  `/cart` (grep `href="/cart"` in both first). **Leave any `useCart()`
+  call in these two files alone if it exists for a non-cart-link reason**
+  — check carefully; if `header.tsx`'s cart badge reads
+  `useCart().itemCount` purely to render the `/cart` link's badge, remove
+  that whole badge (its only purpose, `/cart`, is gone); if `useCart()`
+  is called for any other still-relevant reason in either file, keep it
+  (this task does not remove `hooks/useCart.tsx` itself, so calling it is
+  still valid here).
 
-- [ ] **Step 5: Build**
+- [ ] **Step 4: Build**
 
   Run: `npm run build`
-  Expected: fails initially with unresolved imports wherever step 4
-  missed a reference — fix each until it succeeds.
+  Expected: fails initially with unresolved imports wherever step 3
+  missed a `/cart` reference — fix each until it succeeds. A failure
+  caused by `order-history.tsx`, `home-view.tsx`, or `product-detail.tsx`
+  is NOT this task's responsibility to fix (those are Tasks 9/10/11) —
+  if the build fails only because of one of those three files and the
+  failure is unrelated to anything this task touched, that means
+  something upstream of this task regressed unexpectedly; stop and
+  report rather than fixing it, since this task's own changes shouldn't
+  be able to affect those files at all.
 
-- [ ] **Step 6: Run the full test suite**
+- [ ] **Step 5: Run the full test suite**
 
   Run: `npm test`
   Expected: PASS (any test file that referenced the deleted modules was
   itself deleted in Step 2).
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: Commit**
 
   ```bash
   git add -A
-  git commit -m "remove: delete personal cart and checkout, the only survivor is the shared table cart"
+  git commit -m "remove: delete personal cart/checkout routes (useCart.tsx itself follows in Task 8B)"
   ```
 
 ### Task 9: Delete customer accounts, profile, loyalty, addresses, reviews, and order tracking
@@ -1209,6 +1227,65 @@ out first so nothing customer-surviving imports from the doomed file.
   ```bash
   git add app/\[locale\]/\(customer\)/menu components/customer/product-detail.tsx
   git commit -m "feat: make /menu and /menu/[itemId] public read-only pages"
+  ```
+
+### Task 8B: Delete `hooks/useCart.tsx` and remove `CartProvider` from the customer layout
+
+**Inserted during execution** (see Task 8's revision note) — this is the
+second half of the original Task 8, deferred until every real caller of
+`useCart()` is gone. By this point Task 9 deleted
+`components/customer/order-history.tsx`, Task 10 deleted
+`components/customer/home-view.tsx`, and Task 11 removed
+`product-detail.tsx`'s add-to-cart button — the only three files (besides
+the already-deleted cart/checkout views) that ever called `useCart()`
+for real, per the dossier research this plan was built from.
+
+**Files:**
+- Delete: `hooks/useCart.tsx`, `hooks/useCart.test.ts` (if it exists —
+  check first: `find hooks -iname "useCart*test*"`)
+- Modify: `app/[locale]/(customer)/layout.tsx` (remove `CartProvider`)
+
+- [ ] **Step 1: Confirm zero remaining callers**
+
+  Run:
+  ```bash
+  grep -rln "useCart\|hooks/useCart" app/ components/ hooks/ lib/ | grep -v "^hooks/useCart"
+  ```
+  Expected: empty. If anything prints, stop — this means Task 9, 10, or
+  11 missed a caller, or a new one was introduced since; do not delete
+  `hooks/useCart.tsx` until this is genuinely empty.
+
+- [ ] **Step 2: Delete the hook**
+
+  ```bash
+  git rm hooks/useCart.tsx
+  git rm hooks/useCart.test.ts 2>/dev/null || true
+  ```
+
+- [ ] **Step 3: Remove `CartProvider` from the customer layout**
+
+  Read `app/[locale]/(customer)/layout.tsx` in full first. Remove the
+  `CartProvider` import and its wrapping JSX. Keep `TablesProvider` and
+  `OrdersProvider` (the latter is removed separately in Task 9, which
+  runs before this task — if it's already gone by the time you read this
+  file, that's expected, just don't reintroduce it).
+
+- [ ] **Step 4: Build**
+
+  Run: `npm run build`
+  Expected: succeeds — every real caller was already removed by Tasks
+  9-11.
+
+- [ ] **Step 5: Run the full test suite**
+
+  Run: `npm test`
+  Expected: PASS.
+
+- [ ] **Step 6: Commit**
+
+  ```bash
+  git add -A
+  git commit -m "remove: delete hooks/useCart.tsx and CartProvider now that nothing calls it"
   ```
 
 ---
