@@ -4,7 +4,7 @@ import { useMemo, useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import { AnimatePresence, motion } from "framer-motion"
 import { Search, Plus, Ban } from "lucide-react"
-import { Link, useRouter } from "@/i18n/navigation"
+import { useRouter } from "@/i18n/navigation"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -25,7 +25,7 @@ export function MenuBrowser({
   onAddItem,
   cartItemCount = 0,
   cartSubtotal = 0,
-  cartHref = "/cart",
+  onViewCart,
   canOrder = true,
 }: {
   categories: MenuCategory[]
@@ -33,7 +33,7 @@ export function MenuBrowser({
   onAddItem?: (item: AddToCartInput, quantity?: number) => void
   cartItemCount?: number
   cartSubtotal?: number
-  cartHref?: string
+  onViewCart?: () => void
   canOrder?: boolean
 }) {
   const locale = useLocale()
@@ -183,16 +183,17 @@ export function MenuBrowser({
         ))}
       </StaggerList>
 
-      {displayItemCount > 0 && (
-        <Link
-          href={cartHref}
+      {displayItemCount > 0 && onViewCart && (
+        <button
+          type="button"
+          onClick={onViewCart}
           className="nb-border nb-shadow nb-press fixed inset-x-4 bottom-20 z-40 mx-auto flex max-w-md items-center justify-between rounded-2xl bg-secondary px-5 py-4 text-secondary-foreground transition-colors hover:opacity-95 md:bottom-6 md:max-w-lg md:px-6"
         >
           <span className="font-semibold">
             {t("viewCart")} · {t("itemCount", { count: displayItemCount })}
           </span>
           <span className="text-lg font-bold">{formatVND(displaySubtotal)}</span>
-        </Link>
+        </button>
       )}
 
       <AnimatePresence>

@@ -144,6 +144,7 @@ export function TableOrderingSession({
           onAddItem={handleAddItem}
           cartItemCount={session.cartItems.reduce((sum, i) => sum + i.quantity, 0)}
           cartSubtotal={session.cartItems.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0)}
+          onViewCart={() => setTab("order")}
         />
       ) : (
         <TableCartPanel
