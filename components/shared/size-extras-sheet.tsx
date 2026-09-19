@@ -10,7 +10,7 @@ import { DialogClose, DialogTitle } from "@/components/ui/dialog"
 import { SegmentedControl } from "@/components/motion/segmented-control"
 import { PressFeedback } from "@/components/motion/press-feedback"
 import { useSizeModifierSelection } from "@/hooks/useSizeModifierSelection"
-import type { CartModifier } from "@/hooks/useCart"
+import type { CartModifier } from "@/lib/menu-selection-types"
 import type { MenuItem } from "@/lib/supabase/menu-data"
 
 export type SizeModifierSelection = {

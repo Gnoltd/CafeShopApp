@@ -1,6 +1,7 @@
 "use client"
 
-import { useCart, type AddToCartInput } from "@/hooks/useCart"
+import { useCart } from "@/hooks/useCart"
+import type { AddToCartInput } from "@/lib/menu-selection-types"
 import { SizeExtrasSheet, type SizeModifierSelection } from "@/components/shared/size-extras-sheet"
 import type { MenuItem } from "@/lib/supabase/menu-data"
 

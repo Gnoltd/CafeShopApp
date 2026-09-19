@@ -11,29 +11,9 @@ import { createClient } from "@/lib/supabase/client"
 import { validatePromoCode, type PromoValidation } from "@/lib/supabase/promotions-data"
 import { resolvePromoDiscount, type PromoRule } from "@/lib/order-total"
 import { subtractTransferredQuantities, type TableCartTransferItem } from "@/lib/table-cart-transfer"
+import { type CartItem, type AddToCartInput } from "@/lib/menu-selection-types"
 
-export type CartModifier = {
-  groupId: string
-  optionId: string
-  labelVi: string
-  labelEn: string
-  priceDelta: number
-}
-
-export type CartItem = {
-  cartItemId: string
-  menuItemId: string
-  nameVi: string
-  nameEn: string
-  size?: { id: string; label: string; priceDelta: number }
-  modifiers: CartModifier[]
-  note?: string
-  unitPrice: number
-  quantity: number
-  needsConfiguration?: boolean
-}
-
-export type AddToCartInput = Omit<CartItem, "cartItemId" | "quantity">
+export type { CartModifier, CartItem, AddToCartInput } from "@/lib/menu-selection-types"
 
 type CartContextValue = {
   items: CartItem[]
