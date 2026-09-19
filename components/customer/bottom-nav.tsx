@@ -1,15 +1,13 @@
 "use client"
 
 import { useTranslations } from "next-intl"
-import { Home, UtensilsCrossed, ShoppingBasket, ReceiptText, User } from "lucide-react"
+import { Home, UtensilsCrossed, ReceiptText, User } from "lucide-react"
 import { Link, usePathname } from "@/i18n/navigation"
-import { useCart } from "@/hooks/useCart"
 import { AnimatedTabBar, type TabItem } from "@/components/motion/animated-tab-bar"
 
 const NAV_ITEMS = [
   { href: "/", labelKey: "home", icon: Home } as const,
   { href: "/menu", labelKey: "menu", icon: UtensilsCrossed } as const,
-  { href: "/cart", labelKey: "cart", icon: ShoppingBasket } as const,
   { href: "/orders", labelKey: "orders", icon: ReceiptText } as const,
   { href: "/profile", labelKey: "profile", icon: User } as const,
 ]
@@ -26,7 +24,6 @@ function isFocusedPage(pathname: string): boolean {
 export function BottomNav() {
   const t = useTranslations("Nav")
   const pathname = usePathname()
-  const { itemCount } = useCart()
 
   if (isFocusedPage(pathname)) return null
 
@@ -34,7 +31,6 @@ export function BottomNav() {
     href,
     label: t(labelKey),
     icon,
-    badge: labelKey === "cart" ? itemCount : undefined,
   }))
 
   return (

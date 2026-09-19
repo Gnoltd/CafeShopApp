@@ -1,17 +1,15 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Coffee, ChevronLeft, Home, UtensilsCrossed, ShoppingBasket, ReceiptText, Star, User } from "lucide-react"
+import { Coffee, ChevronLeft, Home, UtensilsCrossed, ReceiptText, Star, User } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { Link, usePathname, useRouter } from "@/i18n/navigation"
 import { cn } from "@/lib/utils"
-import { useCart } from "@/hooks/useCart"
 import { useHeaderActionsClearance } from "@/hooks/useHeaderActionsClearance"
 
 const DESKTOP_NAV = [
   { href: "/", labelKey: "home", icon: Home },
   { href: "/menu", labelKey: "menu", icon: UtensilsCrossed },
-  { href: "/cart", labelKey: "cart", icon: ShoppingBasket },
   { href: "/orders", labelKey: "orders", icon: ReceiptText },
   { href: "/loyalty", labelKey: "loyalty", icon: Star },
   { href: "/profile", labelKey: "profile", icon: User },
@@ -23,7 +21,6 @@ export function CustomerHeader({ showBack = false }: { showBack?: boolean }) {
   const tCustomer = useTranslations("Customer")
   const router = useRouter()
   const pathname = usePathname()
-  const { itemCount } = useCart()
   // #header-actions-stack (RoleBadge + ThemeToggle + LanguageSwitcher) is
   // fixed top-right and can be wider than a static guess, especially at
   // tablet widths — measure it so nav items never end up hidden behind it.
@@ -77,12 +74,6 @@ export function CustomerHeader({ showBack = false }: { showBack?: boolean }) {
               >
                 <Icon className="h-4 w-4" />
                 <span>{tNav(item.labelKey)}</span>
-                {/* Cart badge */}
-                {item.labelKey === "cart" && itemCount > 0 && (
-                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
-                    {itemCount}
-                  </span>
-                )}
                 {/* Active indicator underline */}
                 {isActive && (
                   <motion.span
