@@ -196,7 +196,7 @@ export function MenuBrowser({
       )}
 
       <AnimatePresence>
-        {quickAddItem && canOrder && (
+        {quickAddItem && canOrder && onAddItem && (
           <QuickAddPopup key="quick-add-popup" item={quickAddItem} onClose={() => setQuickAddItem(null)} onAdd={onAddItem} />
         )}
       </AnimatePresence>

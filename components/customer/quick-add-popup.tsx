@@ -1,6 +1,5 @@
 "use client"
 
-import { useCart } from "@/hooks/useCart"
 import type { AddToCartInput } from "@/lib/menu-selection-types"
 import { SizeExtrasSheet, type SizeModifierSelection } from "@/components/shared/size-extras-sheet"
 import type { MenuItem } from "@/lib/supabase/menu-data"
@@ -11,9 +10,7 @@ import type { MenuItem } from "@/lib/supabase/menu-data"
  * full Product Detail Page. Tapping the item itself (not this "+" popup)
  * still opens the full page (for reviews, notes, etc).
  *
- * onAdd defaults to the personal useCart() cart (unchanged /menu
- * behavior) — the table ordering screen (table-ordering-session.tsx)
- * passes its own handler routing into the live shared table cart instead.
+ * onAdd is required and supplied by the caller.
  */
 export function QuickAddPopup({
   item,
@@ -22,13 +19,10 @@ export function QuickAddPopup({
 }: {
   item: MenuItem
   onClose: () => void
-  onAdd?: (input: AddToCartInput) => void
+  onAdd: (input: AddToCartInput) => void
 }) {
-  const { addItem } = useCart()
-  const add = onAdd ?? addItem
-
   function handleAdd(selection: SizeModifierSelection) {
-    add({
+    onAdd({
       menuItemId: item.id,
       nameVi: item.nameVi,
       nameEn: item.nameEn,
