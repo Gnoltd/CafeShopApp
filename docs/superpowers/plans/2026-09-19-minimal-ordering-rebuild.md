@@ -1056,13 +1056,23 @@ rebuild's execution.
   - `lib/supabase/reviews-data.ts`, `lib/supabase/reviews-data.test.ts`
   - `lib/supabase/profile-data.ts`, `lib/supabase/profile-data.test.ts`
   - `lib/supabase/order-tracking.ts`
-  - `lib/supabase/order-history.ts`
   - `hooks/useOrders.tsx`
-  - `hooks/useOrderHistory.tsx`, `hooks/useOrderHistory.test.ts`
 - Modify: `app/[locale]/(customer)/layout.tsx` (remove `OrdersProvider`),
   `lib/supabase/orders-data.ts` (barrel — see Step 3),
   `components/customer/bottom-nav.tsx`, `components/customer/header.tsx`
   (drop profile/loyalty/orders nav links)
+
+**Correction made during execution:** the original file list above also
+had `lib/supabase/order-history.ts`, `hooks/useOrderHistory.tsx`, and
+`hooks/useOrderHistory.test.ts` — that was wrong despite the name
+similarity to `components/customer/order-history.tsx` (the customer's
+own order-history view, correctly deleted here). `lib/supabase/order-history.ts`
+is exclusively a **staff** query module (`get_order_history()`), imported
+only by `app/[locale]/staff/orders/history/*`, `components/staff/order-history-list.tsx`,
+`order-history-detail.tsx`, and `hooks/useOrderHistory.tsx` itself — all
+of which survive until **Task 17** ("Delete Staff Order History and
+Rewards lookup"). Task 17's own file list has been corrected to include
+these three files instead. Task 9 does not touch them.
 
 - [ ] **Step 1: Confirm the product-detail page's review UI is the only
   remaining `reviews-data`/`review-form`/`star-rating` consumer**
@@ -1093,24 +1103,27 @@ rebuild's execution.
   git rm lib/supabase/rewards-data.ts lib/supabase/rewards-data.test.ts
   git rm lib/supabase/reviews-data.ts lib/supabase/reviews-data.test.ts
   git rm lib/supabase/profile-data.ts lib/supabase/profile-data.test.ts
-  git rm lib/supabase/order-tracking.ts lib/supabase/order-history.ts
-  git rm hooks/useOrders.tsx hooks/useOrderHistory.tsx hooks/useOrderHistory.test.ts
+  git rm lib/supabase/order-tracking.ts
+  git rm hooks/useOrders.tsx
   ```
 
 - [ ] **Step 3: Simplify the `orders-data.ts` barrel**
 
-  Read `lib/supabase/orders-data.ts`. Per the dossier it re-exports from
-  `order-tracking.ts` (just deleted), `order-kds.ts` (kept — KDS), and
-  `order-history.ts` (just deleted). Remove the re-exports for the two
-  deleted modules, keeping only the `order-kds.ts` re-export — or, if
-  that leaves the barrel re-exporting a single module with no added
-  value, delete `lib/supabase/orders-data.ts` entirely and update its
-  remaining importers (`components/staff/kitchen-board.tsx`,
-  `kitchen-display.tsx`, `kitchen-pending-payment.tsx` — deleted in Task
-  13 anyway, `payment-method-picker.tsx`, `hooks/useKitchenOrders.tsx`) to
-  import directly from `@/lib/supabase/order-kds` instead. Prefer
-  deleting the barrel — it's simpler and this project's convention
-  doesn't otherwise use barrel files for this directory.
+  Read `lib/supabase/orders-data.ts`. It re-exports from `order-tracking.ts`
+  (just deleted), `order-kds.ts` (kept — KDS), and `order-history.ts`
+  (kept until Task 17 — see the correction note above). Only one of the
+  barrel's three re-exports is actually dead here. Prefer deleting
+  `lib/supabase/orders-data.ts` entirely anyway (matches this project's
+  convention of not using barrel files in this directory) and repoint
+  every importer directly at whichever real module it needs:
+  `components/staff/kitchen-board.tsx`, `kitchen-display.tsx`,
+  `kitchen-pending-payment.tsx` (deleted in Task 13 anyway),
+  `payment-method-picker.tsx`, `hooks/useKitchenOrders.tsx` →
+  `@/lib/supabase/order-kds`; `app/[locale]/staff/orders/history/*`,
+  `components/staff/order-history-list.tsx`, `order-history-detail.tsx`,
+  `hooks/useOrderHistory.tsx` → `@/lib/supabase/order-history` (these
+  survive until Task 17 either way, so they need a real, working import
+  path in the meantime, not a deleted barrel).
 
 - [ ] **Step 4: Remove the review section from `product-detail.tsx`**
 
@@ -1721,12 +1734,17 @@ for real, per the dossier research this plan was built from.
   - `components/staff/staff-shift-history.tsx`
   - `hooks/useShift.tsx`
   - `lib/supabase/shift-data.ts`, `lib/supabase/shift-data.test.ts`
+  - `lib/supabase/order-history.ts`, `hooks/useOrderHistory.tsx`,
+    `hooks/useOrderHistory.test.ts` (moved here from Task 9's original,
+    incorrect file list — this query module/hook is staff-only, backing
+    exactly the routes/components this task deletes; see Task 9's
+    correction note)
 
 - [ ] **Step 1: Confirm these are safe to delete now**
 
   Run:
   ```bash
-  grep -rln "useShift\|shift-data\|reward-lookup\|order-history-detail\|order-history-list\|shift-controls-dialog\|staff-shift-history" app/ components/ hooks/
+  grep -rln "useShift\|shift-data\|reward-lookup\|order-history-detail\|order-history-list\|useOrderHistory\|order-history\b" app/ components/ hooks/ lib/
   ```
   Expected: only the files listed above, plus (for `shift-data`/`useShift`)
   `components/admin/shift-closing.tsx`/`shift-report-detail.tsx` and
@@ -1745,6 +1763,7 @@ for real, per the dossier research this plan was built from.
   git rm components/staff/reward-lookup.tsx components/staff/shift-controls-dialog.tsx components/staff/staff-shift-history.tsx
   git rm hooks/useShift.tsx
   git rm lib/supabase/shift-data.ts lib/supabase/shift-data.test.ts
+  git rm lib/supabase/order-history.ts hooks/useOrderHistory.tsx hooks/useOrderHistory.test.ts
   ```
 
 - [ ] **Step 3: Build**
