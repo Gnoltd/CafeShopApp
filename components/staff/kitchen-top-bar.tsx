@@ -1,15 +1,11 @@
 "use client"
 
-import { useState } from "react"
-import { AnimatePresence } from "framer-motion"
 import { useTranslations } from "next-intl"
-import { Coffee, Bell, Settings, Wallet, LogIn, LogOut } from "lucide-react"
+import { Coffee, Bell, Settings } from "lucide-react"
 import { Link, usePathname } from "@/i18n/navigation"
 import { cn } from "@/lib/utils"
 import { useKitchenOrders } from "@/hooks/useKitchenOrders"
-import { useShift } from "@/hooks/useShift"
 import { useHeaderActionsClearance } from "@/hooks/useHeaderActionsClearance"
-import { ShiftControlsDialog } from "@/components/staff/shift-controls-dialog"
 import { LanguageSwitcher } from "@/components/shared/language-switcher"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
 
@@ -17,27 +13,9 @@ export function KitchenTopBar() {
   const tBrand = useTranslations("Brand")
   const t = useTranslations("KitchenDisplay")
   const { isRealtimeConnected } = useKitchenOrders()
-  const { isShiftOpen, isCurrentUserWorking, joinShift, leaveShift } = useShift()
   const clearance = useHeaderActionsClearance()
   const pathname = usePathname()
   const isKitchenDisplay = pathname === "/staff/orders"
-  const [dialogMode, setDialogMode] = useState<"open" | "close" | null>(null)
-  const [isTogglingMembership, setIsTogglingMembership] = useState(false)
-
-  async function handleToggleMembership() {
-    setIsTogglingMembership(true)
-    try {
-      if (isCurrentUserWorking) {
-        await leaveShift()
-      } else {
-        await joinShift()
-      }
-    } catch {
-      // Realtime/refetch will reconcile the button state either way.
-    } finally {
-      setIsTogglingMembership(false)
-    }
-  }
 
   return (
     <header
@@ -69,39 +47,6 @@ export function KitchenTopBar() {
             {isRealtimeConnected ? t("systemOnline") : t("systemOffline")}
           </span>
         </div>
-        {isShiftOpen ? (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={isTogglingMembership}
-              onClick={handleToggleMembership}
-              className={cn(
-                "nb-border-sm flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold md:px-3",
-                isCurrentUserWorking ? "bg-secondary/20 text-secondary" : "bg-chip text-muted-foreground"
-              )}
-            >
-              {isCurrentUserWorking ? <LogOut className="h-3.5 w-3.5" /> : <LogIn className="h-3.5 w-3.5" />}
-              <span>{isCurrentUserWorking ? t("leaveShiftButton") : t("joinShiftButton")}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setDialogMode("close")}
-              className="nb-border-sm flex items-center gap-1.5 rounded-lg bg-primary px-2 py-1.5 text-xs font-bold text-primary-foreground md:px-3"
-            >
-              <Wallet className="h-3.5 w-3.5" />
-              <span>{t("closeShiftButton")}</span>
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setDialogMode("open")}
-            className="nb-border-sm flex items-center gap-1.5 rounded-lg bg-primary px-2 py-1.5 text-xs font-bold text-primary-foreground md:px-3"
-          >
-            <Wallet className="h-3.5 w-3.5" />
-            <span>{t("openShiftButton")}</span>
-          </button>
-        )}
         <div className="hidden items-center gap-3 md:flex">
           <button
             type="button"
@@ -127,11 +72,6 @@ export function KitchenTopBar() {
           </div>
         )}
       </div>
-      <AnimatePresence>
-        {dialogMode && (
-          <ShiftControlsDialog key="shift-controls-dialog" mode={dialogMode} onClose={() => setDialogMode(null)} />
-        )}
-      </AnimatePresence>
     </header>
   )
 }
