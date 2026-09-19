@@ -9,7 +9,7 @@ import { SegmentedControl } from "@/components/motion/segmented-control"
 import { PREV_ITEM_STATUS } from "@/hooks/useKitchenOrders"
 import type { KdsStatus, KdsOrder } from "@/hooks/useKitchenOrders"
 import type { RealPaymentMethod } from "@/lib/supabase/order-mapping"
-import { PaymentMethodPicker } from "@/components/staff/payment-method-picker"
+import { ConfirmCashPayment } from "@/components/staff/confirm-cash-payment"
 
 const COLUMNS: { status: KdsStatus; key: "columnNew" | "columnPreparing" | "columnReady"; dot: string }[] = [
   { status: "paid", key: "columnNew", dot: "bg-primary" },
@@ -29,12 +29,18 @@ export function urgencyLevelFor(createdAt: number, now: number): UrgencyLevel {
   return minutes >= 15 ? "critical" : minutes >= 10 ? "warning" : "normal"
 }
 
-export type PaymentAction = "confirm-pickup-cash" | "confirm-payment" | null
+export type PaymentAction = "confirm-payment" | null
 
+// The old "confirm-pickup-cash" branch (pending_payment + pickup + cash --
+// the pre-serve cash confirmation for a Pickup order placed through the
+// old individual Pay-Now checkout) is gone: Pickup as an order type and
+// the individual cart/checkout flow that could ever create a
+// "pending_payment" order were both deleted earlier in this rebuild
+// (every order now places through place_table_round, dine-in only,
+// always landing at "pending" -- never "pending_payment"). That combination
+// of conditions can no longer occur, so the branch was removed rather than
+// simplified.
 export function paymentActionForOrder(order: KdsOrder): PaymentAction {
-  if (order.status === "pending_payment" && order.orderType === "pickup" && order.paymentMethod === "cash") {
-    return "confirm-pickup-cash"
-  }
   if (order.status === "served" && order.paymentStatus === "pending") return "confirm-payment"
   return null
 }
@@ -240,16 +246,8 @@ function Ticket({
         })}
       </div>
 
-      {paymentAction === "confirm-pickup-cash" ? (
-        <button
-          type="button"
-          onClick={() => onConfirmPayment(order, "cash")}
-          className="nb-border nb-shadow nb-press h-10 rounded-lg bg-secondary text-xs font-extrabold uppercase tracking-wide text-secondary-foreground"
-        >
-          {t("confirmCashReceived")}
-        </button>
-      ) : paymentAction === "confirm-payment" ? (
-        <PaymentMethodPicker onSelect={(method) => onConfirmPayment(order, method)} />
+      {paymentAction === "confirm-payment" ? (
+        <ConfirmCashPayment onSelect={(method) => onConfirmPayment(order, method)} />
       ) : order.status === "ready" ? (
         // Every item is "ready" -- the one deliberate tap that hands the
         // whole order over (and, if already paid, is what actually

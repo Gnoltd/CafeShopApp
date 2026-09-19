@@ -6,7 +6,7 @@ import { Bell, CircleCheck, Sparkles, User, Utensils, Wallet, LayoutGrid } from 
 import { cn } from "@/lib/utils"
 import { useTables } from "@/hooks/useTables"
 import { useKitchenOrders } from "@/hooks/useKitchenOrders"
-import { PaymentMethodPicker } from "@/components/staff/payment-method-picker"
+import { ConfirmCashPayment } from "@/components/staff/confirm-cash-payment"
 
 // Memoized: its only prop (`active`) rarely changes, so this skips
 // re-rendering when the sibling order columns re-render on the KDS board's
@@ -151,7 +151,7 @@ function KitchenTablesColumnComponent({ active }: { active: boolean }) {
                   </button>
                 )}
                 {awaitingPaymentOrders.length > 0 && (
-                  <PaymentMethodPicker
+                  <ConfirmCashPayment
                     className="w-full"
                     disabled={pendingActionKeys.has(`${table.id}:pay`)}
                     onSelect={(method) =>

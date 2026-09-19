@@ -44,17 +44,16 @@ describe("urgencyLevelFor", () => {
 
 describe("paymentActionForOrder", () => {
   const base = { id: "o", orderType: "dine-in" as const, status: "served" as const, paymentStatus: "pending", paymentMethod: null, createdAt: 0, items: [], total: 0, tableId: "t" }
-  it("offers the full method picker for any served-and-unpaid order, regardless of type or pre-picked method", () => {
+  it("offers cash confirmation for any served-and-unpaid order, regardless of type or pre-picked method", () => {
     expect(paymentActionForOrder(base)).toBe("confirm-payment")
     expect(paymentActionForOrder({ ...base, paymentMethod: "cash" })).toBe("confirm-payment")
-    expect(paymentActionForOrder({ ...base, paymentMethod: "stripe" })).toBe("confirm-payment")
     expect(paymentActionForOrder({ ...base, orderType: "pickup", tableId: undefined })).toBe("confirm-payment")
-  })
-  it("requires cash confirmation before a pending pickup cash order enters the kitchen", () => {
-    expect(paymentActionForOrder({ ...base, orderType: "pickup", status: "pending_payment", paymentMethod: "cash", tableId: undefined })).toBe("confirm-pickup-cash")
   })
   it("shows no payment action once it's already paid", () => {
     expect(paymentActionForOrder({ ...base, paymentStatus: "paid" })).toBeNull()
+  })
+  it("shows no payment action for a pending_payment order -- that status (the old pre-serve Pickup Pay-Now cash flow) is unreachable now that Pickup and individual checkout are both gone", () => {
+    expect(paymentActionForOrder({ ...base, orderType: "pickup", status: "pending_payment", paymentMethod: "cash", tableId: undefined })).toBeNull()
   })
 })
 

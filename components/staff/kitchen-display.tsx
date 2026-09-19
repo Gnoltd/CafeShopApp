@@ -30,9 +30,9 @@ export function KitchenDisplay() {
     }
   }, [])
 
-  // Stable references so KitchenPendingPayment/KitchenTablesColumn (memoized
-  // below and in their own files) can actually skip re-rendering on the
-  // once-a-second `now` tick, instead of getting a fresh closure every time.
+  // Stable references so KitchenTablesColumn (memoized in its own file)
+  // can actually skip re-rendering on the once-a-second `now` tick,
+  // instead of getting a fresh closure every time.
   const handleAdvanceItem = useCallback(
     (orderId: string, itemId: string) => {
       setError(null)

@@ -56,29 +56,27 @@ describe("KitchenTablesColumn mutation guard", () => {
   })
 })
 
-describe("KitchenTablesColumn payment method picker", () => {
+describe("KitchenTablesColumn cash confirmation", () => {
   beforeEach(() => {
     mocks.serveTable.mockReset()
     mocks.setStatus.mockReset()
     mocks.confirmTablePayment.mockReset()
   })
 
-  it("confirms the tapped method for the table and disables every method button while pending", async () => {
+  it("confirms cash for the table and disables the button while pending", async () => {
     let resolveRequest!: () => void
     mocks.confirmTablePayment.mockImplementation(() => new Promise<void>((resolve) => { resolveRequest = resolve }))
     render(<KitchenTablesColumn active />)
 
-    const cashButton = screen.getByRole("button", { name: "KitchenDisplay.methodCash" })
-    const cardButton = screen.getByRole("button", { name: "KitchenDisplay.methodStripe" })
-    fireEvent.click(cashButton)
-    fireEvent.click(cashButton)
-    fireEvent.click(cardButton)
+    const confirmButton = screen.getByRole("button", { name: "KitchenDisplay.confirmCashReceived" })
+    fireEvent.click(confirmButton)
+    fireEvent.click(confirmButton)
 
     expect(mocks.confirmTablePayment).toHaveBeenCalledTimes(1)
     expect(mocks.confirmTablePayment).toHaveBeenCalledWith("table-1", "cash")
-    expect(cardButton).toBeDisabled()
+    expect(confirmButton).toBeDisabled()
 
     await act(async () => resolveRequest())
-    expect(cardButton).toBeEnabled()
+    expect(confirmButton).toBeEnabled()
   })
 })
