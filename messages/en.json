@@ -223,7 +223,8 @@
     "itemCount": "{count, plural, one {# item} other {# items}}",
     "emptyResults": "No matching items found.",
     "extrasLabel": "Extras",
-    "freeLabel": "Free"
+    "freeLabel": "Free",
+    "scanToOrder": "Scan the table's QR code to order"
   },
   "Cart": {
     "empty": "Your cart is empty.",

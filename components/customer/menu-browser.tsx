@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { formatVND } from "@/lib/format"
-import { useCart } from "@/hooks/useCart"
 import type { AddToCartInput } from "@/lib/menu-selection-types"
 import { ItemImage } from "@/components/customer/item-image"
 import { QuickAddPopup } from "@/components/customer/quick-add-popup"
@@ -24,9 +23,10 @@ export function MenuBrowser({
   categories,
   items,
   onAddItem,
-  cartItemCount,
-  cartSubtotal,
+  cartItemCount = 0,
+  cartSubtotal = 0,
   cartHref = "/cart",
+  canOrder = true,
 }: {
   categories: MenuCategory[]
   items: MenuItem[]
@@ -34,14 +34,14 @@ export function MenuBrowser({
   cartItemCount?: number
   cartSubtotal?: number
   cartHref?: string
+  canOrder?: boolean
 }) {
   const locale = useLocale()
   const t = useTranslations("Menu")
   const router = useRouter()
-  const { addItem, itemCount, subtotal } = useCart()
-  const addToCart = onAddItem ?? addItem
-  const displayItemCount = cartItemCount ?? itemCount
-  const displaySubtotal = cartSubtotal ?? subtotal
+  const addToCart = onAddItem
+  const displayItemCount = cartItemCount
+  const displaySubtotal = cartSubtotal
 
   const [selectedCategory, setSelectedCategory] = useState<string>(ALL_CATEGORY)
   const [searchQuery, setSearchQuery] = useState("")
@@ -69,13 +69,13 @@ export function MenuBrowser({
   }
 
   function quickAdd(item: MenuItem) {
-    if (!item.isAvailable) return
+    if (!item.isAvailable || !canOrder) return
     const needsChoice = (item.hasSizeOptions && item.sizes.length > 0) || item.modifierGroups.length > 0
     if (needsChoice) {
       setQuickAddItem(item)
       return
     }
-    addToCart({
+    addToCart?.({
       menuItemId: item.id,
       nameVi: item.nameVi,
       nameEn: item.nameEn,
@@ -160,11 +160,14 @@ export function MenuBrowser({
                   {item.isAvailable ? (
                     <motion.button
                       type="button"
+                      role="button"
                       aria-label={t("add")}
+                      disabled={!canOrder}
+                      title={canOrder ? undefined : t("scanToOrder")}
                       whileTap={TAP_SCALE}
                       transition={TAP_TRANSITION}
                       onClick={() => quickAdd(item)}
-                      className="pointer-events-auto nb-border-sm nb-shadow-sm flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                      className="pointer-events-auto nb-border-sm nb-shadow-sm flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Plus className="h-4 w-4" />
                     </motion.button>
@@ -193,7 +196,7 @@ export function MenuBrowser({
       )}
 
       <AnimatePresence>
-        {quickAddItem && (
+        {quickAddItem && canOrder && (
           <QuickAddPopup key="quick-add-popup" item={quickAddItem} onClose={() => setQuickAddItem(null)} onAdd={onAddItem} />
         )}
       </AnimatePresence>

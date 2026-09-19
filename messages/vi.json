@@ -223,7 +223,8 @@
     "itemCount": "{count} món",
     "emptyResults": "Không tìm thấy món phù hợp.",
     "extrasLabel": "Món Thêm",
-    "freeLabel": "Miễn phí"
+    "freeLabel": "Miễn phí",
+    "scanToOrder": "Quét mã QR tại bàn để đặt món"
   },
   "Cart": {
     "empty": "Giỏ hàng của bạn đang trống.",
