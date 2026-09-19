@@ -165,17 +165,11 @@ export async function abandonTableSession(supabase: SupabaseClient, qrToken: str
   return data as boolean
 }
 
-export async function checkoutTableSession(
-  supabase: SupabaseClient,
-  qrToken: string,
-  method: "cash" | "stripe" | "vnpay",
-  locale: string,
-  promoCode?: string | null,
-  attemptId = crypto.randomUUID()
-): Promise<{ checkoutUrl?: string }> {
-  const { data, error } = await supabase.functions.invoke("checkout-table-session", {
-    body: { qrToken, method, locale, promoCode: promoCode ?? null, attemptId },
+export async function requestTableBill(supabase: SupabaseClient, qrToken: string): Promise<void> {
+  const { error } = await supabase.rpc("checkout_table_session", {
+    p_qr_token: qrToken,
+    p_method: "cash",
+    p_promo_code: null,
   })
-  if (error || data?.error) throw error ?? new Error(data.error)
-  return data as { checkoutUrl?: string }
+  if (error) throw error
 }

@@ -7,7 +7,7 @@ import {
   removeCartItem,
   placeTableRound,
   abandonTableSession,
-  checkoutTableSession,
+  requestTableBill,
   importTableCart,
 } from "./table-session-data"
 
@@ -220,33 +220,19 @@ describe("abandonTableSession", () => {
   })
 })
 
-describe("checkoutTableSession", () => {
-  it("invokes checkout-table-session with qrToken/method/locale/promoCode", async () => {
-    const invoke = vi.fn(() => Promise.resolve({ data: { checkoutUrl: "https://example.com/pay" }, error: null }))
-    const supabase = { functions: { invoke } } as unknown as SupabaseClient
-
-    const result = await checkoutTableSession(supabase, "qr-token-1", "vnpay", "vi", "SAVE10")
-
-    expect(invoke).toHaveBeenCalledWith("checkout-table-session", {
-      body: { qrToken: "qr-token-1", method: "vnpay", locale: "vi", promoCode: "SAVE10", attemptId: expect.any(String) },
-    })
-    expect(result.checkoutUrl).toBe("https://example.com/pay")
-  })
-
-  it("defaults promoCode to null", async () => {
-    const invoke = vi.fn(() => Promise.resolve({ data: { ok: true }, error: null }))
-    const supabase = { functions: { invoke } } as unknown as SupabaseClient
-
-    await checkoutTableSession(supabase, "qr-token-1", "cash", "en")
-
-    expect(invoke).toHaveBeenCalledWith("checkout-table-session", {
-      body: { qrToken: "qr-token-1", method: "cash", locale: "en", promoCode: null, attemptId: expect.any(String) },
+describe("requestTableBill", () => {
+  it("calls the RPC with cash method and no promo code", async () => {
+    const { rpc, supabase } = mockRpc({ data: null, error: null })
+    await requestTableBill(supabase, "qr-token-1")
+    expect(rpc).toHaveBeenCalledWith("checkout_table_session", {
+      p_qr_token: "qr-token-1",
+      p_method: "cash",
+      p_promo_code: null,
     })
   })
 
-  it("throws when the invoke response carries an error field", async () => {
-    const invoke = vi.fn(() => Promise.resolve({ data: { error: "no_active_session" }, error: null }))
-    const supabase = { functions: { invoke } } as unknown as SupabaseClient
-    await expect(checkoutTableSession(supabase, "qr-token-1", "cash", "vi")).rejects.toThrow("no_active_session")
+  it("throws on error", async () => {
+    const { supabase } = mockRpc({ data: null, error: new Error("no_active_session") })
+    await expect(requestTableBill(supabase, "qr-token-1")).rejects.toThrow("no_active_session")
   })
 })
