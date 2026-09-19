@@ -19,7 +19,7 @@ import { SegmentedControl } from "@/components/motion/segmented-control"
 import { useTableSession } from "@/hooks/useTableSession"
 import type { TableRecord } from "@/hooks/useTables"
 import type { MenuCategory, MenuItem } from "@/lib/supabase/menu-data"
-import type { AddToCartInput } from "@/hooks/useCart"
+import type { AddToCartInput } from "@/lib/menu-selection-types"
 import { AsyncRetryError, AsyncSkeleton, StaleNotice } from "@/components/shared/async-state"
 
 export function TableOrderingSession({
