@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRealtimeChannel } from "@/hooks/useRealtimeChannel"
-import { getOrderHistory, type OrderHistoryFilters, type OrderHistoryRow } from "@/lib/supabase/orders-data"
+import { getOrderHistory, type OrderHistoryFilters, type OrderHistoryRow } from "@/lib/supabase/order-history"
 
 /** No default window -- an unset bound means "all time," matching customers' own order history. */
 export function buildDateRange(dateFrom?: string, dateTo?: string): { dateFrom?: string; dateTo?: string } {

@@ -15,9 +15,8 @@ import {
   recallLastCompletedOrder as recallLastCompletedOrderQuery,
   type KdsOrderRow,
   type OrderItemStatus,
-  type RealOrderStatus,
-  type RealPaymentMethod,
-} from "@/lib/supabase/orders-data"
+} from "@/lib/supabase/order-kds"
+import type { RealOrderStatus, RealPaymentMethod } from "@/lib/supabase/order-mapping"
 
 // Derived from the real order_status enum (not hand-typed) so it can never
 // silently drift from it -- was a second, independently-declared status

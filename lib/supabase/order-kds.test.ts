@@ -6,7 +6,32 @@ import {
   advanceOrderItemStatus,
   markOrderItemsServed,
   recallLastCompletedOrder,
+  getKitchenOrders,
+  confirmCashPayment,
 } from "./order-kds"
+
+describe("getKitchenOrders", () => {
+  it("filters to paid/preparing/ready/served statuses", async () => {
+    const inSpy = vi.fn(() => ({ order: () => Promise.resolve({ data: [], error: null }) }))
+    const supabase = {
+      from: () => ({ select: () => ({ in: inSpy }) }),
+    } as unknown as SupabaseClient
+
+    await getKitchenOrders(supabase)
+    expect(inSpy).toHaveBeenCalledWith("status", ["paid", "preparing", "ready", "served"])
+  })
+})
+
+describe("confirmCashPayment", () => {
+  it("updates both status and payment_status to paid", async () => {
+    const eqSpy = vi.fn(() => Promise.resolve({ error: null }))
+    const updateSpy = vi.fn(() => ({ eq: eqSpy }))
+    const supabase = { from: () => ({ update: updateSpy }) } as unknown as SupabaseClient
+
+    await confirmCashPayment(supabase, "ord-1")
+    expect(updateSpy).toHaveBeenCalledWith({ status: "paid", payment_status: "paid" })
+  })
+})
 
 describe("confirmTablePayment", () => {
   it("calls confirm_table_payment with the table id and method, returns the row count", async () => {

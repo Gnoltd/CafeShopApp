@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl"
 import { Banknote, CreditCard, QrCode } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { RealPaymentMethod } from "@/lib/supabase/orders-data"
+import type { RealPaymentMethod } from "@/lib/supabase/order-mapping"
 
 const METHODS: { value: RealPaymentMethod; labelKey: "methodCash" | "methodStripe" | "methodVnpay"; icon: typeof Banknote }[] = [
   { value: "cash", labelKey: "methodCash", icon: Banknote },

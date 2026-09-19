@@ -6,7 +6,7 @@ import { Banknote } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatOrderId } from "@/lib/format"
 import type { KdsOrder } from "@/hooks/useKitchenOrders"
-import type { RealPaymentMethod } from "@/lib/supabase/orders-data"
+import type { RealPaymentMethod } from "@/lib/supabase/order-mapping"
 import { PaymentMethodPicker } from "@/components/staff/payment-method-picker"
 
 // Memoized: doesn't depend on the KDS board's once-a-second `now` tick, so

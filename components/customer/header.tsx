@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Coffee, ChevronLeft, Home, UtensilsCrossed, ReceiptText, Star, User } from "lucide-react"
+import { Coffee, ChevronLeft, Home, UtensilsCrossed } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { Link, usePathname, useRouter } from "@/i18n/navigation"
 import { cn } from "@/lib/utils"
@@ -10,9 +10,6 @@ import { useHeaderActionsClearance } from "@/hooks/useHeaderActionsClearance"
 const DESKTOP_NAV = [
   { href: "/", labelKey: "home", icon: Home },
   { href: "/menu", labelKey: "menu", icon: UtensilsCrossed },
-  { href: "/orders", labelKey: "orders", icon: ReceiptText },
-  { href: "/loyalty", labelKey: "loyalty", icon: Star },
-  { href: "/profile", labelKey: "profile", icon: User },
 ] as const
 
 export function CustomerHeader({ showBack = false }: { showBack?: boolean }) {

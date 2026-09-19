@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 import { OrderHistoryDetailView } from "@/components/staff/order-history-detail"
 import { createClient } from "@/lib/supabase/server"
-import { getOrderHistoryDetail } from "@/lib/supabase/orders-data"
+import { getOrderHistoryDetail } from "@/lib/supabase/order-history"
 
 export default async function OrderHistoryDetailPage({
   params,

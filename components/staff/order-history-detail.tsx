@@ -4,7 +4,7 @@ import { useLocale, useTranslations } from "next-intl"
 import { ChevronLeft } from "lucide-react"
 import { Link } from "@/i18n/navigation"
 import { formatOrderId, formatVND } from "@/lib/format"
-import type { OrderHistoryDetail } from "@/lib/supabase/orders-data"
+import type { OrderHistoryDetail } from "@/lib/supabase/order-history"
 
 export function OrderHistoryDetailView({ order }: { order: OrderHistoryDetail }) {
   const locale = useLocale()

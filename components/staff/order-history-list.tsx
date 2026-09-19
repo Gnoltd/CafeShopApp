@@ -6,7 +6,8 @@ import { Search } from "lucide-react"
 import { Link } from "@/i18n/navigation"
 import { formatOrderId, formatVND } from "@/lib/format"
 import { useOrderHistory } from "@/hooks/useOrderHistory"
-import type { OrderHistoryFilters, RealOrderStatus, OrderType } from "@/lib/supabase/orders-data"
+import type { OrderHistoryFilters } from "@/lib/supabase/order-history"
+import type { RealOrderStatus, OrderType } from "@/lib/supabase/order-mapping"
 
 const PAGE_SIZE = 20
 

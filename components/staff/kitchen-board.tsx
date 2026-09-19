@@ -8,7 +8,7 @@ import { formatOrderId } from "@/lib/format"
 import { SegmentedControl } from "@/components/motion/segmented-control"
 import { PREV_ITEM_STATUS } from "@/hooks/useKitchenOrders"
 import type { KdsStatus, KdsOrder } from "@/hooks/useKitchenOrders"
-import type { RealPaymentMethod } from "@/lib/supabase/orders-data"
+import type { RealPaymentMethod } from "@/lib/supabase/order-mapping"
 import { PaymentMethodPicker } from "@/components/staff/payment-method-picker"
 
 const COLUMNS: { status: KdsStatus; key: "columnNew" | "columnPreparing" | "columnReady"; dot: string }[] = [
