@@ -898,22 +898,25 @@ inserted after Task 11 below) finishes the job once nothing else calls
   - `components/customer/cart-view.component.test.tsx`
   - `components/customer/checkout-view.tsx`
   - `components/customer/checkout-view.component.test.tsx`
-  - `lib/table-cart-transfer.ts`
-  - `lib/table-cart-transfer.test.ts`
 - Modify: `components/customer/bottom-nav.tsx`, `components/customer/header.tsx`
   (drop cart-link/cart-count UI — grep each first)
 
-- [ ] **Step 1: Confirm `lib/table-cart-transfer.ts` has no dependents
-  left outside this deletion set**
+**Correction made during execution:** `lib/table-cart-transfer.ts` is
+**not** deleted by this task after all — `hooks/useCart.tsx:13` imports
+`subtractTransferredQuantities` from it as a real runtime function (used
+inside `consumeTransfer()`), not just a type as an earlier draft of this
+brief assumed. It stays in place until Task 8B deletes it alongside
+`hooks/useCart.tsx` itself (Task 8B's file list already includes it).
+
+- [ ] **Step 1: Confirm nothing outside `hooks/useCart.tsx` depends on
+  the doomed cart/checkout files**
 
   Run:
   ```bash
-  grep -rln "table-cart-transfer" app/ components/ hooks/ lib/ | grep -v -E "cart-view|table-cart-transfer\.(ts|test\.ts)$"
+  grep -rln "cart-view\|checkout-view" app/ components/ hooks/ lib/
   ```
-  Expected: empty (Task 7 already removed `table-landing.tsx`'s only use
-  of it; `hooks/useCart.tsx` itself still imports a type from it, which
-  is fine and expected — `useCart.tsx` is not deleted by this task). If
-  anything else prints, stop and resolve it before deleting.
+  Expected: only the files in this task's own Delete list. If anything
+  else prints, stop and resolve it before deleting.
 
 - [ ] **Step 2: Delete the files**
 
@@ -922,7 +925,6 @@ inserted after Task 11 below) finishes the job once nothing else calls
   git rm app/\[locale\]/\(customer\)/checkout/page.tsx
   git rm components/customer/cart-view.tsx components/customer/cart-view.component.test.tsx
   git rm components/customer/checkout-view.tsx components/customer/checkout-view.component.test.tsx
-  git rm lib/table-cart-transfer.ts lib/table-cart-transfer.test.ts
   ```
 
 - [ ] **Step 3: Clean up `bottom-nav.tsx` and `header.tsx`**
@@ -961,6 +963,63 @@ inserted after Task 11 below) finishes the job once nothing else calls
   ```bash
   git add -A
   git commit -m "remove: delete personal cart/checkout routes (useCart.tsx itself follows in Task 8B)"
+  ```
+
+### Task 8A: Fix `MenuBrowser`'s dead `/cart` link inside the table ordering session
+
+**Inserted during execution** — Task 8's implementer found this while
+deleting `/cart`: `MenuBrowser`'s floating "view cart" pill (rendered
+whenever `cartItemCount > 0`) links to a `cartHref` prop that defaults to
+`"/cart"`. `components/customer/table-ordering-session.tsx:141-147` (the
+permanent shared-table-cart screen — the ONLY caller that ever has
+`cartItemCount > 0`, since the standalone `/menu` page always passes
+`canOrder={false}` and thus never shows this pill) never overrides that
+prop, so the pill is a live dead link to a route that no longer exists.
+Nothing later in this plan touches this. Fix it now rather than let a
+real customer-facing screen carry a 404 link for the rest of this
+rebuild's execution.
+
+**Files:**
+- Modify: `components/customer/menu-browser.tsx`, `components/customer/table-ordering-session.tsx`
+
+- [ ] **Step 1: Replace the `cartHref` prop with an `onViewCart` callback**
+
+  In `menu-browser.tsx`: remove the `cartHref = "/cart"` prop entirely.
+  Add `onViewCart?: () => void` to the props type. Where the floating
+  pill currently renders as `<Link href={cartHref} ...>`, change it to
+  render only when `onViewCart` is provided, as a `<button type="button"
+  onClick={onViewCart} ...>` with the same visual classes (drop the
+  `Link`/`href` and its `next/navigation`-specific styling concerns, keep
+  everything else — text, item count, subtotal — identical). If
+  `onViewCart` is not provided, render nothing (no pill) rather than a
+  link to a now-nonexistent page.
+
+- [ ] **Step 2: Wire it up in `table-ordering-session.tsx`**
+
+  Pass `onViewCart={() => setTab("order")}` to `<MenuBrowser>` (switches
+  to the same screen's "order" tab instead of navigating anywhere).
+
+- [ ] **Step 3: Update `menu-browser.component.test.tsx` if it references `cartHref`**
+
+  Grep the test file for `cartHref`; if present, remove/replace it per
+  the new prop (the existing tests from Task 3 didn't test this pill
+  directly, so this is likely a no-op check, not a required change).
+
+- [ ] **Step 4: Build**
+
+  Run: `npm run build`
+  Expected: succeeds.
+
+- [ ] **Step 5: Run the full test suite**
+
+  Run: `npm test`
+  Expected: PASS.
+
+- [ ] **Step 6: Commit**
+
+  ```bash
+  git add components/customer/menu-browser.tsx components/customer/table-ordering-session.tsx
+  git commit -m "fix: replace MenuBrowser's dead /cart link with an in-page tab switch"
   ```
 
 ### Task 9: Delete customer accounts, profile, loyalty, addresses, reviews, and order tracking
@@ -1242,24 +1301,27 @@ for real, per the dossier research this plan was built from.
 
 **Files:**
 - Delete: `hooks/useCart.tsx`, `hooks/useCart.test.ts` (if it exists —
-  check first: `find hooks -iname "useCart*test*"`)
+  check first: `find hooks -iname "useCart*test*"`), `lib/table-cart-transfer.ts`,
+  `lib/table-cart-transfer.test.ts` (Task 8 deferred these here — see its
+  revision note; `hooks/useCart.tsx` is their only remaining dependent)
 - Modify: `app/[locale]/(customer)/layout.tsx` (remove `CartProvider`)
 
 - [ ] **Step 1: Confirm zero remaining callers**
 
   Run:
   ```bash
-  grep -rln "useCart\|hooks/useCart" app/ components/ hooks/ lib/ | grep -v "^hooks/useCart"
+  grep -rln "useCart\|hooks/useCart\|table-cart-transfer" app/ components/ hooks/ lib/ | grep -v -E "^hooks/useCart|^lib/table-cart-transfer"
   ```
   Expected: empty. If anything prints, stop — this means Task 9, 10, or
   11 missed a caller, or a new one was introduced since; do not delete
   `hooks/useCart.tsx` until this is genuinely empty.
 
-- [ ] **Step 2: Delete the hook**
+- [ ] **Step 2: Delete the hook and its transfer-bridge dependency**
 
   ```bash
   git rm hooks/useCart.tsx
   git rm hooks/useCart.test.ts 2>/dev/null || true
+  git rm lib/table-cart-transfer.ts lib/table-cart-transfer.test.ts
   ```
 
 - [ ] **Step 3: Remove `CartProvider` from the customer layout**
