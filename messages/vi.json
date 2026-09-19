@@ -367,22 +367,9 @@
     "starRatingLabel": "{value} sao"
   },
   "TableLanding": {
-    "orderingAt": "Bạn đang đặt món tại",
-    "tableName": "Bàn {number}",
-    "servedHere": "Món của bạn sẽ được phục vụ tại bàn này",
-    "viewMenu": "Xem Thực Đơn",
     "invalidTitle": "Mã Bàn Không Hợp Lệ",
     "invalidMessage": "Vui lòng quét lại mã QR trên bàn hoặc nhờ nhân viên hỗ trợ.",
-    "backToMenu": "Về Thực Đơn",
-    "cleaningTitle": "Bàn Đang Được Dọn Dẹp",
-    "cleaningMessage": "Chúng tôi đang chuẩn bị bàn này cho khách tiếp theo. Vui lòng đợi trong giây lát.",
-    "notifyStaff": "Báo Nhân Viên",
-    "staffNotified": "Đã Báo Nhân Viên",
-    "transferringCart": "Đang chuyển giỏ hàng vào bàn…",
-    "transferFailedTitle": "Không Thể Chuyển Giỏ Hàng",
-    "transferFailedMessage": "Giỏ hàng cũ vẫn được giữ nguyên. Vui lòng thử lại.",
-    "retryTransfer": "Thử Lại",
-    "backToCheckout": "Quay Lại Thanh Toán"
+    "backToMenu": "Về Thực Đơn"
   },
   "TableSession": {
     "menuTabLabel": "Thực Đơn",
