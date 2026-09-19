@@ -9,7 +9,7 @@ export default async function MenuPage() {
   return (
     <>
       <h1 className="sr-only">{t("menuTitle")}</h1>
-      <MenuBrowser categories={categories} items={items} />
+      <MenuBrowser categories={categories} items={items} canOrder={false} />
     </>
   )
 }
