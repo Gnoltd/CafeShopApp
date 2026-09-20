@@ -86,7 +86,12 @@ export function SignupForm() {
     }
 
     await supabase.from("profiles").update({ full_name: name, phone }).eq("id", data.user!.id)
-    router.push(ROLE_HOME.customer)
+    // ROLE_HOME no longer has a "customer" entry (Task 16 -- there's no
+    // customer-facing destination to send a role to anymore); this
+    // component is itself unreachable dead code already (no /signup route
+    // renders it), left as-is pending its own removal, but falls back to
+    // "/menu" rather than pushing an undefined path if it's ever revived.
+    router.push(ROLE_HOME.customer ?? "/menu")
   }
 
   async function handleGoogleSignIn() {

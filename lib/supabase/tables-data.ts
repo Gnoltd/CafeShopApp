@@ -105,27 +105,6 @@ export async function updateTableLocation(
   return mapTableRow(data as TableRow)
 }
 
-export async function setTableStatus(
-  supabase: SupabaseClient,
-  id: string,
-  status: TableOccupancyStatus
-): Promise<TableRecord> {
-  const { data, error } = await supabase
-    .from("tables")
-    .update({ status })
-    .eq("id", id)
-    .select(TABLE_SELECT_SAFE)
-    .single()
-  if (error) throw error
-  return mapTableRow(data as TableRow)
-}
-
-export async function notifyTableCleaning(supabase: SupabaseClient, id: string): Promise<TableRecord> {
-  const { data, error } = await supabase.rpc("notify_table_cleaning", { p_table_id: id })
-  if (error) throw error
-  return mapTableRow(data as TableRow)
-}
-
 export async function regenerateQrToken(supabase: SupabaseClient, id: string): Promise<TableRecord> {
   const { data, error } = await supabase.rpc("regenerate_table_qr_token", { p_table_id: id })
   if (error) throw error

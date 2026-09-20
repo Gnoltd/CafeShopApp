@@ -8,6 +8,37 @@ import { KitchenSidebar } from "@/components/staff/kitchen-sidebar"
 import { useKitchenOrders } from "@/hooks/useKitchenOrders"
 import { canAccessAdmin } from "@/lib/roles"
 
+// The two-tab "Operations" switcher (Task 16) -- the only real navigation
+// affordance the live KDS board exposes (it otherwise bare-renders with no
+// chrome of its own, see the isLiveOrdersActive/isTablesActive branch
+// below), so this is what makes /staff/tables actually reachable by a
+// plain `staff` account, which has no admin sidebar to fall back on.
+function OperationsTabSwitcher({ isTablesActive }: { isTablesActive: boolean }) {
+  const tNav = useTranslations("Nav")
+  return (
+    <nav className="nb-border-sm nb-shadow-sm inline-flex w-fit shrink-0 items-center gap-1 rounded-lg bg-card p-1">
+      <Link
+        href="/staff/orders"
+        className={cn(
+          "rounded-md px-3 py-1.5 text-xs font-extrabold",
+          !isTablesActive ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+        )}
+      >
+        {tNav("kitchenDisplay")}
+      </Link>
+      <Link
+        href="/staff/tables"
+        className={cn(
+          "rounded-md px-3 py-1.5 text-xs font-extrabold",
+          isTablesActive ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+        )}
+      >
+        {tNav("tables")}
+      </Link>
+    </nav>
+  )
+}
+
 export function StaffOrdersLayoutClient({
   children,
   role,
@@ -19,12 +50,20 @@ export function StaffOrdersLayoutClient({
   const tNav = useTranslations("Nav")
   const pathname = usePathname()
   const isLiveOrdersActive = pathname === "/staff/orders"
+  const isTablesActive = pathname === "/staff/tables"
   const isHistoryActive = pathname === "/staff/orders/history"
   const isShiftHistoryActive = pathname === "/staff/orders/shift-history"
   const { completedCount, avgTimeLabel } = useKitchenOrders()
 
-  if (isLiveOrdersActive) {
-    return <div className="h-full overflow-hidden">{children}</div>
+  if (isLiveOrdersActive || isTablesActive) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden">
+        <div className={cn("flex shrink-0 items-center px-3 pb-2", isTablesActive ? "pt-14" : "pt-2")}>
+          <OperationsTabSwitcher isTablesActive={isTablesActive} />
+        </div>
+        <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+      </div>
+    )
   }
 
   return (

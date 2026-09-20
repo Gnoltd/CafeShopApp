@@ -7,8 +7,6 @@ import {
   regenerateQrToken,
   incrementScanCount,
   getTableByToken,
-  setTableStatus,
-  notifyTableCleaning,
   getActiveSessionTableIds,
 } from "./tables-data"
 
@@ -167,29 +165,6 @@ describe("getTableByToken", () => {
   })
 })
 
-describe("setTableStatus", () => {
-  it("updates status and returns the mapped row", async () => {
-    const row = {
-      id: "tbl-1",
-      table_number: "1",
-      qr_code_token: "abc",
-      location_vi: "",
-      location_en: "",
-      status: "cleaning",
-      cleaning_notified_at: null,
-      scan_count: 0,
-    }
-    const eqSpy = vi.fn(() => ({ select: () => ({ single: () => Promise.resolve({ data: row, error: null }) }) }))
-    const updateSpy = vi.fn(() => ({ eq: eqSpy }))
-    const supabase = { from: () => ({ update: updateSpy }) } as unknown as SupabaseClient
-
-    const result = await setTableStatus(supabase, "tbl-1", "cleaning")
-
-    expect(updateSpy).toHaveBeenCalledWith({ status: "cleaning" })
-    expect(result.status).toBe("cleaning")
-  })
-})
-
 describe("getActiveSessionTableIds", () => {
   it("queries table_sessions filtered to status = active and returns just the table ids", async () => {
     const eqSpy = vi.fn(() =>
@@ -203,27 +178,5 @@ describe("getActiveSessionTableIds", () => {
     expect(selectSpy).toHaveBeenCalledWith("table_id")
     expect(eqSpy).toHaveBeenCalledWith("status", "active")
     expect(result).toEqual(["tbl-1", "tbl-2"])
-  })
-})
-
-describe("notifyTableCleaning", () => {
-  it("calls the notify_table_cleaning RPC with the right argument name", async () => {
-    const row = {
-      id: "tbl-1",
-      table_number: "1",
-      qr_code_token: "abc",
-      location_vi: "",
-      location_en: "",
-      status: "cleaning",
-      cleaning_notified_at: "2026-07-08T10:00:00Z",
-      scan_count: 0,
-    }
-    const rpcSpy = vi.fn(() => Promise.resolve({ data: row, error: null }))
-    const supabase = { rpc: rpcSpy } as unknown as SupabaseClient
-
-    const result = await notifyTableCleaning(supabase, "tbl-1")
-
-    expect(rpcSpy).toHaveBeenCalledWith("notify_table_cleaning", { p_table_id: "tbl-1" })
-    expect(result.cleaningNotifiedAt).toBe("2026-07-08T10:00:00Z")
   })
 })

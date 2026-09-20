@@ -11,10 +11,8 @@ import {
   getTablesWithQrTokens,
   incrementScanCount,
   mapTableRow,
-  notifyTableCleaning,
   regenerateQrToken as regenerateQrTokenQuery,
   renameTable as renameTableQuery,
-  setTableStatus,
   updateTableLocation,
   type TableInput,
   type TableOccupancyStatus,
@@ -29,8 +27,6 @@ type TablesContextValue = {
   addTable: (input: TableInput) => Promise<void>
   renameTable: (id: string, number: string) => Promise<void>
   updateLocation: (id: string, locationVi: string, locationEn: string) => Promise<void>
-  setStatus: (id: string, status: TableOccupancyStatus) => Promise<void>
-  notifyCleaning: (id: string) => Promise<void>
   // Binary "has an open session" signal (rebuild Decision 12) -- the set of
   // table ids that currently have an active `table_sessions` row. Kept
   // alongside `tables`/`status` (still the 3-state DB enum, untouched)
@@ -162,14 +158,6 @@ export function TablesProvider({ children }: { children: ReactNode }) {
     setActiveTable((prev) => (prev?.id === id ? { ...prev, locationVi, locationEn } : prev))
   }
 
-  async function setStatus(id: string, status: TableOccupancyStatus) {
-    await setTableStatus(supabase, id, status)
-  }
-
-  async function notifyCleaning(id: string) {
-    await notifyTableCleaning(supabase, id)
-  }
-
   async function regenerateToken(id: string): Promise<TableRecord> {
     return regenerateQrTokenQuery(supabase, id)
   }
@@ -202,8 +190,6 @@ export function TablesProvider({ children }: { children: ReactNode }) {
         addTable,
         renameTable,
         updateLocation,
-        setStatus,
-        notifyCleaning,
         openSessionTableIds,
         regenerateToken,
         getQrTokens,

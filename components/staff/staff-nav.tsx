@@ -4,24 +4,18 @@ import { useTranslations } from "next-intl"
 import { Coffee } from "lucide-react"
 import { Link, usePathname } from "@/i18n/navigation"
 import { cn } from "@/lib/utils"
-import { canAccessAdmin } from "@/lib/roles"
 import { useHeaderActionsClearance } from "@/hooks/useHeaderActionsClearance"
 
 const NAV_ITEMS = [
-  { href: "/staff/pos", labelKey: "pos" },
   { href: "/staff/orders", labelKey: "kitchenDisplay" },
-  { href: "/staff/rewards", labelKey: "rewards" },
+  { href: "/staff/tables", labelKey: "tables" },
 ] as const
 
-export function StaffNav({ role = null }: { role?: string | null }) {
+export function StaffNav() {
   const tBrand = useTranslations("Brand")
   const tNav = useTranslations("Nav")
   const pathname = usePathname()
   const clearance = useHeaderActionsClearance()
-
-  const navItems = canAccessAdmin(role)
-    ? [...NAV_ITEMS, { href: "/admin/dashboard", labelKey: "dashboard" } as const]
-    : NAV_ITEMS
 
   return (
     <header
@@ -35,7 +29,7 @@ export function StaffNav({ role = null }: { role?: string | null }) {
       <nav
         className="nb-border-sm nb-shadow-sm flex w-full min-w-0 items-center gap-1 overflow-x-auto rounded-lg bg-card p-1 [mask-image:linear-gradient(to_left,transparent,black_24px)] md:w-auto md:[mask-image:none]"
       >
-        {navItems.map(({ href, labelKey }) => (
+        {NAV_ITEMS.map(({ href, labelKey }) => (
           <Link
             key={href}
             href={href}

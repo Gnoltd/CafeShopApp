@@ -172,13 +172,13 @@
   },
   "Staff": {
     "posTitle": "Bán Hàng",
-    "kitchenDisplayTitle": "Màn Hình Bếp"
+    "kitchenDisplayTitle": "Màn Hình Bếp",
+    "tablesTitle": "Quản Lý Bàn"
   },
   "Admin": {
     "dashboardTitle": "Tổng Quan",
     "menuTitle": "Quản Lý Thực Đơn",
     "inventoryTitle": "Kho Hàng",
-    "tablesTitle": "Quản Lý Bàn",
     "staffTitle": "Nhân Viên",
     "settingsTitle": "Cài Đặt"
   },

@@ -172,13 +172,13 @@
   },
   "Staff": {
     "posTitle": "POS",
-    "kitchenDisplayTitle": "Kitchen Display"
+    "kitchenDisplayTitle": "Kitchen Display",
+    "tablesTitle": "Tables"
   },
   "Admin": {
     "dashboardTitle": "Dashboard",
     "menuTitle": "Manage Menu",
     "inventoryTitle": "Inventory",
-    "tablesTitle": "Tables",
     "staffTitle": "Staff Accounts",
     "settingsTitle": "Settings"
   },

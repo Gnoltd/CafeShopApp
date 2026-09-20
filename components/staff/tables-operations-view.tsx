@@ -3,25 +3,55 @@
 import { useEffect, useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import QRCode from "qrcode"
-import { QrCode, Download, RefreshCw, Plus, Pencil, Check, X, Grid2x2, CircleCheck, User, ScanLine, Sparkles } from "lucide-react"
+import {
+  QrCode,
+  Download,
+  RefreshCw,
+  Plus,
+  Pencil,
+  Check,
+  X,
+  Grid2x2,
+  CircleCheck,
+  User,
+  ScanLine,
+  Utensils,
+  Wallet,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { useTables } from "@/hooks/useTables"
-import { TableForm } from "@/components/admin/table-form"
+import { useKitchenOrders } from "@/hooks/useKitchenOrders"
+import { ConfirmCashPayment } from "@/components/staff/confirm-cash-payment"
+import { TableForm } from "@/components/staff/table-form"
 
-export function TablesManagement() {
+// Staff "Operations" area, Tables tab (Task 16 merge): table list + binary
+// open-session badge + "Xác nhận đã thu tiền"/"Served" actions (moved
+// wholesale from the old KDS board's 4th column, kitchen-tables-column.tsx)
+// combined with table CRUD (add/rename/QR view/regenerate token, moved from
+// components/admin/tables-management.tsx + table-form.tsx). Reachable by
+// staff|manager|admin alike (previously CRUD was manager/admin-only under
+// /admin/tables) -- see app/[locale]/staff/tables/page.tsx.
+export function TablesOperationsView() {
   const locale = useLocale()
   const t = useTranslations("AdminTables")
-  const { tables, addTable, renameTable, updateLocation, setStatus, regenerateToken, getQrTokens } = useTables()
+  const tKds = useTranslations("KitchenDisplay")
+  const { tables, openSessionTableIds, addTable, renameTable, updateLocation, regenerateToken, getQrTokens } =
+    useTables()
+  const { orders, serveTable, confirmTablePayment } = useKitchenOrders()
+
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draftNumber, setDraftNumber] = useState("")
   const [draftLocationVi, setDraftLocationVi] = useState("")
   const [draftLocationEn, setDraftLocationEn] = useState("")
   const [qrCodes, setQrCodes] = useState<Record<string, string>>({})
   // tables.qr_code_token isn't in the shared TablesProvider list at all (see
-  // hooks/useTables.tsx) -- this admin-only page fetches it separately via
-  // the role-gated get_tables_admin RPC.
+  // hooks/useTables.tsx) -- this view fetches it separately via the
+  // role-gated get_tables_admin RPC. get_tables_admin/regenerate_table_qr_token
+  // already allow plain `staff` (not just manager/admin) as of migration
+  // 0046 -- this route's staff|manager|admin gate matches what the DB
+  // already permitted, no backend change needed for this merge.
   const [tokensById, setTokensById] = useState<Record<string, string>>({})
   const [showAddForm, setShowAddForm] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -29,6 +59,10 @@ export function TablesManagement() {
   // on a physical table, so the button only stages the table id here and the
   // confirmation dialog below does the actual regeneration.
   const [tableIdPendingRegen, setTableIdPendingRegen] = useState<string | null>(null)
+  // Keyed "<tableId>:serve" / "<tableId>:pay" -- disables only the tapped
+  // table's own action button while its mutation is in flight, so a
+  // double-tap can't fire two concurrent RPCs for the same table.
+  const [pendingActionKeys, setPendingActionKeys] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     let cancelled = false
@@ -43,8 +77,8 @@ export function TablesManagement() {
   }, [])
 
   const totalScans = tables.reduce((sum, table) => sum + table.scanCount, 0)
-  const availableCount = tables.filter((table) => table.status === "available").length
-  const cleaningCount = tables.filter((table) => table.status === "cleaning").length
+  const inServiceCount = tables.filter((table) => openSessionTableIds.has(table.id)).length
+  const availableCount = tables.length - inServiceCount
 
   useEffect(() => {
     let cancelled = false
@@ -97,6 +131,22 @@ export function TablesManagement() {
     setEditingId(null)
   }
 
+  async function runTableAction(key: string, action: () => Promise<void>) {
+    setError(null)
+    setPendingActionKeys((prev) => new Set(prev).add(key))
+    try {
+      await action()
+    } catch {
+      setError(tKds("updateError"))
+    } finally {
+      setPendingActionKeys((prev) => {
+        const next = new Set(prev)
+        next.delete(key)
+        return next
+      })
+    }
+  }
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -129,12 +179,12 @@ export function TablesManagement() {
           </div>
         </div>
         <div className="nb-border-sm nb-shadow-sm flex items-center gap-3 rounded-xl bg-card p-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
-            <Sparkles className="h-5 w-5" />
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <User className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">{t("cleaning")}</p>
-            <p className="text-xl font-bold text-card-foreground">{cleaningCount}</p>
+            <p className="text-xs text-muted-foreground">{tKds("tableInService")}</p>
+            <p className="text-xl font-bold text-card-foreground">{inServiceCount}</p>
           </div>
         </div>
         <div className="nb-border-sm nb-shadow-sm flex items-center gap-3 rounded-xl bg-card p-4">
@@ -152,6 +202,18 @@ export function TablesManagement() {
         {tables.map((table) => {
           const isEditing = editingId === table.id
           const location = locale === "vi" ? table.locationVi : table.locationEn
+          const hasOpenSession = openSessionTableIds.has(table.id)
+          const tableOrders = orders.filter((o) => o.tableId === table.id)
+          const readyOrderIds = tableOrders.filter((o) => o.status === "ready").map((o) => o.id)
+          // A running tab can have several unpaid rounds sharing one payment
+          // method once Check Bill has been tapped -- "awaiting payment"
+          // isn't scoped to status === "served" here, and also includes
+          // rounds with no payment_method chosen yet (paymentMethod ===
+          // null): a table round starts with no method and only gets one
+          // once Check Bill is tapped, so this is the only signal staff have
+          // that money is owed on this table at all if a guest never taps it.
+          const awaitingPaymentOrders = tableOrders.filter((o) => o.paymentStatus === "pending")
+
           return (
             <div
               key={table.id}
@@ -160,32 +222,15 @@ export function TablesManagement() {
                 isEditing && "border-primary"
               )}
             >
-              <button
-                type="button"
-                onClick={() => {
-                  const next =
-                    table.status === "available" ? "occupied" : table.status === "occupied" ? "cleaning" : "available"
-                  setStatus(table.id, next).catch(() => setError(t("updateError")))
-                }}
-                title={
-                  table.status === "available"
-                    ? t("markOccupied")
-                    : table.status === "occupied"
-                      ? t("markCleaning")
-                      : t("cleaningDone")
-                }
+              <span
                 className={cn(
-                  "nb-border-sm nb-press-sm inline-flex items-center gap-1 self-start rounded-full px-2.5 py-1 text-[11px] font-extrabold",
-                  table.status === "available" && "bg-green-100 text-green-700",
-                  table.status === "occupied" && "bg-red-100 text-red-700",
-                  table.status === "cleaning" && "bg-amber-100 text-amber-700"
+                  "nb-border-sm inline-flex items-center gap-1 self-start rounded-full px-2.5 py-1 text-[11px] font-extrabold",
+                  hasOpenSession ? "bg-primary/10 text-primary" : "bg-green-100 text-green-700"
                 )}
               >
-                {table.status === "available" && <CircleCheck className="h-3 w-3" />}
-                {table.status === "occupied" && <User className="h-3 w-3" />}
-                {table.status === "cleaning" && <Sparkles className="h-3 w-3" />}
-                {table.status === "available" ? t("available") : table.status === "occupied" ? t("occupied") : t("cleaning")}
-              </button>
+                {hasOpenSession ? <User className="h-3 w-3" /> : <CircleCheck className="h-3 w-3" />}
+                {hasOpenSession ? tKds("tableInService") : tKds("tableAvailable")}
+              </span>
 
               <div className="nb-border-sm flex h-32 w-32 items-center justify-center rounded-xl bg-chip">
                 {qrCodes[table.id] ? (
@@ -287,6 +332,33 @@ export function TablesManagement() {
                   {t("regenerateCode")}
                 </Button>
               </div>
+
+              {awaitingPaymentOrders.length > 0 && (
+                <span className="flex items-center gap-1 self-start text-[10px] font-bold text-amber-700">
+                  <Wallet className="h-3 w-3" />
+                  {tKds("tableAwaitingPaymentCount", { count: awaitingPaymentOrders.length })}
+                </span>
+              )}
+              {readyOrderIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => void runTableAction(`${table.id}:serve`, () => serveTable(readyOrderIds))}
+                  disabled={pendingActionKeys.has(`${table.id}:serve`)}
+                  className="nb-border-sm nb-shadow-sm nb-press-sm flex h-9 w-full items-center justify-center gap-1 rounded-lg bg-primary px-3 py-2 text-xs font-extrabold text-primary-foreground disabled:opacity-60"
+                >
+                  <Utensils className="h-3 w-3" />
+                  {tKds("markServed")}
+                </button>
+              )}
+              {awaitingPaymentOrders.length > 0 && (
+                <ConfirmCashPayment
+                  className="w-full"
+                  disabled={pendingActionKeys.has(`${table.id}:pay`)}
+                  onSelect={(method) =>
+                    void runTableAction(`${table.id}:pay`, () => confirmTablePayment(table.id, method))
+                  }
+                />
+              )}
             </div>
           )
         })}

@@ -1,8 +1,7 @@
 export const ROLE_HOME: Record<string, string> = {
-  customer: "/",
-  staff: "/staff/pos",
-  manager: "/admin/dashboard",
-  admin: "/admin/dashboard",
+  staff: "/staff/orders",
+  manager: "/staff/orders",
+  admin: "/staff/orders",
 }
 
 export function canAccessAdmin(role: string | null): boolean {

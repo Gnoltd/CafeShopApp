@@ -68,11 +68,14 @@ describe("resolveRedirect — existing /staff and /admin behavior unaffected", (
   })
 
   it("still redirects a customer away from /admin/dashboard", () => {
-    expect(resolveRedirect("/admin/dashboard", "customer")).toBe("/")
+    // ROLE_HOME has no "customer" entry as of Task 16 (there's no
+    // customer-facing destination to send a role to anymore) -- falls
+    // back to "/menu", same as any other unmapped role.
+    expect(resolveRedirect("/admin/dashboard", "customer")).toBe("/menu")
   })
 
   it("redirects non-manager customers away from admin settings", () => {
-    expect(resolveRedirect("/admin/settings", "customer")).toBe("/")
+    expect(resolveRedirect("/admin/settings", "customer")).toBe("/menu")
   })
 })
 

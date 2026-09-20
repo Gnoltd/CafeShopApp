@@ -30,9 +30,8 @@ export function KitchenDisplay() {
     }
   }, [])
 
-  // Stable references so KitchenTablesColumn (memoized in its own file)
-  // can actually skip re-rendering on the once-a-second `now` tick,
-  // instead of getting a fresh closure every time.
+  // Stable references so this board's children don't get a fresh closure
+  // on every once-a-second `now` tick.
   const handleAdvanceItem = useCallback(
     (orderId: string, itemId: string) => {
       setError(null)
