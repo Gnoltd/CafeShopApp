@@ -4,61 +4,15 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { resolveRedirect, getSupabaseAuthCookieName, hasSupabaseAuthCookie } from "./middleware-rules"
 
-describe("resolveRedirect — auth-required exact paths", () => {
-  it("redirects an anonymous guest away from /profile", () => {
-    expect(resolveRedirect("/profile", null)).toBe("/login")
-  })
-
-  it("redirects an anonymous guest away from /orders", () => {
-    expect(resolveRedirect("/orders", null)).toBe("/login")
-  })
-
-  it("redirects an anonymous guest away from /loyalty", () => {
-    expect(resolveRedirect("/loyalty", null)).toBe("/login")
+describe("resolveRedirect — no more auth-required exact paths", () => {
+  it("never gates any path for an anonymous guest via AUTH_REQUIRED_EXACT_PATHS", () => {
+    expect(resolveRedirect("/profile", null)).toBeNull()
+    expect(resolveRedirect("/orders", null)).toBeNull()
+    expect(resolveRedirect("/loyalty", null)).toBeNull()
   })
 
   it("does not gate the root home page for an anonymous guest", () => {
     expect(resolveRedirect("/", null)).toBeNull()
-  })
-
-  it("allows a logged-in customer to reach /profile", () => {
-    expect(resolveRedirect("/profile", "customer")).toBeNull()
-  })
-
-  it("allows a logged-in staff user to reach /orders", () => {
-    expect(resolveRedirect("/orders", "staff")).toBeNull()
-  })
-
-  it("allows a logged-in admin to reach /loyalty", () => {
-    expect(resolveRedirect("/loyalty", "admin")).toBeNull()
-  })
-
-  it("does not gate an individual order tracking page for a guest", () => {
-    expect(resolveRedirect("/orders/abc123", null)).toBeNull()
-  })
-
-  it("redirects an anonymous guest away from /profile/settings", () => {
-    expect(resolveRedirect("/profile/settings", null)).toBe("/login")
-  })
-
-  it("allows a logged-in customer to reach /profile/settings", () => {
-    expect(resolveRedirect("/profile/settings", "customer")).toBeNull()
-  })
-
-  it("redirects an anonymous guest away from /profile/addresses", () => {
-    expect(resolveRedirect("/profile/addresses", null)).toBe("/login")
-  })
-
-  it("allows a logged-in customer to reach /profile/addresses", () => {
-    expect(resolveRedirect("/profile/addresses", "customer")).toBeNull()
-  })
-
-  it("redirects an anonymous guest away from /loyalty/redemptions", () => {
-    expect(resolveRedirect("/loyalty/redemptions", null)).toBe("/login")
-  })
-
-  it("allows a logged-in customer to reach /loyalty/redemptions", () => {
-    expect(resolveRedirect("/loyalty/redemptions", "customer")).toBeNull()
   })
 })
 
