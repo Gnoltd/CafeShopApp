@@ -20,7 +20,6 @@ const ICONS: Record<MenuIcon, typeof Coffee> = {
 export function ProductDetail({ item }: { item: MenuItem }) {
   const locale = useLocale()
   const t = useTranslations("Menu")
-  const tProduct = useTranslations("ProductDetail")
 
   const {
     selectedSizeId,
@@ -87,7 +86,7 @@ export function ProductDetail({ item }: { item: MenuItem }) {
           {extraGroups.length > 0 && (
             <section className="mt-6 flex flex-col gap-2">
               <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {tProduct("extrasLabel")}
+                {t("extrasLabel")}
               </span>
               <div className="flex flex-col gap-2">
                 {extraGroups.map((group) => {
@@ -110,7 +109,7 @@ export function ProductDetail({ item }: { item: MenuItem }) {
                         <span>{locale === "vi" ? option.nameVi : option.nameEn}</span>
                       </div>
                       <span className={selected ? "text-primary" : "text-muted-foreground"}>
-                        {option.priceDelta > 0 ? `+${formatVND(option.priceDelta)}` : tProduct("freeLabel")}
+                        {option.priceDelta > 0 ? `+${formatVND(option.priceDelta)}` : t("freeLabel")}
                       </span>
                     </PressFeedback>
                   )
@@ -144,7 +143,7 @@ export function ProductDetail({ item }: { item: MenuItem }) {
                         {selected && <Check className="h-4 w-4 text-primary" />}
                       </div>
                       <span className="text-xs text-muted-foreground">
-                        {option.priceDelta > 0 ? `+${formatVND(option.priceDelta)}` : tProduct("freeLabel")}
+                        {option.priceDelta > 0 ? `+${formatVND(option.priceDelta)}` : t("freeLabel")}
                       </span>
                     </PressFeedback>
                   )
