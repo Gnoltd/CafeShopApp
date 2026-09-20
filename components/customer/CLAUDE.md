@@ -67,7 +67,11 @@ if it ever looks stale rather than trusting this list from memory.
   from `/staff/tables` afterward; see `components/staff/CLAUDE.md`.
 - **`header.tsx`** — the sticky top bar (logo, back button, desktop
   nav to `/` and `/menu`). No cart link, no profile/loyalty/orders
-  links — all deleted along with those features.
+  links — all deleted along with those features. Also had a real,
+  pre-existing TypeScript bug fixed along the way during this rebuild
+  (unrelated to the rebuild itself — introduced by an earlier
+  nav-trimming change): a `never`-narrowing issue in its active-nav-item
+  logic. Fixed, not otherwise consequential to this file's structure.
 - **`bottom-nav.tsx`** — mobile bottom nav, same trimmed link set as
   `header.tsx`.
 - **`item-image.tsx`** — real uploaded photo when set, falling back to
