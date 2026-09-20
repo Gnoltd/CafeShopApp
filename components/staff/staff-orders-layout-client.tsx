@@ -51,8 +51,6 @@ export function StaffOrdersLayoutClient({
   const pathname = usePathname()
   const isLiveOrdersActive = pathname === "/staff/orders"
   const isTablesActive = pathname === "/staff/tables"
-  const isHistoryActive = pathname === "/staff/orders/history"
-  const isShiftHistoryActive = pathname === "/staff/orders/shift-history"
   const { completedCount, avgTimeLabel } = useKitchenOrders()
 
   if (isLiveOrdersActive || isTablesActive) {
@@ -79,24 +77,6 @@ export function StaffOrdersLayoutClient({
             )}
           >
             {t("liveOrders")}
-          </Link>
-          <Link
-            href="/staff/orders/history"
-            className={cn(
-              "rounded-lg px-3 py-1.5 text-xs font-bold",
-              isHistoryActive ? "bg-secondary/20 text-secondary" : "text-muted-foreground"
-            )}
-          >
-            {t("orderHistoryNav")}
-          </Link>
-          <Link
-            href="/staff/orders/shift-history"
-            className={cn(
-              "rounded-lg px-3 py-1.5 text-xs font-bold",
-              isShiftHistoryActive ? "bg-secondary/20 text-secondary" : "text-muted-foreground"
-            )}
-          >
-            {t("shiftHistoryNav")}
           </Link>
           <Link href="/staff/pos" className="rounded-lg px-3 py-1.5 text-xs font-bold text-muted-foreground">
             {tNav("pos")}
