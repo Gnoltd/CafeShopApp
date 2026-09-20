@@ -2235,6 +2235,17 @@ silently.
 
 **Files:**
 - Modify: `lib/middleware-rules.ts`, `lib/middleware-rules.test.ts`
+- Delete: `lib/auth-required-routes.test.ts`
+
+**Correction, tracked since Task 9/19**: `lib/auth-required-routes.test.ts`
+has been failing (ENOENT) since Task 9 deleted `app/[locale]/(customer)/profile/`
+and `loyalty/` — it dynamically `readdirSync`s those two directories at
+test-collection time to assert `AUTH_REQUIRED_EXACT_PATHS` stays in sync
+with the real route tree. Once this task empties `AUTH_REQUIRED_EXACT_PATHS`
+to `[]` (Step 3), this whole test file's premise (keep a list in sync
+with routes that must be exact-match-gated) is moot — there is no list
+to keep in sync anymore, and the two directories it walks no longer
+exist. Delete the file entirely rather than trying to fix it.
 
 **Interfaces:**
 - Produces: `ADMIN_ONLY_PREFIXES = ["/admin/staff", "/admin/settings"]`
@@ -2291,11 +2302,24 @@ silently.
   Run: `npx vitest run lib/middleware-rules.test.ts`
   Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Delete the now-moot `auth-required-routes.test.ts`**
+
+  ```bash
+  git rm lib/auth-required-routes.test.ts
+  ```
+
+- [ ] **Step 6: Run the full test suite**
+
+  Run: `npm test`
+  Expected: PASS with no failures at all (this was the one remaining
+  known pre-existing failure tracked since Task 9 — after this step,
+  the suite should be fully green for the first time since then).
+
+- [ ] **Step 7: Commit**
 
   ```bash
   git add lib/middleware-rules.ts lib/middleware-rules.test.ts
-  git commit -m "refactor: drop auth-required exact paths now that customer accounts are gone"
+  git commit -m "refactor: drop auth-required exact paths now that customer accounts are gone (also removes the now-moot auth-required-routes.test.ts)"
   ```
 
 ### Task 24: Confirm `ROLE_HOME` change from Task 16 has full test coverage
