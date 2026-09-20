@@ -1,12 +1,11 @@
 "use client"
 
 import { useState, type FormEvent } from "react"
-import { useLocale, useTranslations } from "next-intl"
+import { useTranslations } from "next-intl"
 import { Coffee, Mail, Eye, EyeOff } from "lucide-react"
-import { Link, useRouter } from "@/i18n/navigation"
+import { useRouter } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { GoogleIcon } from "@/components/auth/google-icon"
 import { createClient } from "@/lib/supabase/client"
 import { getCurrentRole } from "@/lib/get-current-role"
 import { ROLE_HOME } from "@/lib/roles"
@@ -47,18 +46,12 @@ function AuthLayoutWrapper({ children }: { children: React.ReactNode }) {
 
 export function LoginForm() {
   const t = useTranslations("Auth")
-  const locale = useLocale()
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [oauthLoading, setOauthLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [view, setView] = useState<"login" | "requestReset" | "resetSent">("login")
-  const [resetEmail, setResetEmail] = useState("")
-  const [resetError, setResetError] = useState<string | null>(null)
-  const [isSendingReset, setIsSendingReset] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -79,119 +72,6 @@ export function LoginForm() {
 
     const role = data.user ? await getCurrentRole(supabase) : null
     router.push(ROLE_HOME[role ?? "customer"] ?? "/menu")
-  }
-
-  async function handleGoogleSignIn() {
-    setError(null)
-    setOauthLoading(true)
-    const supabase = createClient()
-    try {
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: `${window.location.origin}/${locale}/callback` },
-      })
-      if (oauthError) setError(t("oauthStartError"))
-    } catch {
-      setError(t("oauthStartError"))
-    } finally {
-      setOauthLoading(false)
-    }
-  }
-
-  async function handleSendResetLink() {
-    setResetError(null)
-    setIsSendingReset(true)
-    const supabase = createClient()
-    const { error: resetSendError } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: `${window.location.origin}/${locale}/reset-password`,
-    })
-    setIsSendingReset(false)
-    if (resetSendError) {
-      setResetError(resetSendError.message)
-      return
-    }
-    setView("resetSent")
-  }
-
-  if (view === "resetSent") {
-    return (
-      <AuthLayoutWrapper>
-        <div className="text-center">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/15">
-            <Mail className="h-8 w-8 text-primary" />
-          </div>
-          <h1 className="text-xl font-bold text-card-foreground">{t("checkEmailTitle")}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{t("resetEmailSentBody")}</p>
-          <button
-            type="button"
-            onClick={() => setView("login")}
-            className="mt-6 inline-block font-bold text-primary hover:underline"
-          >
-            {t("login")}
-          </button>
-        </div>
-      </AuthLayoutWrapper>
-    )
-  }
-
-  if (view === "requestReset") {
-    return (
-      <AuthLayoutWrapper>
-        <div>
-          <div className="mb-6 flex flex-col items-center gap-3 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/15">
-              <Mail className="h-8 w-8 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-card-foreground">{t("resetPasswordTitle")}</h1>
-              <p className="mt-1 text-sm text-muted-foreground">{t("resetPasswordBody")}</p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <label htmlFor="reset-email" className="block px-1 text-xs font-medium text-muted-foreground">
-                {t("emailLabel")}
-              </label>
-              <div className="relative">
-                <Input
-                  id="reset-email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={resetEmail}
-                  onChange={(e) => setResetEmail(e.target.value)}
-                  placeholder={t("emailPlaceholder")}
-                  className="h-12 rounded-xl pr-10"
-                />
-                <Mail className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              </div>
-            </div>
-
-            {resetError && (
-              <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{resetError}</p>
-            )}
-
-            <Button
-              type="button"
-              onClick={handleSendResetLink}
-              disabled={isSendingReset}
-              className="h-12 w-full rounded-xl text-base font-bold"
-            >
-              {isSendingReset ? t("sendingResetLink") : t("sendResetLinkButton")}
-            </Button>
-
-            <button
-              type="button"
-              onClick={() => setView("login")}
-              className="w-full text-center text-sm font-bold text-primary hover:underline"
-            >
-              {t("backToLogin")}
-            </button>
-          </div>
-        </div>
-      </AuthLayoutWrapper>
-    )
   }
 
   return (
@@ -251,15 +131,6 @@ export function LoginForm() {
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => setView("requestReset")}
-                className="flex min-h-11 items-center px-1 text-xs font-medium text-primary hover:underline"
-              >
-                {t("forgotPassword")}
-              </button>
-            </div>
           </div>
 
           {error && (
@@ -276,34 +147,6 @@ export function LoginForm() {
             {loading ? t("loggingIn") : t("login")}
           </Button>
         </form>
-
-        <div className="my-6 flex items-center gap-3">
-          <div className="h-px flex-1 bg-border" />
-          <span className="text-xs italic text-muted-foreground">{t("or")}</span>
-          <div className="h-px flex-1 bg-border" />
-        </div>
-
-        <Button
-          variant="outline"
-          onClick={handleGoogleSignIn}
-          disabled={oauthLoading}
-          className="h-12 w-full gap-3 rounded-xl text-sm font-medium"
-        >
-          <GoogleIcon />
-          {oauthLoading ? t("oauthRedirecting") : t("continueWithGoogle")}
-        </Button>
-
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          {t("noAccount")}{" "}
-          {/* Inline text link — WCAG 2.5.5's 44x44 target size has a
-              built-in exception for links inside a sentence/block of text,
-              since forcing a full box here would break the reading flow.
-              py-3 still grows the vertical hit area to 44px without
-              wrapping the link onto its own line or affecting layout. */}
-          <Link href="/signup" className="inline-block px-1 py-3 font-bold text-primary hover:underline">
-            {t("signup")}
-          </Link>
-        </p>
       </div>
     </AuthLayoutWrapper>
   )
