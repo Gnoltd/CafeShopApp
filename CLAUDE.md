@@ -8,40 +8,74 @@ decision was made or the full bug-hunt narrative behind a fix.
 
 ## Status
 
-Everything shipped so far is real end-to-end. Next.js app (bilingual,
-role-gated), full customer/staff/admin UI, live Supabase DB (43
-migrations) with RLS, live Realtime sync across Inventory/Tables/Orders/
-Staff accounts, 3-state table occupancy/cleaning, deferred (Pay
-Now/Pay Later) payment with method-chosen-at-serving-time (including
-a served-but-unpaid order's method being changeable/undoable), all
-three payment methods (Cash/Stripe/VNPay), real customer reviews, real
-admin menu-image upload, real Profile persistence, real Admin
-Dashboard KPIs, shift closing (cash reconciliation) with real Shift
-History, real Google sign-in, real Profile Settings (password change +
-Google account linking), an admin-editable per-item Sizes editor, a
-real forgot-password/reset-via-email flow, real Loyalty tier progress,
-a real Rewards catalog/redemption (with a staff-facing redemption
-lookup to close the loop), a real customer Address Book, a real POS
-size/extras picker, and real Admin Settings (shop info, tax rate, and
-loyalty enable/rates — genuinely persisted and driving POS/checkout,
-not `useState` mock) all work end-to-end. Deployed at
-**https://phadincafe.vercel.app**, auto-deploys on push to `main`. See
-`daily.md` for what's currently open — it's kept short and recap-free by
-design, so check it before this file for "what's left."
+**Rebuilt 2026-09-19 into a deliberately minimal, single-purpose app**
+(the "minimal ordering rebuild" — see
+`docs/superpowers/specs/2026-09-19-minimal-ordering-rebuild-design.md`
+for the design/decisions and
+`docs/superpowers/plans/2026-09-19-minimal-ordering-rebuild.md` for the
+full task-by-task execution, including several real mid-execution
+findings/corrections recorded inline against Tasks 1, 8, 9, and 16 —
+read those before trusting the original plan text's intent over what
+actually shipped). The app now does exactly one thing end-to-end: a
+guest scans a table's QR code, orders from a live shared table cart
+(`/table/[qrToken]`, multi-device real-time sync, no account of any
+kind), and staff/manager/admin run one login-gated "operations" area
+(`/staff/orders` KDS + `/staff/tables`) that settles every bill in cash.
+Admin is limited to `/admin/menu` (items/prices/images/availability),
+`/admin/staff` (create staff accounts), and a trimmed `/admin/settings`
+(shop name/address/phone/hours only — no tax, no loyalty, no landing
+hero). Removed entirely (application code, not DB — see the Database
+section below): customer accounts/login/signup/Google sign-in/forgot-
+password, Profile + Profile Settings, Address Book, Loyalty, Rewards +
+staff redemption lookup, Reviews, Promotions/promo codes, the
+individual (non-table) cart + checkout, Pickup as an orderable type,
+Pay Now/Pay Later choice, Stripe, VNPay, tax calculation, POS, Shift
+Closing (and the underlying shift-open gate that used to block
+ordering entirely), Admin Dashboard, Admin Inventory, Food Cost, and
+the landing/marketing page. Bilingual (`vi`/`en`) and RLS-as-boundary
+are unchanged from before the rebuild. **As of this docs update
+(rebuild plan Task 26), the rebuild lives on branch
+`rebuild/minimal-ordering-rebuild` in a git worktree and has not yet
+been pushed to `main` or deployed** — the rebuild plan's Task 27 (final
+local build/lint/test pass) and Task 28 (push + live-verify) come
+after this one; until Task 28 lands,
+**https://phadincafe.vercel.app** (auto-deploys on push to `main`)
+still serves the pre-rebuild, full-featured app this Status section no
+longer describes. Check `git log`/`daily.md` for whether that's since
+happened. See `daily.md` for what's currently open — it's kept short
+and recap-free by design, so check it before this file for "what's
+left."
 
 ## Stack
 
 Next.js (App Router) + Tailwind v4 + shadcn/ui + next-intl, talking
 directly to Supabase (Postgres + Auth + Realtime) via its SDK. No custom
-backend server — RLS is the access-control boundary; Edge Functions
-handle logic needing secrets/atomicity (payments, order placement, staff
-account creation).
+backend server — RLS is the access-control boundary. **Since the
+2026-09-19 rebuild removed Stripe/VNPay/POS, only one Edge Function
+remains** (`create-staff-account`, for the one thing that still needs
+the service-role key/atomicity outside the DB) — order placement now
+goes straight through a `security definer` RPC
+(`place_table_round`/`place_order`) called directly from the browser,
+no Edge Function in front of it.
 
 ## Roles
 
-`profiles.role`: `customer | staff | manager | admin`. Staff =
-POS+Kitchen Display. Manager = Staff + menu/inventory/tables/reports.
-Admin = Manager + staff accounts/roles + shop/loyalty settings.
+`profiles.role`: `customer | staff | manager | admin`. **Since the
+2026-09-19 rebuild, nothing ever creates a new `customer` row** (signup
+is deleted — see the Route map) — the value stays in the enum and in
+role-resolution code (`lib/get-current-role.ts` still returns
+`"customer"` as the downgrade target below) only because old rows and
+that downgrade mechanism aren't something this rebuild touches. Staff =
+Kitchen Display + Tables (`/staff/orders`, `/staff/tables`) — POS is
+deleted. Manager currently has identical reach to Staff (both land on
+`/staff/orders`) plus `/admin/menu`; Inventory/reports/dashboard, the
+old manager-only surfaces, are deleted. Admin = Manager + `/admin/staff`
+(staff accounts/roles) + `/admin/settings` (shop info only — tax/loyalty
+settings are deleted). Per Decision 23 of the 2026-09-19 design doc,
+staff/manager/admin deliberately stay three distinct DB/RLS roles even
+though staff and manager now end up with near-identical UI access —
+collapsing the role schema was judged a bigger, riskier change than the
+value it would add here.
 `profiles.is_active = false` downgrades a disabled staff/manager/admin
 to `customer` everywhere (`current_user_role()` + RLS) without touching
 their Auth login — a disabled employee can still walk in and order as a
@@ -77,26 +111,51 @@ Original mockup source: `design/stitch-exports/`.
 
 ## Route map
 
-Relative to the locale prefix, under `app/[locale]/`:
-- `(auth)` — `/login`, `/signup`, `/callback` (Google OAuth), `/reset-password`
-  (route group, contributes no URL segment — bare paths)
-- `(customer)` — `/` (Home — merged marketing+dashboard, see below), `/menu`,
-  `/menu/[itemId]`, `/cart`, `/checkout`, `/orders`, `/orders/[orderId]`,
-  `/table/[qrToken]`, `/profile`, `/profile/settings`, `/profile/addresses`,
-  `/loyalty`, `/loyalty/redemptions`
-- `staff` — `/staff/pos`, `/staff/orders`, `/staff/orders/history`,
-  `/staff/orders/history/[orderId]`, `/staff/rewards` (real URL
-  segments, not route groups — a route group would collide with
-  `(customer)`'s bare paths)
-- `admin` — `/admin/dashboard`, `/menu`, `/inventory`, `/tables`,
-  `/food-cost`, `/shift`, `/staff` (admin-only), `/settings` (admin-only)
+**Rewritten 2026-09-19** (the minimal ordering rebuild) — verify against
+`find app -type f` if this ever looks stale, rather than trusting this
+list from memory. Relative to the locale prefix, under `app/[locale]/`:
+- `(auth)` — `/login` only (route group, contributes no URL segment).
+  The one surviving auth surface in the whole app — staff/manager/admin
+  sign-in (plain email/password, no Google/reset/signup — see the
+  Feature areas' "Login" note below). `signup/`, `callback/` (Google
+  OAuth), and `reset-password/` were all deleted; `(auth)/layout.tsx`
+  and `(auth)/login/page.tsx` are the only two files left in the group.
+- `(customer)` — `/` (a bare "scan the QR code at your table to order"
+  screen with a staff-sign-in link — replaced the old merged marketing+
+  dashboard Home, see the historical note below), `/menu`, `/menu/[itemId]`
+  (both public and permanently read-only — no add-to-cart control is
+  ever enabled outside an active table session), `/table/[qrToken]`
+  (the shared table ordering session — the only place any order can be
+  placed, and the only "logged-in-feeling" customer surface, though it's
+  still fully guest/anonymous).
+- `staff` — `/staff/orders` (KDS ticket board) and `/staff/tables`
+  (table list/CRUD/QR + cash confirmation, absorbing the old admin
+  Tables page). Both files live under a route group,
+  `app/[locale]/staff/(operations)/`, sharing one layout/nav — the
+  group contributes no URL segment, so the live paths are still
+  `/staff/orders`/`/staff/tables`. `/staff/pos`, `/staff/orders/history`,
+  `/staff/orders/shift-history`, and `/staff/rewards` are all deleted.
+- `admin` — `/admin/menu`, `/admin/staff` (admin-only), `/admin/settings`
+  (admin-only). `/admin/dashboard`, `/inventory`, `/tables`, `/food-cost`,
+  `/shift`, and `/promotions` are all deleted.
 
 `middleware.ts` (+ `lib/middleware-rules.ts` for the pure/testable
 routing logic, extracted so it doesn't pull in `next-intl/middleware`
 under Vitest) gates `/staff/*` (staff|manager|admin) and `/admin/*`
-(manager|admin), plus exact-path gating on `/profile`/`/orders`/`/loyalty`
-for logged-out guests (not `/orders/[id]`, reachable by guest checkout).
-Fails open to anonymous on Supabase errors rather than crashing.
+(manager|admin), with `/admin/staff`/`/admin/settings` further
+restricted to admin only (`/admin/menu` stays manager+admin).
+`AUTH_REQUIRED_EXACT_PATHS` is now an empty array — every customer-
+facing route is guest/anonymous, so there is no page left that needs to
+gate a logged-out guest (the old `/profile`/`/orders`/`/loyalty` exact-
+path gates were deleted along with those routes). Fails open to
+anonymous on Supabase errors rather than crashing.
+
+**Superseded 2026-09-19:** the minimal ordering rebuild replaced the
+merged Home page this whole entry describes with a bare "scan the QR
+code" screen (`app/[locale]/(customer)/page.tsx`, see the Route map
+above) — `home-view.tsx`, `best-sellers-arc.tsx`, and every mockup-
+fidelity detail below are deleted. Kept here as history per this file's
+own convention rather than deleted outright.
 
 **Home (`/`) merge, 2026-09-06:** the old `(marketing)` route group (a
 separate public landing page at `/`, `CoffeeCupHero` +
@@ -157,14 +216,20 @@ Reusable facts that apply anywhere in the codebase, not tied to one feature.
 - **The fixed `LanguageSwitcher`** (`app/[locale]/layout.tsx`,
   `fixed top-2 right-2 z-50`) can overlap admin header action buttons —
   admin layout uses `pt-16` to keep content clear of it.
-- **Supabase Edge Function secrets (`Deno.env`) are a separate store
-  from Vercel's env vars.** Syncing a var to Vercel does *not* make it
-  available inside an Edge Function — it must also be set via the
-  Supabase Dashboard (Edge Functions → Secrets) or `supabase secrets
-  set`. Has bitten this project repeatedly (`STRIPE_SECRET_KEY`,
-  `SITE_URL`, `STRIPE_WEBHOOK_SECRET`, `VNPAY_TMN_CODE`,
-  `VNPAY_HASH_SECRET` all needed this separately). No MCP tool manages
-  these secrets — it's a manual step every time.
+- **Historical (no longer applicable after the 2026-09-19 rebuild
+  removed Stripe/VNPay, but keeping the lesson):** Supabase Edge
+  Function secrets (`Deno.env`) are a separate store from Vercel's env
+  vars — syncing a var to Vercel does *not* make it available inside an
+  Edge Function; it must also be set via the Supabase Dashboard (Edge
+  Functions → Secrets) or `supabase secrets set`. Bit this project
+  repeatedly (`STRIPE_SECRET_KEY`, `SITE_URL`, `STRIPE_WEBHOOK_SECRET`,
+  `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET` all needed this separately) back
+  when those gateways existed. The one remaining Edge Function,
+  `create-staff-account`, only reads Supabase's own always-present
+  `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`, so this gotcha has no live
+  trigger surface today — but the underlying two-secret-stores fact
+  still applies to any future custom secret. No MCP tool manages these
+  secrets — it's a manual step every time.
 - **Guest-safe RPC pattern**: any operation a logged-out guest needs
   (order tracking, order self-cancel, table QR scan count) is a narrow
   `security definer` function taking the row's id as a required
@@ -179,41 +244,61 @@ Reusable facts that apply anywhere in the codebase, not tied to one feature.
   `coalesce()` inside the function body if a default matters.
 - **`order_type` enum is `pickup | dine_in`** (underscore) — client
   state uses hyphenated `"dine-in"` and must translate before any RPC
-  call. Was a real bug (every dine-in order silently failed) until
-  fixed 2026-07-07.
-- **Order-status lifecycle logic intentionally lives in two separate
-  places**, not one: `hooks/useKitchenOrders.tsx`'s `NEXT_STATUS` map
-  (staff-driven kitchen progression, paid→preparing→ready→served) and
-  `supabase/functions/_shared/order-status.ts`'s `buildPaidUpdate`
-  (the served-or-not branch a payment webhook applies when money
-  clears). Considered unifying these during an architecture review
-  (2026-07-12) and rejected it — they're triggered by different events
-  (a staff tap vs. a gateway callback), live in different runtimes
-  (Next.js client bundle vs. Deno edge function) with no shared-code
-  bridge between them (`tsconfig.json` excludes `supabase/functions`
-  entirely), and don't call each other. Unifying would mean inventing
-  new cross-runtime tooling to remove one repeated `"served"` string
-  comparison — not worth it. Don't re-propose merging them without a
-  third concern showing up that actually needs the same table.
+  call (`lib/supabase/order-mapping.ts`'s `toRealOrderType`/
+  `fromRealOrderType`). Was a real bug (every dine-in order silently
+  failed) until fixed 2026-07-07. **Since the 2026-09-19 rebuild**,
+  every order placed goes through `place_table_round` (dine-in only,
+  always tied to a scanned table) — `pickup` can no longer be created,
+  but old `pickup` rows still exist in production and KDS
+  (`kitchen-display.tsx`/`kitchen-board.tsx`) still filters/displays
+  them, so the enum value and this translation gotcha both stay live.
+- **Resolved by deletion (2026-09-19 rebuild) — was "order-status
+  lifecycle logic intentionally lives in two separate places."** This
+  entry used to document a deliberate non-unification of
+  `hooks/useKitchenOrders.tsx`'s status-progression logic and
+  `supabase/functions/_shared/order-status.ts`'s `buildPaidUpdate` (a
+  branch a Stripe/VNPay webhook applied when money cleared). Both
+  webhook callers (`stripe-webhook`, `vnpay-ipn`) and `order-status.ts`
+  itself are now deleted — there's no second runtime's copy of this
+  logic left to compare against, so the "don't re-propose merging them"
+  guidance is moot. Progression is now single-owner: migration `0082`
+  added per-item `order_items.status` (so one ticket with several drinks
+  can advance drink-by-drink instead of one all-or-nothing order
+  status), `hooks/useKitchenOrders.tsx`'s `NEXT_ITEM_STATUS`/
+  `PREV_ITEM_STATUS` maps drive the staff tap, and `orders.status`
+  itself is a server-side rolled-up derivation from its items' statuses
+  (same migration) that every remaining trigger
+  (`complete_order_when_served_and_paid`, `sync_table_occupancy`,
+  `handle_order_paid`) still reads unmodified.
 - **Any code reading `profiles.role` directly** (not via
   `current_user_role()` or a function built on it) risks ignoring
   `is_active` — three call sites needed fixing for exactly this once;
   grep for a raw `.select("role")` on `profiles` before adding a new one.
-- **VND handling differs by payment gateway**: Stripe treats VND as
-  zero-decimal (send the integer total as-is); VNPay always wants
-  `total × 100` regardless of currency. Don't copy one convention into
-  the other.
-- **VNPay signs with PHP `urlencode()` convention** (`+` for space, not
-  `%20`) — plain `encodeURIComponent` produces a wrong hash for any
-  value containing a space (e.g. `vnp_OrderInfo`). Was a real bug until
-  caught via live sandbox testing 2026-07-07; fixed with a shared
-  `vnpayEncode()` helper used consistently everywhere VNPay data is
-  signed or verified.
-- **`supabase.functions.invoke()` always attaches an `Authorization`
-  header, even for a guest** — for a guest it's the client's own
-  publishable key, not a JWT. Forwarding it blindly breaks
-  `auth.uid()` resolution; only forward when the token is actually
-  JWT-shaped (3 dot-separated segments).
+- **Historical (no longer applicable after the 2026-09-19 rebuild
+  removed Stripe/VNPay entirely — payment is cash-only now):** VND
+  handling used to differ by payment gateway (Stripe treats VND as
+  zero-decimal, send the integer total as-is; VNPay always wanted
+  `total × 100` regardless of currency), and VNPay signed with PHP
+  `urlencode()` convention (`+` for space, not `%20` — plain
+  `encodeURIComponent` produced a wrong hash for any value containing a
+  space, e.g. `vnp_OrderInfo`; a real bug until caught via live sandbox
+  testing 2026-07-07, fixed with a shared `vnpayEncode()` helper). Both
+  gotchas' entire trigger surface (`place-order`, `pay-order`,
+  `stripe-webhook`, `vnpay-ipn`, `vnpay-return`) is deleted. Kept here
+  as a reminder that a future non-VND or non-cash gateway would need the
+  same kind of per-gateway amount/encoding audit, not assumed-identical
+  handling.
+- **Historical (narrower trigger surface after the 2026-09-19 rebuild):**
+  `supabase.functions.invoke()` always attaches an `Authorization`
+  header, even for a guest — for a guest it's the client's own
+  publishable key, not a JWT; forwarding it blindly breaks
+  `auth.uid()` resolution, so only forward when the token is actually
+  JWT-shaped (3 dot-separated segments). This mattered because
+  `place-order`/`pay-order` were guest-callable; both are deleted. The
+  one surviving Edge Function, `create-staff-account`, is never
+  guest-callable (`verify_jwt` stays on, admin-only) so this gotcha has
+  no live trigger today — but the lesson still applies to any future
+  guest-callable function.
 - **Query layers are DI'd**: every `lib/supabase/*.ts` module takes a
   `SupabaseClient` as its first argument (not importing a singleton),
   so it's testable with a mocked client. Follow this pattern for new
@@ -295,192 +380,199 @@ you need to find your way around; check the dated docs for full detail.
 ### Customer, staff, and admin feature areas
 
 Migrated to per-folder files (2026-07-13) so they only load when working
-in that folder: `components/customer/CLAUDE.md` (ordering flow, landing/
-auth/profile/loyalty/order history, reviews), `components/staff/CLAUDE.md`
-(POS, KDS, reward lookup), `components/admin/CLAUDE.md` (dashboard, menu,
-inventory, tables, staff accounts, settings). Below are only the feature
-areas that span multiple directories.
+in that folder: `components/customer/CLAUDE.md` (menu browsing, QR-scan
+table landing, the shared table ordering session, cash-only Check
+Bill), `components/staff/CLAUDE.md` (the merged KDS + Tables
+"operations" area, cash confirmation), `components/admin/CLAUDE.md`
+(menu management, staff accounts, trimmed settings). All three were
+rewritten for the 2026-09-19 minimal ordering rebuild — everything they
+used to describe (POS, reward lookup, dashboard, inventory, shift
+closing, etc.) is deleted; see "Status" above and
+`docs/superpowers/plans/2026-09-19-minimal-ordering-rebuild.md` for
+what came out. Below are only the feature areas that span multiple
+directories.
 
-### Orders + Realtime (core, all real)
-- `place_order` RPC (`security definer`) — the only place order money
-  is computed; never trusts client-supplied prices. Always inserts
-  `pending_payment`/`pending`, second `UPDATE` to `paid` when already
-  collected (POS).
-- `get_order_for_tracking` / `cancel_pending_order` — guest-safe
-  single-row RPCs (see "Guest-safe RPC pattern" above).
-- `place-order` Edge Function wraps `place_order` with the service-role
-  key (see the JWT-forwarding gotcha above).
-- A guest's own tracking page has no Realtime path (would require a
-  bulk-guest-visibility RLS leak) — polls `get_order_for_tracking`
-  every 10s instead, labeled in the UI as polling. Logged-in
-  customers/staff get true Realtime.
-- Order Tracking's "Contact Shop" button calls the real
-  `shop_settings.phone` (`getShopSettings`, added 2026-07-11) and
-  hides itself entirely when no phone is configured — was a hardcoded
-  fake number (`+84281234567`) dialed for every order regardless of
-  which shop's data was actually configured.
+### Login — the one surviving auth surface (fixed 2026-09-19)
 
-### Table status — occupancy + cleaning (all real, shipped 2026-07-08)
-- `tables.status` (migration `0021`) is a 3-state enum — `available |
-  occupied | cleaning` — replacing the old `is_occupied` boolean.
-- **Occupied**: automatic — `sync_table_occupancy` trigger fires on a
-  dine-in order `INSERT`, regardless of payment status.
-- **Cleaning**: automatic — same trigger, fires when a table's *last*
-  active order reaches `completed`/`cancelled`. Deliberately not the
-  same event as "guest left" — a finished order always routes through
-  Cleaning, never straight to Available.
-- **Available**: always a manual staff tap ("Cleaning Done") — never
-  automatic. Two surfaces call the same `setStatus`: the KDS "Tables"
-  4th board column (`components/staff/kitchen-tables-column.tsx`) and
-  Admin Tables (`components/admin/tables-management.tsx`, a 3-state
-  contextual button, not a binary toggle).
-- Guests scanning a `cleaning` table's QR get a blocked message with a
-  "Notify Staff" button — guest-safe `notify_table_cleaning` RPC (sets
-  `cleaning_notified_at`), shown as an urgent badge on the KDS table
-  card until cleared.
-- Admin Dashboard has a real-time "Table Status" card (3-way counts +
-  a cleaning-attention alert), alongside the real KPI cards above it
-  (see Admin pages above).
-- Design: `docs/superpowers/specs/2026-07-08-table-status-design.md`;
-  plan: `docs/superpowers/plans/2026-07-08-table-status.md`.
+`components/auth/login-form.tsx` (`/login`) is staff/manager/admin
+sign-in only — plain email/password via
+`supabase.auth.signInWithPassword`, routing to `ROLE_HOME[role]`
+(`/staff/orders` for all three roles). **A real, live bug found and
+fixed during the 2026-09-19 rebuild** (Task 16B, not anticipated by the
+original plan): this file had a working "Sign in with Google" button, a
+"Forgot password?" flow, and a "Sign up" link — all three pointed at
+routes deleted many tasks earlier in the same rebuild (`(auth)/callback/`,
+`(auth)/reset-password/`, `(auth)/signup/`), so all three were live
+dead links on the one page every staff member actually uses to get in.
+Fixed to plain email/password only. Four now-orphaned files were
+deleted alongside it: `components/auth/signup-form.tsx`,
+`oauth-callback.tsx`, `reset-password-view.tsx`, `google-icon.tsx`. No
+self-service "forgot password" for anyone (Decision 19) — a staff
+member who forgets their password gets it reset manually via the
+Supabase Dashboard.
 
-### Deferred payment + service lifecycle (all real, shipped 2026-07-08)
-- New `served` order status (between `ready` and `completed`) — set
-  from the table's own card in the KDS Tables column for dine-in (not
-  the order card), or the existing Ready-column tap for pickup (no
-  table to attach a Served action to).
-- Checkout offers **Pay Now / Pay Later**. Pay Now is the unchanged
-  existing flow (payment method picked at checkout, before the kitchen
-  ever sees the order). Pay Later shows **no payment method picker at
-  checkout at all** — the order reaches the kitchen immediately
-  (bypasses `pending_payment`), and both the method and the payment
-  itself are chosen only once the order is `served`:
-  - **Customer** picks Cash/Card/VNPay on their own tracking page (a
-    3-way picker) — Cash just records the choice for staff to collect
-    in person; Card/VNPay records it and redirects to that gateway
-    immediately.
-  - **Staff** can also mark Cash directly from the table's card in KDS
-    ("Mark Cash") — Stripe/VNPay stay customer-only, since staff can't
-    complete a hosted checkout on the guest's behalf.
-  - `orders.payment_method` is nullable (migration `0023`);
-    `place_order` only requires it when `payAt = 'now'`.
-- **Auto-completion**: `complete_order_when_served_and_paid` trigger
-  (migration `0022`) promotes an order to `completed` the instant it's
-  both `served` and `payment_status = 'paid'`, regardless of which
-  becomes true first — a Pay Now order satisfies payment before
-  serving, so tapping Served completes it immediately; a Pay Later
-  order satisfies serving first and waits on payment.
-- New `pay-order` Edge Function — customer-triggered deferred
-  Stripe/VNPay checkout-session creation, reusing `place-order`'s
-  session-building logic but invoked later against an existing order.
-  `stripe-webhook`/`vnpay-ipn`/`vnpay-return` were all corrected to
-  branch on the order's *current* status, so a served-but-unpaid order
-  is never wrongly regressed back to `paid` or cancelled by a stale
-  payment attempt.
-- Checkout now **requires a real scanned table for Dine-in** — the
-  toggle is disabled until `activeTable` is set (no more fake
-  fallback table number sending `table_id: null`, which used to make
-  an order invisible to the entire table-driven KDS model).
-- **Payment method correction** (real, shipped 2026-07-10): a
-  served-but-unpaid order's recorded method can be changed or reset.
-  `change_order_payment_method(p_order_id, p_method default null)`
-  (guest-safe `security definer`, migration `0032`) only acts while
-  `status = 'served' AND payment_status = 'pending'`; `null` resets to
-  "no method chosen." Two surfaces: the customer's tracking page
-  ("Change payment method" under the Cash-awaiting note, "Choose a
-  different method" next to the gateway retry button) and KDS's table
-  card (an "Undo" button next to Confirm Cash — dine-in only, no
-  pickup equivalent, see known gaps below).
-- Design: `docs/superpowers/specs/2026-07-08-deferred-payment-service-lifecycle-design.md`
-  (see its "Revision" section for the method-also-deferred correction);
-  plan: `docs/superpowers/plans/2026-07-08-deferred-payment-service-lifecycle.md`.
-  Payment method correction: `docs/superpowers/specs/2026-07-10-payment-method-correction-design.md` /
-  `docs/superpowers/plans/2026-07-10-payment-method-correction.md`.
+### Orders + Realtime (core, all real — rewritten for the 2026-09-19 rebuild)
 
-### Payments — Cash, Stripe, VNPay (all real, all end-to-end verified live)
-- **Cash**: self-checkout starts `pending_payment`; staff confirms via
-  `components/staff/kitchen-pending-payment.tsx`'s "Confirm Cash
-  Received" (`confirmCashPayment`, plain update). POS cash collects in
-  person, skips straight to `paid`.
-- **Stripe**: `place-order` creates a real Checkout Session (raw
-  `fetch`, no SDK) when `paymentMethod === "stripe"` and not already
-  collected; 30-min `expires_at`. `stripe-webhook` (HMAC-SHA256 via Web
-  Crypto) is the source of truth for "paid" —
-  `checkout.session.completed`/`.expired` flip the order via a guarded
-  `UPDATE ... WHERE payment_status = 'pending'`. POS's Card option
-  reuses the `'stripe'` enum value (no separate `'card'` value), sends
-  `paymentCollected: true`, skips the Stripe branch entirely.
-- **VNPay**: `place-order` builds a locally-signed redirect URL (no API
-  call needed). `vnpay-ipn` (server-to-server, source of truth, VNPay's
-  `{RspCode, Message}` response contract) and `vnpay-return` (single
-  return URL for every outcome, distinguished by `vnp_ResponseCode`;
-  calls `cancel_pending_order` on failure) are both real. POS's VNPay
-  option has its own real `'vnpay'` enum value.
-- All three share `cancel_pending_order` for self-cancel/expiry cleanup.
-- Out of scope for all three: refunds/disputes (handled manually via
-  each gateway's dashboard), any in-person card/QR reader hardware
-  integration (Stripe Terminal etc.).
+**Every order is created through `place_table_round`** (dine-in only,
+tied to a scanned table's shared session) — there is no other code path
+that inserts an `orders` row. The call chain is `place_table_round` →
+`place_table_round_legacy` → `place_order` (an idempotency wrapper
+added in migration `0085`: takes a client-generated submission id and
+returns the existing order on an exact retry instead of double-placing)
+→ `place_order_legacy` (the original pricing/promo/loyalty/inventory
+logic, unmodified except for migration `0094` removing its
+`no_open_shift` guard — see the Database section). Money is still
+always computed server-side; the client never supplies prices.
+- Per-item kitchen status (migration `0082`): `order_items.status`
+  lets one ticket with several drinks advance drink-by-drink;
+  `orders.status` is a server-side rolled-up derivation from its
+  items, read unmodified by `complete_order_when_served_and_paid`,
+  `sync_table_occupancy`, and `handle_order_paid`.
+- There is no separate guest order-tracking route or RPC anymore
+  (`get_order_for_tracking`/`cancel_pending_order`/`/orders/[orderId]`
+  are all deleted) — a guest's order status is shown inline on their
+  own `/table/[qrToken]` page instead, via `hooks/useTableSession.tsx`
+  (Realtime on `table_cart_items`/`orders`/`table_sessions`, plus a
+  10s poll for `orders` status changes Realtime can't deliver to a
+  guest at all — see the Shared table ordering session entry below).
+- Cash confirmation is a single staff-facing RPC,
+  `confirm_table_payment(p_table_id, p_method)` (migration `0091`),
+  called from `/staff/tables` always with `method: "cash"` (the UI
+  component is `ConfirmCashPayment`, a one-tap confirm with no picker —
+  cash is the only method left system-wide). It updates every
+  `pending`-payment order for that `table_id` to `paid`, which
+  `handle_order_paid` (still only on an `UPDATE` transitioning
+  `payment_status` to `'paid'`, never on `INSERT`) picks up as before.
+- A `recall_last_completed_order()` RPC (migrations `0087`–`0089`, not
+  part of the 2026-09-19 rebuild) lets staff revert the single most
+  recent completed+paid order back onto the KDS board within a short
+  window, resetting its item statuses too.
 
-### Shift closing (real, shipped 2026-07-10)
-- `/admin/shift` — cash reconciliation: open a shift with a starting
-  cash amount, a live report tracks cash orders against it, close with
-  a counted amount to get an over/short summary.
-- `shifts` table + `orders.paid_at` column + three RPCs (migration
-  `0031`): open/report/close. `open_shift` errors cleanly (shown, not
-  crashed) if a shift is already open — only one open shift at a time.
-- `lib/supabase/shift-data.ts` query module; reachable from Admin
-  Dashboard's Revenue KPI card and the Admin sidebar. Manager/admin
-  only (same gate as the rest of `/admin/*`).
-- **Shift History** (real, added 2026-07-11): `/admin/shift` has a
-  Current/History tab switch. `get_shift_history()` RPC (migration
-  `0036`) lists every past closed shift (open/close time, counted cash,
-  difference, total revenue across all methods) — `getShiftHistory`.
-  Selecting one calls the already-existing `get_shift_report(p_shift_id)`
-  (query layer's `getShiftReport` gained an optional `shiftId` param) to
-  show that shift's full detail. `components/admin/shift-report-detail.tsx`
-  is the shared renderer (opened/closed time, KPI stats, per-method
-  breakdown, transaction list) used for the live shift, the
-  just-closed summary, and any historical shift — previously the
-  just-closed summary only showed cash stats with no method breakdown
-  and nothing at all persisted once you navigated away, since only the
-  currently-open shift was ever fetchable.
-- Plan: `docs/superpowers/plans/2026-07-10-shift-closing.md`; design:
-  `docs/superpowers/specs/2026-07-10-shift-closing-design.md`.
+### Table status — DB stays 3-state, UI is binary since 2026-09-19
+- `tables.status` (migration `0021`) is still a 3-state enum —
+  `available | occupied | cleaning` — and `sync_table_occupancy` still
+  maintains it exactly as before (occupied on a dine-in order `INSERT`;
+  cleaning when a table's last active order completes/cancels;
+  available only ever via a manual staff action). Per this rebuild's
+  Decision 1 ("never drop a DB table/column"), none of that DB-level
+  machinery changed.
+- **What changed is the UI, and the history is worth getting right**:
+  the old 3-state cycle button (`components/staff/kitchen-tables-column.tsx`,
+  described in this section pre-2026-09-19) had already been dead,
+  unrendered code since a 2026-09-05 commit — predating this whole
+  rebuild by two weeks. So the "live 3-state table UI" this section used
+  to describe hadn't actually been reachable by anyone for a while
+  before the rebuild even started. `notify_table_cleaning`/the
+  "cleaning" blocked-QR-scan screen were similarly dead on the customer
+  side (`TableLanding`'s `cleaning`-status branch, removed outright in
+  Task 7 of the rebuild).
+- The new `/staff/tables` page (`components/staff/tables-operations-view.tsx`,
+  absorbing the old admin Tables CRUD too — see the route map) is what
+  actually makes a table-status view live for the first time in a
+  while: a binary "trống" (empty) / "đang phục vụ" (in service) badge
+  computed from whether the table currently has an open `table_sessions`
+  row — reusing data the component already fetches for showing active
+  carts/rounds, not a second query. No "cleaning" state, no urgent-alert
+  badge, no "Notify Staff" affordance — Decision 12 dropped the
+  3-way distinction from the UI entirely.
+- Historical design/plan docs for the original 3-state feature:
+  `docs/superpowers/specs/2026-07-08-table-status-design.md` /
+  `docs/superpowers/plans/2026-07-08-table-status.md`. Current binary
+  UI: Task 15/16 of
+  `docs/superpowers/plans/2026-09-19-minimal-ordering-rebuild.md`.
 
-### Shared table ordering session (real, shipped 2026-08-28)
+### Deferred payment, Pay Now/Later, and Payment method correction — deleted 2026-09-19
+
+This whole feature area (the `served`-status deferred-payment lifecycle,
+the Pay Now/Pay Later checkout choice, and the later "payment method
+correction" undo/change flow — all shipped 2026-07-08/2026-07-10) is
+gone. It only ever existed for the individual (non-table) checkout flow
+and the Stripe/VNPay gateways, both deleted by the 2026-09-19 rebuild —
+see "Cash-only payment" below for what replaced it. `orders.payment_method`
+stays nullable (migration `0023`) and the `served` status/
+`complete_order_when_served_and_paid` trigger are untouched at the DB
+level (Decision 1: never drop), but nothing in the surviving UI ever
+shows a payment-method picker or an "undo"/"change method" control —
+every order is cash, decided once, by staff, after the fact. Historical
+docs, kept for the full bug-hunt narrative:
+`docs/superpowers/specs/2026-07-08-deferred-payment-service-lifecycle-design.md`,
+`docs/superpowers/plans/2026-07-08-deferred-payment-service-lifecycle.md`,
+`docs/superpowers/specs/2026-07-10-payment-method-correction-design.md`,
+`docs/superpowers/plans/2026-07-10-payment-method-correction.md`.
+
+### Cash-only payment (real, since the 2026-09-19 rebuild)
+
+Payment is cash-only everywhere — no Stripe, no VNPay, no method
+picker of any kind shown to a customer. The customer's only
+payment-adjacent action is tapping "Yêu cầu tính tiền" (request the
+bill) on their table page, which calls `requestTableBill` →
+`checkout_table_session(p_qr_token, p_method: 'cash', p_promo_code:
+null)` directly from the browser (no Edge Function in front of it
+anymore — see Edge Functions below). Staff then settle the table from
+`/staff/tables` with a single-tap `ConfirmCashPayment` control that
+always calls `confirmTablePayment(tableId, 'cash')` →
+`confirm_table_payment` (migration `0091`). No refunds/disputes support
+(handled manually, unchanged assumption from before the rebuild).
+
+### Shift closing — deleted entirely, including the underlying ordering gate (2026-09-19)
+
+Cash reconciliation (`/admin/shift`, open/report/close, Shift History)
+is gone — `components/admin/shift-closing.tsx`, `shift-report-detail.tsx`,
+`app/[locale]/admin/shift/`, `hooks/useShift.tsx`, and
+`lib/supabase/shift-data.ts` are all deleted. **The more consequential
+change**: `place_order_legacy` used to refuse to run at all unless a row
+in `shifts` had `closed_at is null` — i.e. ordering itself was gated on
+a shift being "open." Deleting only the Shift Closing UI would have
+deadlocked the entire app (no UI left to ever open a shift, so no one
+could ever order again) — migration `0094` removes that `no_open_shift`
+guard outright. No shift concept survives anywhere, not even a minimal
+open/close toggle. `shifts`/`shift_workers` tables and `orders.paid_at`
+stay in the schema, unused, per the never-drop rule. Historical docs:
+`docs/superpowers/plans/2026-07-10-shift-closing.md`,
+`docs/superpowers/specs/2026-07-10-shift-closing-design.md`.
+
+### Shared table ordering session (real, shipped 2026-08-28 — now the *only* ordering path)
+
 - A live, multi-device shared cart per dine-in table — every phone that
   scans a table's QR sees and edits the same draft cart in real time,
-  can place it as a round (`payAt: 'later'`, kitchen sees it
-  immediately), and keeps a running tab across multiple rounds until
-  someone pays.
+  can place it as a round (kitchen sees it immediately), and keeps a
+  running tab across multiple rounds until someone pays. **Since the
+  2026-09-19 rebuild, this is the one and only way any order can be
+  placed** — the old individual `/cart` → `/checkout` flow and its
+  cart-transfer bridge into a table session are both deleted (Decision
+  9); there is no Pickup order type left to choose either (Decision 6).
 - `table_sessions`/`table_cart_items` (migration `0070`) get a public
   SELECT RLS policy and **zero write policy** — every write goes
   through guest-safe `security definer` RPCs (`get_table_session`,
   `add_cart_item`, `update_cart_item_quantity`, `remove_cart_item`,
   `place_table_round`, `abandon_table_session`, migrations `0071`–`0072`,
-  `0077`), all keyed on the table's `qr_token` rather than its raw
-  `table_id` — `qr_code_token` has zero SELECT grant to anon/
-  authenticated (unlike the openly-enumerable `tables.id`), so a
+  `0077`, plus `0085`'s idempotency/optimistic-concurrency additions —
+  see the Database section), all keyed on the table's `qr_token` rather
+  than its raw `table_id` — `qr_code_token` has zero SELECT grant to
+  anon/authenticated (unlike the openly-enumerable `tables.id`), so a
   qr_token-keyed RPC can't be walked table-to-table the way a
   table_id-keyed one could.
-- **Check Bill** (`checkout_table_session`/`confirm_table_cash_payment`,
-  migration `0074`) is the aggregate payment step: sets a chosen
-  payment method on every currently-unpaid order under the table's
-  session, applies at most one promo code against the aggregate total,
-  and — for Stripe/VNPay — sets `payment_pending` so a new round can't
-  be placed mid-checkout.
+- **Check Bill** is now a single cash-only confirm, no picker or promo
+  UI at all (Decision 10/14): the customer's only action is
+  `requestTableBill` → `checkout_table_session(p_qr_token, p_method:
+  'cash', p_promo_code: null)`, called directly from the browser (the
+  `checkout-table-session` Edge Function that used to front this is
+  deleted). Staff close it out from `/staff/tables` via
+  `confirm_table_payment` — see "Cash-only payment" above.
 - `hooks/useTableSession.tsx` drives the customer-facing session state:
   Realtime on `table_cart_items`/`orders`/`table_sessions` for fast
-  updates, plus a 10s polling fallback (migration `0080`'s
-  `table_sessions` touch on cash-confirm gives a faster guest signal
-  for that one case) covering `orders` status changes Realtime can't
-  deliver to a guest at all (`customer_id` is null on a guest round,
-  matching neither `orders_select_own` nor `orders_select_staff` — see
-  the guest-safe RPC pattern above). KDS's `KitchenTablesColumn` gained
-  a "Mark Cash" action (`markTableCashPayment`) so staff can still
-  settle a table whose guest never tapped Check Bill.
+  updates, plus a 10s polling fallback covering `orders` status changes
+  Realtime can't deliver to a guest at all (`customer_id` is null on a
+  guest round, matching neither `orders_select_own` nor
+  `orders_select_staff` — see the guest-safe RPC pattern above).
+  `/staff/tables`' `ConfirmCashPayment` action lets staff settle a table
+  whose guest never tapped Check Bill.
 - Design: `docs/superpowers/specs/2026-08-28-shared-table-ordering-session-design.md`;
   plan: `docs/superpowers/plans/2026-08-28-shared-table-ordering-session.md`.
+  What changed for the 2026-09-19 rebuild (cash-only Check Bill, sole
+  ordering path):
+  `docs/superpowers/specs/2026-09-19-minimal-ordering-rebuild-design.md`
+  Decisions 5/6/9/10/14, plan Tasks 5–8B.
 
 ## Database (`supabase/migrations/`)
 
@@ -537,15 +629,14 @@ has RLS enabled (confirmed via `list_tables`/`get_advisors`).
 | `0058` | Fixed an off-by-one in `0057`'s `check_rate_limit()` (allowed one fewer request than configured) |
 | `0059`–`0060` | Backfilled `confirm_order_payment()` (applied live 2026-07-28 outside the repo) and revoked an anon `EXECUTE` grant the platform auto-added — was a live payment-bypass (any anon caller could mark any pending order "paid") |
 
-**Check later:** a separate, not-yet-merged branch
-(`docs/superpowers/plans/2026-07-29-architecture-deepening.md`, worked
-in a `.worktrees/architecture-deepening` git worktree) wires
-`confirm_order_payment()` into `stripe-webhook`/`vnpay-ipn` and deletes
-`_shared/order-status.ts`'s `buildPaidUpdate` helper. When that branch
-merges, reconcile it against the `stripe-webhook` amount-cross-check
-(L-2) and multi-`v1=` signature fix (I-5) shipped in the 2026-07-29
-security review's P2 pass (`0063`-`0067`, PR #4) — both touched the same
-file independently and haven't been merged against each other yet.
+**Resolved by deletion (2026-09-19 rebuild)** — this used to be a "check
+later" note about reconciling a not-yet-merged `architecture-deepening`
+branch (which wired `confirm_order_payment()` into
+`stripe-webhook`/`vnpay-ipn` and deleted `_shared/order-status.ts`'s
+`buildPaidUpdate` helper) against the 2026-07-29 security review's P2
+pass. Both `stripe-webhook`/`vnpay-ipn` and `_shared/order-status.ts`
+are now deleted outright (Stripe/VNPay removed entirely), so there is
+nothing left to reconcile.
 | `0061` | Revoked the same platform auto-re-grant on `check_rate_limit` (anon/authenticated could otherwise manipulate arbitrary rate-limit counters) |
 | `0062` | Defense-in-depth role checks added to `get_dashboard_stats`/`get_order_history`/`get_shift_history`/`get_shift_report`/`find_redemption_by_code` (not currently exploitable — RLS-backstopped — but were missing the check every sibling staff-only function has) |
 | `0063` | `menu_item_reviews` direct SELECT scoped to own-or-staff (was `using (true)`, leaking raw `customer_id` UUIDs per review) |
@@ -566,13 +657,34 @@ file independently and haven't been merged against each other yet.
 | `0078` | Missing FK indexes on `table_cart_items` (performance) |
 | `0079` | **CRITICAL** — `increment_table_scan_count`/`notify_table_cleaning` (`return`ed the whole `tables` row, `qr_code_token` included) let any anon caller recover a table's QR token via `tables.id` despite the column having zero direct SELECT grant (see the "`SECURITY DEFINER` returning a full row" gotcha below) |
 | `0080` | `confirm_table_cash_payment` also touches `table_sessions` so a guest's existing Realtime subscription picks up staff cash confirmation (full fix is `hooks/useTableSession.tsx`'s polling fallback, see feature entry below) |
+| `0081` | `table_cart_imports` table + RPC to transactionally import a whole local cart into the shared table session in one retry-safe step (re-opening dine-in from the old individual checkout without bypassing the shared-cart model) — the application-layer side of this (`lib/table-cart-transfer.ts`, `TableLanding`'s `?cartTransfer=` handling) was deleted by the 2026-09-19 rebuild (Decision 9); the DB objects stay per the never-drop rule |
+| `0082` | `order_items.status` (per-item kitchen status) + `orders.status` becomes a server-side rolled-up derivation of its items' statuses, so one ticket with several drinks can advance drink-by-drink instead of one all-or-nothing order status — every downstream trigger keeps reading `orders.status` unmodified (see the "order-status lifecycle" gotcha above) |
+| `0083` | `table_sessions.checkout_attempt_id`/`checkout_started_at` + guest-safe `release_table_checkout` — makes a pre-redirect gateway-checkout failure recoverable without clobbering a newer attempt or an already-cash-selected order (now largely dormant since Stripe/VNPay themselves are deleted, but the columns/RPC stay) |
+| `0084` | `shop_settings_update_admin`/`loyalty_settings_update_admin` RLS narrowed from manager\|admin to admin-only (matching the `/admin/settings` route gate) + Postgres range constraints on tax rate/loyalty earning rate/redemption value |
+| `0085` | Order/table-cart idempotency: `orders.submission_id` (unique) + the original `place_order` renamed to `place_order_legacy` behind a small idempotent wrapper (new `place_order`); `table_cart_items.version` for optimistic-concurrency cart edits; `table_round_submissions` for dedup |
+| `0086` | Missing FK indexes (`order_items.order_id`, `orders.customer_id`, `orders.table_id`) + a partial paid-order date index, from a live performance-advisor pass |
+| `0087`–`0089` | `recall_last_completed_order()` — lets staff revert the single most recent completed+paid order back onto the KDS board within a short window, plus an anon auto-re-grant revoke and a follow-up making recall also reset the recalled order's item statuses (unrelated to the 2026-09-19 rebuild) |
+| `0090` | `menu_item_categories` join table replaces `menu_items.category_id` (many-to-many categories) |
+| `0091` | `confirm_table_payment(table_id, method)` replaces the cash-hardcoded `confirm_table_cash_payment` — confirms a table's unpaid balance as paid via any method, matched on `orders.table_id` directly (not just table-session orders); the 2026-09-19 rebuild's staff Tables page always calls it with `'cash'` |
+| `0092` | Revoked the same platform auto-re-grant on `confirm_table_payment` (anon) |
+| `0093` | **Minimal ordering rebuild, Task 1 reconciliation** — re-applying `0083`–`0086` (found to have been silently skipped on the live database despite being committed in the repo the whole time) re-triggered the platform auto-re-grant gotcha: revoked excess `anon`/`PUBLIC` grants on `get_dashboard_stats()` (low severity, function's own role check still blocks non-staff) and, more seriously, on `record_table_checkout_session()` — an internal service-role-only persistence hook that a guest could otherwise have used to poison a pending table's stored gateway redirect URL |
+| `0094` | **Minimal ordering rebuild, Task 1** — removed the `no_open_shift` guard from `place_order_legacy` (ordering no longer requires an open shift; the entire shift concept is deleted from the UI, see "Shift closing" below) and zeroed `shop_settings.tax_rate` to `0` (menu prices are now treated as already tax-inclusive; no tax UI anywhere) |
+
+The live database is caught up through migration `0094` as of the
+2026-09-19 rebuild (it had silently drifted to `0080` applied /
+`0086` committed-but-unapplied before that rebuild's Task 1 caught and
+fixed it — see `0093`'s note above). `supabase/CLAUDE.md`, if present,
+may carry its own copy of a similar table for `supabase/`-only work;
+treat this file as authoritative for anything referenced from a
+customer/staff/admin feature area.
 
 **Live-grant auto-re-grant gotcha, worth remembering:** a migration's own
 `revoke all ... from public; grant execute ... to X;` does NOT reliably
 survive Supabase's platform-level auto-grant behavior on `CREATE
 FUNCTION` — a distinct, LATER follow-up migration is required every
-time. Has bitten this project at least four times now (`0045`, `0047`,
-`0060`, `0061`). Any new `SECURITY DEFINER` function should have its
+time. Has bitten this project at least nine times now (`0045`, `0047`,
+`0060`, `0061`, `0069`, `0075`, `0088`, `0092`, `0093`). Any new
+`SECURITY DEFINER` function should have its
 `information_schema.role_routine_grants` checked live immediately after
 creation, not assumed correct from the migration text alone.
 
@@ -583,12 +695,24 @@ exist — credentials in `.env.local` and the gitignored `test-accounts.md`.
 
 ## Edge Functions (`supabase/functions/`)
 
-All real: `place-order` (routes to Stripe/VNPay/cash based on payload),
-`stripe-webhook`, `vnpay-ipn`, `vnpay-return`, `create-staff-account`.
-None use an SDK for their respective gateway — raw `fetch`/Web Crypto
-throughout, matching this project's dependency-free convention. No Deno
-test harness exists in this project — Edge Functions are verified live
-(curl smoke tests + real sandbox transactions), not with automated tests.
+**Only `create-staff-account` remains** as of the 2026-09-19 rebuild.
+`place-order`, `pay-order`, `stripe-webhook`, `vnpay-ipn`,
+`vnpay-return`, and `checkout-table-session` are all deleted (Decision
+25) — every remaining write goes either through a direct browser
+`supabase.rpc(...)` call (`place_table_round`, `checkout_table_session`
+called with `p_method: 'cash'`, `confirm_table_payment`, all
+`security definer`) or, for staff-account creation, this one surviving
+function. `create-staff-account` uses no SDK for anything — raw
+`@supabase/supabase-js` client calls with the service-role key, `verify_jwt`
+left on (admin-only, no guest use case, see the Login/Cross-cutting
+notes above). No Deno test harness exists in this project — Edge
+Functions are verified live (curl smoke tests), not with automated
+tests. **Undeploying the 6 deleted functions from the live Supabase
+project and removing their now-unused Stripe/VNPay secrets is a manual,
+external step (Task 22 of the rebuild plan) — confirm with whoever ran
+it (`dothanhlong166@gmail.com`) whether that's actually been done yet;
+this repo update only deletes the local source, it can't undeploy a
+live function or touch a secrets dashboard.**
 
 ## Deployment (Vercel)
 
@@ -602,13 +726,13 @@ auto-deploys, no manual `vercel deploy` needed).
   referenced by any Next.js code, service-role logic lives only in Edge
   Functions with their own separate secret store; safe to remove from
   Vercel to shrink blast radius, just needs someone with dashboard
-  access), `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `VNPAY_TMN_CODE`,
-  `VNPAY_HASH_SECRET`, `VNPAY_RETURN_URL` (dead —
-  VNPay's real return URL is built dynamically pointing at the Supabase
-  function URL, not this var). The Stripe/VNPay secrets are *also*
-  separately required as **Supabase Edge Function secrets** — see
-  Cross-cutting conventions above; Vercel and Supabase are two
-  different secret stores.
+  access). `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `VNPAY_TMN_CODE`,
+  `VNPAY_HASH_SECRET`, `VNPAY_RETURN_URL` are all **dead as of the
+  2026-09-19 rebuild** (no code references any Stripe/VNPay gateway
+  anymore) but removing them from Vercel/Supabase is a manual dashboard
+  step (Task 22 of the rebuild plan) — check `daily.md` for whether
+  that's confirmed done before assuming they're actually gone from
+  those dashboards.
 - **Supabase Auth's "URL Configuration" (Site URL + Redirect URLs) is
   Dashboard-only**, no MCP tool exposes it. Must include
   `https://phadincafe.vercel.app/**`, the Vercel preview-deployment
@@ -616,31 +740,49 @@ auto-deploys, no manual `vercel deploy` needed).
 
 ## Building the rest
 
-All Stitch-designed pages are ported; all four original "make all data
-real-time" sub-projects (Inventory, Tables, Orders, Staff accounts),
-all three payment methods (Cash, Stripe, VNPay), table occupancy/
-cleaning, deferred payment + service lifecycle, payment method
-correction, real reviews, real menu-image upload, real Profile
-persistence, the admin Sizes editor, Shift History, the real Address
-Book, the POS size/extras picker, and the Admin/KDS/POS nav-link gaps
-are shipped and verified live. Google sign-in and Profile Settings
-(password change + Google account linking) are shipped and
-live-verified end-to-end. Forgot password is shipped and verified live
-except for the actual emailed-link round trip (shared email-sender
-rate-limit risk, same as signup confirmation). Loyalty tier progress
-(migration `0034`) and rewards catalog/redemption + its staff-facing
-redemption lookup (migrations `0035`, `0038`) are both real, shipped
-and live-verified end-to-end. Real Admin Dashboard KPIs and shift
-closing's open/report/close flow are shipped but still need a hand
-live-verification pass — an automated attempt at this specific check
-has stalled twice without landing a result, see `daily.md`'s Open
-list. No known-mock surfaces remain — check `daily.md` for current
-status.
-When adding anything new:
-shared brand tokens, `useTranslations`/`getTranslations` with both
-message files updated together, Base UI's `render` prop for polymorphic
-Buttons, "disabled + tooltip" for unbacked actions, DI'd query-layer
-modules, guest-safe RPCs for anything a logged-out user needs to touch.
+The app is intentionally finished at "minimal" as of the 2026-09-19
+rebuild — this is not a partially-built product waiting on more
+features, it's a deliberately small one. Every application-code task
+in `docs/superpowers/plans/2026-09-19-minimal-ordering-rebuild.md`
+(Tasks 1–25, ending with this docs update, Task 26) is done and each
+built/tested locally at the time it landed. **Not yet done as of this
+docs update**: Task 27 (a final full local `build`/`lint`/`test` pass
+across everything Tasks 1–26 touched) and Task 28 (push to `main`,
+confirm the Vercel deploy, and live-verify the guest/staff/admin flows
+against `https://phadincafe.vercel.app`) — don't describe this rebuild
+as "live-verified" until those actually run; check `daily.md`/git log
+for whether they have. Everything the design doc calls a non-goal
+(customer accounts, loyalty, rewards, address book, reviews,
+promotions, shift reconciliation, POS, the landing page, Stripe/VNPay,
+tax, Pickup) is deleted from the application layer — not "not yet
+built." The underlying DB tables/columns for all of it still exist,
+unused, per the rebuild's own never-drop-data rule, so nothing about
+this is irreversible if the owner ever wants a feature back;
+reintroducing one means writing new application code against
+already-live data, not a fresh migration.
+
+Two other items are worth checking before treating the rebuild as fully
+closed out — see `daily.md`:
+1. Task 22 (Edge Function undeploy + Stripe/VNPay secret removal from
+   Supabase/Vercel dashboards) is a manual, external step this repo
+   update can't confirm — check with `dothanhlong166@gmail.com`.
+2. `daily.md`'s *own*, separate, earlier Reliability/UX/Performance
+   Remediation Plan (predates this rebuild — see the top of `daily.md`)
+   has its own still-open Task 8 (production acceptance pass: mobile
+   device matrix, axe/keyboard/zoom accessibility pass, etc.). Most of
+   that task's checklist items reference since-deleted surfaces
+   (Stripe/VNPay/POS/shift matrices) and don't need re-running for
+   them, but the still-relevant items (real iOS Safari/Android Chrome
+   device checks, the accessibility smoke test) were never completed
+   and remain open regardless of this rebuild.
+
+When adding anything new: shared brand tokens,
+`useTranslations`/`getTranslations` with both message files updated
+together, Base UI's `render` prop for polymorphic Buttons, "disabled +
+tooltip" for unbacked actions, DI'd query-layer modules, guest-safe
+RPCs for anything a logged-out user needs to touch, and — per this
+rebuild's own precedent — never drop a DB table/column just because its
+application code went away.
 
 ## Agent skills
 

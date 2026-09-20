@@ -10,6 +10,32 @@
 
 **Spec:** Current-state rules in `AGENTS.md`; audit performed 2026-09-02 against source, production, tests, TypeScript, lint, and build output. This file is the user-requested plan and replaces the old recap-heavy backlog.
 
+## Current status (2026-09-19)
+
+A separate, later effort — the **minimal ordering rebuild**
+(`docs/superpowers/specs/2026-09-19-minimal-ordering-rebuild-design.md`,
+`docs/superpowers/plans/2026-09-19-minimal-ordering-rebuild.md`) — cut
+this app down to guest QR-scan ordering + cash-only staff settlement,
+deleting customer accounts, loyalty/rewards, address book, shift
+reconciliation, POS, the landing page, Stripe/VNPay, and tax. It is
+code-complete through Task 26 (this update) on branch
+`rebuild/minimal-ordering-rebuild`. **Still open:**
+- Task 27 (final local `build`/`lint`/`test` pass) and Task 28 (push to
+  `main`, deploy, live-verify) haven't run yet — production at
+  `https://phadincafe.vercel.app` still serves the pre-rebuild app
+  until Task 28 lands.
+- Task 22's manual external cleanup (undeploy the 6 now-dead Stripe/
+  VNPay/non-table-order Edge Functions from the live Supabase project;
+  remove their secrets from the Supabase/Vercel dashboards) — not
+  confirmed done; needs `dothanhlong166@gmail.com` to run it.
+
+The remediation plan below (Tasks 1–8) predates that rebuild and
+targets the pre-rebuild app. Its Stripe/VNPay/POS/shift-specific
+checklist items no longer apply to surfaces the rebuild deleted; its
+still-relevant open items (a real iOS Safari/Android Chrome device
+matrix, an axe/keyboard/zoom accessibility pass — both under Task 8)
+remain open regardless of the rebuild and aren't superseded by it.
+
 ## Global constraints
 
 - Keep `/vi` and `/en` behavior identical; every new message/accessible label goes into both catalogs.
