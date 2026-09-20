@@ -7,7 +7,7 @@ import { Link, usePathname } from "@/i18n/navigation"
 import { cn } from "@/lib/utils"
 import { SideDrawer } from "@/components/motion/side-drawer"
 import { DialogTitle } from "@/components/ui/dialog"
-import { ADMIN_NAV_ITEMS as NAV_ITEMS, ADMIN_FULFILLMENT_NAV_ITEMS as FULFILLMENT_NAV_ITEMS } from "@/components/admin/admin-nav-items"
+import { ADMIN_NAV_ITEMS as NAV_ITEMS, ADMIN_EXTERNAL_NAV_ITEMS as EXTERNAL_NAV_ITEMS } from "@/components/admin/admin-nav-items"
 
 function AdminNavContent({ onNavigate }: { onNavigate?: () => void }) {
   const tBrand = useTranslations("Brand")
@@ -44,7 +44,7 @@ function AdminNavContent({ onNavigate }: { onNavigate?: () => void }) {
         })}
       </nav>
       <nav className="space-y-1 border-t px-2 pt-3">
-        {FULFILLMENT_NAV_ITEMS.map(({ href, labelKey, icon: Icon }) => {
+        {EXTERNAL_NAV_ITEMS.map(({ href, labelKey, icon: Icon }) => {
           const isActive = pathname === href
           return (
             <Link

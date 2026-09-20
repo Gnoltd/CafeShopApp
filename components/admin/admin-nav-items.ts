@@ -1,33 +1,20 @@
-import {
-  LayoutDashboard,
-  UtensilsCrossed,
-  Package,
-  Table2,
-  Users,
-  Calculator,
-  Settings,
-  ShoppingCart,
-  CookingPot,
-  Wallet,
-  Ticket,
-} from "lucide-react"
+import { UtensilsCrossed, Users, Settings, ClipboardList } from "lucide-react"
 
 // Single source of truth for admin-shell navigation -- shared by the
 // desktop sidebar, the mobile drawer, and the mobile header's page-title
 // lookup, so all three stay in sync with one edit.
 export const ADMIN_NAV_ITEMS = [
-  { href: "/admin/dashboard", labelKey: "dashboard", icon: LayoutDashboard },
   { href: "/admin/menu", labelKey: "menu", icon: UtensilsCrossed },
-  { href: "/admin/inventory", labelKey: "inventory", icon: Package },
-  { href: "/admin/tables", labelKey: "tables", icon: Table2 },
   { href: "/admin/staff", labelKey: "staff", icon: Users },
-  { href: "/admin/food-cost", labelKey: "foodCost", icon: Calculator },
-  { href: "/admin/shift", labelKey: "shift", icon: Wallet },
-  { href: "/admin/promotions", labelKey: "promotions", icon: Ticket },
   { href: "/admin/settings", labelKey: "settings", icon: Settings },
 ] as const
 
-export const ADMIN_FULFILLMENT_NAV_ITEMS = [
-  { href: "/staff/pos", labelKey: "pos", icon: ShoppingCart },
-  { href: "/staff/orders", labelKey: "kitchenDisplay", icon: CookingPot },
+// Links out of the admin shell entirely (outside /admin/*) to the staff
+// operations area -- admin/manager still need a way to reach KDS/Tables
+// even though those pages no longer live under /admin/*. Kept as its own
+// list (rendered in its own bordered-off section, distinct from
+// ADMIN_NAV_ITEMS) since it's conceptually "leaving the admin shell", not
+// one more admin page.
+export const ADMIN_EXTERNAL_NAV_ITEMS = [
+  { href: "/staff/orders", labelKey: "operations", icon: ClipboardList },
 ] as const
