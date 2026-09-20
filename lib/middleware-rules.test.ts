@@ -17,15 +17,15 @@ describe("resolveRedirect — no more auth-required exact paths", () => {
 })
 
 describe("resolveRedirect — existing /staff and /admin behavior unaffected", () => {
-  it("still redirects an anonymous guest away from /staff/pos", () => {
-    expect(resolveRedirect("/staff/pos", null)).toBe("/login")
+  it("still redirects an anonymous guest away from /staff/orders", () => {
+    expect(resolveRedirect("/staff/orders", null)).toBe("/login")
   })
 
-  it("still redirects a customer away from /admin/dashboard", () => {
+  it("still redirects a customer away from /admin/menu", () => {
     // ROLE_HOME has no "customer" entry as of Task 16 (there's no
     // customer-facing destination to send a role to anymore) -- falls
     // back to "/menu", same as any other unmapped role.
-    expect(resolveRedirect("/admin/dashboard", "customer")).toBe("/menu")
+    expect(resolveRedirect("/admin/menu", "customer")).toBe("/menu")
   })
 
   it("redirects non-manager customers away from admin settings", () => {
@@ -138,9 +138,9 @@ describe("middleware matcher — must run on real app routes", () => {
     "/menu",
     "/vi",
     "/vi/menu",
-    "/vi/staff/pos",
+    "/vi/staff/orders",
     "/vi/staff/orders/history/6f1c2b9e-1111-2222-3333-444455556666",
-    "/en/admin/dashboard",
+    "/en/admin/menu",
     "/vi/profile/settings",
     "/vi/table/some-qr-token",
   ])("runs on %s", (pathname) => {
