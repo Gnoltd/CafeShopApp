@@ -1720,6 +1720,129 @@ for real, per the dossier research this plan was built from.
   git commit -m "feat: merge KDS + Tables into one staff operations area, absorb table CRUD"
   ```
 
+### Task 16B: Fix `/login` — remove Google sign-in, forgot-password, and signup (all three point at deleted routes)
+
+**Inserted during execution — a real, live bug found by Task 16's
+reviewer, not anticipated anywhere in the original plan.** `/login`
+(`components/auth/login-form.tsx`) is the ONE auth surface that survives
+this entire rebuild (staff/manager/admin sign in there — Decision 3).
+Nobody in the original planning research ever read this file's actual
+contents. It currently has THREE flows that are now broken because their
+target routes were deleted back in Task 9:
+- A "Sign in with Google" button (`handleGoogleSignIn`) redirecting to
+  `/${locale}/callback` — that route (`(auth)/callback/`) is deleted.
+  Google sign-in is out of scope entirely per Decision 3.
+- A "Forgot password?" flow (`handleSendResetLink`, the
+  `requestReset`/`resetSent` view states) redirecting to
+  `/${locale}/reset-password` — that route is deleted. Per Decision 19,
+  there is no self-service password reset for anyone; a forgotten staff
+  password is reset manually via the Supabase Dashboard.
+- A "Don't have an account? Sign up" link to `/signup` — that route is
+  deleted. Nobody self-registers in this app anymore; staff accounts are
+  created via `/admin/staff`.
+
+Additionally, `components/auth/` has 4 files nothing reachable renders
+anymore: `signup-form.tsx`, `oauth-callback.tsx`,
+`reset-password-view.tsx` (each backed exactly one of the three deleted
+routes above), and `google-icon.tsx` (only used by `login-form.tsx`'s
+Google button and `signup-form.tsx`, both going away). This is a gap in
+Task 9's original file list — it deleted the route *directories* but
+never looked at this separate shared-component directory.
+
+**Files:**
+- Modify: `components/auth/login-form.tsx`,
+  `components/auth/auth-forms.component.test.tsx`, `messages/vi.json`,
+  `messages/en.json`
+- Delete: `components/auth/signup-form.tsx`,
+  `components/auth/oauth-callback.tsx`,
+  `components/auth/reset-password-view.tsx`,
+  `components/auth/google-icon.tsx`
+
+- [ ] **Step 1: Confirm no other real caller of the 4 files to delete**
+
+  Run:
+  ```bash
+  grep -rln "signup-form\|oauth-callback\|reset-password-view\|google-icon" app/ components/ hooks/ lib/
+  ```
+  Expected: only the 4 files themselves and `login-form.tsx` (for
+  `google-icon`, removed in Step 2) and `auth-forms.component.test.tsx`
+  (for `signup-form`, fixed in Step 4). If anything else prints, stop
+  and investigate before deleting.
+
+- [ ] **Step 2: Rewrite `login-form.tsx`**
+
+  Remove entirely: the `GoogleIcon` import, `oauthLoading` state,
+  `handleGoogleSignIn`, the "or" divider + "Continue with Google" button
+  block. Remove entirely: `view`/`resetEmail`/`resetError`/`isSendingReset`
+  state, `handleSendResetLink`, the `requestReset` and `resetSent`
+  render branches, and the "Forgot password?" button that switches to
+  them (keep the password `<Input>` field itself, just drop the link
+  below it). Remove entirely: the closing "Don't have an account? Sign
+  up" paragraph and its `Link` to `/signup`. What remains: the
+  `AuthLayoutWrapper`, the plain email/password form (`handleSubmit`,
+  unchanged — still signs in via `supabase.auth.signInWithPassword` and
+  routes to `ROLE_HOME[role]`), and the show/hide password toggle.
+
+- [ ] **Step 3: Delete the 4 orphaned files**
+
+  ```bash
+  git rm components/auth/signup-form.tsx
+  git rm components/auth/oauth-callback.tsx
+  git rm components/auth/reset-password-view.tsx
+  git rm components/auth/google-icon.tsx
+  ```
+
+- [ ] **Step 4: Fix `auth-forms.component.test.tsx`**
+
+  Read the current file first. Remove the `SignupForm` import and its
+  `describe.each` entry entirely (the whole file currently tests ONE
+  shared OAuth-initiation scenario across both `LoginForm` and
+  `SignupForm` — after Step 2, `LoginForm` has no OAuth path left
+  either, so this whole test scenario is gone, not just the signup half).
+  Following this project's TDD convention, add a real replacement test
+  for `LoginForm`'s surviving behavior instead of leaving the file
+  empty: at minimum, a test that submitting valid credentials calls
+  `supabase.auth.signInWithPassword` with the entered email/password
+  (mock it to resolve successfully), and a test that a sign-in error
+  shows the translated error message and re-enables the submit button
+  (mirror the existing error-handling test pattern already in this file
+  for shape/mocking style).
+
+- [ ] **Step 5: Trim the `Auth` i18n namespace**
+
+  Read the current `Auth` namespace in both `messages/vi.json` and
+  `messages/en.json`. Keep only the keys `login-form.tsx` still uses
+  after Step 2 (expect: `login`, `welcomeBack`, `emailLabel`,
+  `emailPlaceholder`, `passwordLabel`, `passwordPlaceholder`,
+  `showPassword`, `hidePassword`, `loginError`, `loggingIn` — verify
+  this list against the actual post-Step-2 file rather than assuming it,
+  since exact wording may differ). Remove every other key in the
+  namespace (signup/OAuth/reset-password related) from both files.
+
+- [ ] **Step 6: Build**
+
+  Run: `npm run build`
+  Expected: shows only the 2 known pre-existing errors
+  (`menu-item-reviews-panel.tsx`, `reward-lookup.tsx`) — nothing new.
+
+- [ ] **Step 7: Run the full test suite**
+
+  Run: `npm test`
+  Expected: PASS (plus the 1 known pre-existing unrelated failure).
+
+- [ ] **Step 8: Commit**
+
+  ```bash
+  git add -A
+  git commit -m "fix: remove login page's Google sign-in, forgot-password, and signup links (all pointed at deleted routes)"
+  ```
+
+**Note for Task 25:** this task already trims the `Auth` namespace down
+to its surviving login-only keys — Task 25's own file list (below)
+originally said to remove the `Auth` namespace entirely; that's been
+corrected there to reflect that it's trimmed here, not deleted outright
+(the namespace itself must stay, just smaller).
+
 ### Task 17: Delete Staff Order History and Rewards lookup
 
 **Files:**
@@ -2214,13 +2337,16 @@ silently.
 - Modify: `messages/vi.json`, `messages/en.json`
 
 **Interfaces:**
-- Removes top-level namespaces: `Auth`, `Profile`, `Cart`, `Checkout`,
+- Removes top-level namespaces: `Profile`, `Cart`, `Checkout`,
   `OrderHistory`, `OrderTracking`, `Loyalty`, `ProductDetail` (fold any
   still-needed keys — e.g. a generic "add to cart" label — into `Menu`
   first, then delete the namespace; check usage before deleting each
   key, don't delete blind), `Pos`, `MyRedemptions`, `Addresses`,
   `StaffRewards`, `StaffOrderHistory`, `Dashboard`, `AdminShift`,
   `AdminPromotions`, `AdminInventory`, `FoodCost`.
+- **`Auth` is NOT in this list** — Task 16B already trimmed it down to
+  its surviving `/login`-only keys (a real, live-used namespace, not a
+  dead one); do not touch it here.
 
 - [ ] **Step 1: Run the i18n coverage check first to see the current
   baseline**
@@ -2236,7 +2362,7 @@ silently.
 
   Run, once per namespace:
   ```bash
-  grep -rn '"Auth"\|"Profile"\|"Cart"\|"Checkout"\|"OrderHistory"\|"OrderTracking"\|"Loyalty"\|"ProductDetail"\|"Pos"\|"MyRedemptions"\|"Addresses"\|"StaffRewards"\|"StaffOrderHistory"\|"Dashboard"\|"AdminShift"\|"AdminPromotions"\|"AdminInventory"\|"FoodCost"' app/ components/
+  grep -rn '"Profile"\|"Cart"\|"Checkout"\|"OrderHistory"\|"OrderTracking"\|"Loyalty"\|"ProductDetail"\|"Pos"\|"MyRedemptions"\|"Addresses"\|"StaffRewards"\|"StaffOrderHistory"\|"Dashboard"\|"AdminShift"\|"AdminPromotions"\|"AdminInventory"\|"FoodCost"' app/ components/
   ```
   Expected: empty after Tasks 8-19's deletions. If anything remains,
   that file was missed earlier — go fix it there, don't just leave the
