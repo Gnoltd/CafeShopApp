@@ -54,8 +54,9 @@ export function CustomerHeader({ showBack = false }: { showBack?: boolean }) {
         <nav className="hidden items-center gap-1 md:flex">
           {DESKTOP_NAV.map((item) => {
             const isActive =
-              item.href === pathname ||
-              (item.href !== "/menu" && item.href !== "/" && pathname.startsWith(item.href))
+              item.href === "/"
+                ? pathname === "/"
+                : pathname === item.href || pathname.startsWith(`${item.href}/`)
             const Icon = item.icon
 
             return (

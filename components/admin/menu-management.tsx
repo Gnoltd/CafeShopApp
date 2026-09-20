@@ -20,7 +20,6 @@ import {
   type MenuItemSizeInput,
 } from "@/lib/supabase/menu-data"
 import { saveMenuItem } from "@/lib/supabase/save-menu-item"
-import type { RecipeEntry } from "@/lib/supabase/inventory-data"
 import { MenuItemForm } from "@/components/admin/menu-item-form"
 import { MenuCategoriesCard } from "@/components/admin/menu-categories-card"
 
@@ -129,13 +128,12 @@ export function MenuManagement({
   async function saveItem(
     input: MenuItemInput,
     extraGroupIds: string[],
-    recipeEntries: RecipeEntry[],
     sizes: MenuItemSizeInput[],
     editingId: string | null
   ) {
     setError(null)
     try {
-      const refreshed = await saveMenuItem(supabase, { editingId, item: input, extraGroupIds, recipeEntries, sizes })
+      const refreshed = await saveMenuItem(supabase, { editingId, item: input, extraGroupIds, sizes })
       setItems((prev) =>
         editingId ? prev.map((item) => (item.id === editingId ? refreshed : item)) : [refreshed, ...prev]
       )
@@ -187,8 +185,8 @@ export function MenuManagement({
           categories={categoryList}
           initialItem={formMode.type === "edit" ? formMode.item : undefined}
           onCancel={() => setFormMode(null)}
-          onSave={(input, extraGroupIds, recipeEntries, sizes) =>
-            saveItem(input, extraGroupIds, recipeEntries, sizes, formMode?.type === "edit" ? formMode.item.id : null)
+          onSave={(input, extraGroupIds, sizes) =>
+            saveItem(input, extraGroupIds, sizes, formMode?.type === "edit" ? formMode.item.id : null)
           }
         />
       )}

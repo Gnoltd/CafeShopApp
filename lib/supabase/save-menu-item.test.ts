@@ -10,12 +10,7 @@ vi.mock("./menu-data", () => ({
   getMenuItemById: vi.fn(),
 }))
 
-vi.mock("./inventory-data", () => ({
-  setMenuItemIngredients: vi.fn(),
-}))
-
 import { createMenuItem, updateMenuItem, setItemModifierGroups, setItemCategories, setItemSizes, getMenuItemById, type MenuItem } from "./menu-data"
-import { setMenuItemIngredients } from "./inventory-data"
 import { saveMenuItem } from "./save-menu-item"
 
 const supabase = {} as SupabaseClient
@@ -57,7 +52,7 @@ beforeEach(() => {
 })
 
 describe("saveMenuItem", () => {
-  it("creates a new item when editingId is null, then wires modifier groups, ingredients, and sizes", async () => {
+  it("creates a new item when editingId is null, then wires modifier groups, categories, and sizes", async () => {
     vi.mocked(createMenuItem).mockResolvedValue(SAVED_ITEM)
     vi.mocked(getMenuItemById).mockResolvedValue(REFETCHED_ITEM)
 
@@ -65,7 +60,6 @@ describe("saveMenuItem", () => {
       editingId: null,
       item: ITEM_INPUT,
       extraGroupIds: ["grp-1"],
-      recipeEntries: [{ ingredientId: "ing-1", quantityUsed: 2 }],
       sizes: [{ name: "M", priceDelta: 0 }],
     })
 
@@ -73,7 +67,6 @@ describe("saveMenuItem", () => {
     expect(updateMenuItem).not.toHaveBeenCalled()
     expect(setItemModifierGroups).toHaveBeenCalledWith(supabase, "item-1", ["grp-1"])
     expect(setItemCategories).toHaveBeenCalledWith(supabase, "item-1", ["cat-1"])
-    expect(setMenuItemIngredients).toHaveBeenCalledWith(supabase, "item-1", [{ ingredientId: "ing-1", quantityUsed: 2 }])
     expect(setItemSizes).toHaveBeenCalledWith(supabase, "item-1", [{ name: "M", priceDelta: 0 }])
     expect(result).toEqual(REFETCHED_ITEM)
   })
@@ -86,7 +79,6 @@ describe("saveMenuItem", () => {
       editingId: "item-1",
       item: ITEM_INPUT,
       extraGroupIds: [],
-      recipeEntries: [],
       sizes: [],
     })
 
@@ -102,7 +94,6 @@ describe("saveMenuItem", () => {
       editingId: null,
       item: ITEM_INPUT,
       extraGroupIds: [],
-      recipeEntries: [],
       sizes: [],
     })
 

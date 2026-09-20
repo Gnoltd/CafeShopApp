@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
-import { useLocale, useTranslations } from "next-intl"
+import { useTranslations } from "next-intl"
 import { UploadCloud, X, Plus, Pencil, ChevronUp, ChevronDown, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FormDialog } from "@/components/ui/dialog"
@@ -12,16 +12,6 @@ import { formatVND } from "@/lib/format"
 import { createClient } from "@/lib/supabase/client"
 import { createModifierGroup, getModifierGroups, updateModifierGroup } from "@/lib/supabase/menu-data"
 import type { MenuCategory, MenuIcon, MenuItem, MenuItemInput, MenuItemSizeInput, MenuModifierGroup } from "@/lib/supabase/menu-data"
-import {
-  getIngredients,
-  getMenuItemIngredients,
-  getModifierIngredients,
-  setModifierIngredients,
-  type Ingredient,
-  type RecipeEntry,
-} from "@/lib/supabase/inventory-data"
-import { RecipeChecklist, type RecipeSelection } from "@/components/admin/recipe-checklist"
-import { MenuItemReviewsPanel } from "@/components/admin/menu-item-reviews-panel"
 
 const ICON_OPTIONS: MenuIcon[] = ["coffee", "cup-soda", "cookie", "milk"]
 
@@ -34,10 +24,9 @@ export function MenuItemForm({
   categories: MenuCategory[]
   initialItem?: MenuItem
   onCancel: () => void
-  onSave: (input: MenuItemInput, extraGroupIds: string[], recipeEntries: RecipeEntry[], sizes: MenuItemSizeInput[]) => void | Promise<void>
+  onSave: (input: MenuItemInput, extraGroupIds: string[], sizes: MenuItemSizeInput[]) => void | Promise<void>
 }) {
   const t = useTranslations("AdminMenu")
-  const locale = useLocale()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const isEditing = Boolean(initialItem)
 
@@ -111,13 +100,8 @@ export function MenuItemForm({
   const [editExtraNameVi, setEditExtraNameVi] = useState("")
   const [editExtraNameEn, setEditExtraNameEn] = useState("")
   const [editExtraPrice, setEditExtraPrice] = useState("")
-  const [editExtraRecipe, setEditExtraRecipe] = useState<RecipeSelection>({})
   const [editExtraError, setEditExtraError] = useState<string | null>(null)
   const [isSavingExtra, setIsSavingExtra] = useState(false)
-
-  const [ingredientsList, setIngredientsList] = useState<Ingredient[]>([])
-  const [selectedRecipe, setSelectedRecipe] = useState<RecipeSelection>({})
-  const [recipeError, setRecipeError] = useState<string | null>(null)
 
   useEffect(() => {
     getModifierGroups(supabase).then((groups) => {
@@ -126,23 +110,6 @@ export function MenuItemForm({
     // Runs once on mount; supabase is a fresh client instance each render
     // but functionally equivalent, so depending on it would only cause
     // needless repeated fetches.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  useEffect(() => {
-    getIngredients(supabase).then(setIngredientsList)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  useEffect(() => {
-    if (!initialItem) return
-    getMenuItemIngredients(supabase, initialItem.id).then((entries) => {
-      const map: RecipeSelection = {}
-      entries.forEach((e) => {
-        map[e.ingredientId] = e.quantityUsed
-      })
-      setSelectedRecipe(map)
-    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -200,32 +167,18 @@ export function MenuItemForm({
     }
   }
 
-  async function openExtraEdit(group: MenuModifierGroup) {
+  function openExtraEdit(group: MenuModifierGroup) {
     setEditingExtraId(group.id)
     setEditExtraNameVi(group.nameVi)
     setEditExtraNameEn(group.nameEn)
     setEditExtraPrice(String(group.options[0].priceDelta))
     setEditExtraError(null)
-    const entries = await getModifierIngredients(supabase, group.options[0].id)
-    const map: RecipeSelection = {}
-    entries.forEach((entry) => {
-      map[entry.ingredientId] = entry.quantityUsed
-    })
-    setEditExtraRecipe(map)
   }
 
   async function handleSaveExtraEdit(group: MenuModifierGroup) {
     const parsedPrice = Number(editExtraPrice)
     if (!editExtraNameVi.trim() || !editExtraNameEn.trim() || !Number.isFinite(parsedPrice) || parsedPrice < 0) {
       setEditExtraError(t("extraRequiredFieldsError"))
-      return
-    }
-    const recipeEntries = Object.entries(editExtraRecipe).map(([ingredientId, quantityUsed]) => ({
-      ingredientId,
-      quantityUsed,
-    }))
-    if (recipeEntries.some((entry) => !Number.isFinite(entry.quantityUsed) || entry.quantityUsed <= 0)) {
-      setEditExtraError(t("recipeQuantityRequiredError"))
       return
     }
     setEditExtraError(null)
@@ -236,7 +189,6 @@ export function MenuItemForm({
         nameEn: editExtraNameEn.trim(),
         priceDelta: parsedPrice,
       })
-      await setModifierIngredients(supabase, updated.options[0].id, recipeEntries)
       setExtraGroups((prev) => prev.map((g) => (g.id === group.id ? updated : g)))
       setEditingExtraId(null)
     } catch {
@@ -252,16 +204,6 @@ export function MenuItemForm({
       setError(t("requiredFieldsError"))
       return
     }
-
-    const recipeEntries: RecipeEntry[] = Object.entries(selectedRecipe).map(([ingredientId, quantityUsed]) => ({
-      ingredientId,
-      quantityUsed,
-    }))
-    if (recipeEntries.some((entry) => !Number.isFinite(entry.quantityUsed) || entry.quantityUsed <= 0)) {
-      setRecipeError(t("recipeQuantityRequiredError"))
-      return
-    }
-    setRecipeError(null)
 
     if (sizes.some((s) => !s.name.trim())) {
       setSizesError(t("sizeRequiredFieldsError"))
@@ -314,7 +256,6 @@ export function MenuItemForm({
         imageUrl: finalImageUrl,
       },
       selectedExtraIds,
-      recipeEntries,
       parsedSizes
     )).finally(() => setIsSaving(false))
   }
@@ -695,14 +636,6 @@ export function MenuItemForm({
                         className="h-9"
                       />
                     </div>
-                    <RecipeChecklist
-                      ingredients={ingredientsList}
-                      selected={editExtraRecipe}
-                      onChange={setEditExtraRecipe}
-                      locale={locale}
-                      emptyLabel={t("noIngredientsForRecipe")}
-                      quantityPlaceholder={t("recipeQuantityPlaceholder")}
-                    />
                     <div className="flex justify-end gap-2">
                       <Button type="button" variant="outline" size="sm" onClick={() => setEditingExtraId(null)}>
                         {t("cancel")}
@@ -764,22 +697,6 @@ export function MenuItemForm({
         )}
       </div>
 
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-muted-foreground">{t("recipeLabel")}</label>
-        {recipeError && (
-          <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{recipeError}</p>
-        )}
-        <RecipeChecklist
-          ingredients={ingredientsList}
-          selected={selectedRecipe}
-          onChange={setSelectedRecipe}
-          locale={locale}
-          emptyLabel={t("noIngredientsForRecipe")}
-          quantityPlaceholder={t("recipeQuantityPlaceholder")}
-        />
-      </div>
-
-      {isEditing && initialItem && <MenuItemReviewsPanel itemId={initialItem.id} />}
     </FormDialog>
   )
 }
