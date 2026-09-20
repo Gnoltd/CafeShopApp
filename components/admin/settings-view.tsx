@@ -2,32 +2,21 @@
 
 import { useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
-import { Store, Gift, Check, Loader2 } from "lucide-react"
+import { Store, Check, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import { formatVND } from "@/lib/format"
 import { createClient } from "@/lib/supabase/client"
-import { LandingHeroSettingsCard } from "@/components/admin/landing-hero-settings-card"
 import {
   getShopSettings,
   updateShopSettings,
-  getLoyaltySettings,
-  updateLoyaltySettings,
-  validateShopSettingsInput,
-  validateLoyaltySettingsInput,
   type ShopSettings,
-  type LoyaltySettings,
-  type SettingsValidationField,
 } from "@/lib/supabase/settings-data"
 
-type ShopDraft = { shopName: string; address: string; phone: string; openingHours: string; taxRate: string }
-type LoyaltyDraft = { enabled: boolean; earnRate: string; redeemRate: string }
+type ShopDraft = { shopName: string; address: string; phone: string; openingHours: string }
 
-const EMPTY_SHOP: ShopDraft = { shopName: "", address: "", phone: "", openingHours: "", taxRate: "0" }
-const EMPTY_LOYALTY: LoyaltyDraft = { enabled: true, earnRate: "0", redeemRate: "0" }
+const EMPTY_SHOP: ShopDraft = { shopName: "", address: "", phone: "", openingHours: "" }
 
 function toShopDraft(s: ShopSettings): ShopDraft {
   return {
@@ -35,12 +24,7 @@ function toShopDraft(s: ShopSettings): ShopDraft {
     address: s.address,
     phone: s.phone,
     openingHours: s.openingHours,
-    taxRate: String(s.taxRatePercent),
   }
-}
-
-function toLoyaltyDraft(s: LoyaltySettings): LoyaltyDraft {
-  return { enabled: s.enabled, earnRate: String(s.earnRateVndPerPoint), redeemRate: String(s.redeemValueVndPerPoint) }
 }
 
 export function SettingsView() {
@@ -49,22 +33,17 @@ export function SettingsView() {
 
   const [savedShop, setSavedShop] = useState<ShopDraft>(EMPTY_SHOP)
   const [shopDraft, setShopDraft] = useState<ShopDraft>(EMPTY_SHOP)
-  const [savedLoyalty, setSavedLoyalty] = useState<LoyaltyDraft>(EMPTY_LOYALTY)
-  const [loyaltyDraft, setLoyaltyDraft] = useState<LoyaltyDraft>(EMPTY_LOYALTY)
 
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [fieldErrors, setFieldErrors] = useState<Partial<Record<SettingsValidationField, string>>>({})
   const [justSaved, setJustSaved] = useState(false)
 
   useEffect(() => {
-    Promise.all([getShopSettings(supabase), getLoyaltySettings(supabase)])
-      .then(([shop, loyalty]) => {
+    getShopSettings(supabase)
+      .then((shop) => {
         setSavedShop(toShopDraft(shop))
         setShopDraft(toShopDraft(shop))
-        setSavedLoyalty(toLoyaltyDraft(loyalty))
-        setLoyaltyDraft(toLoyaltyDraft(loyalty))
       })
       .catch(() => setError(t("loadError")))
       .finally(() => setIsLoading(false))
@@ -73,59 +52,14 @@ export function SettingsView() {
 
   function updateShop<K extends keyof ShopDraft>(key: K, value: ShopDraft[K]) {
     setShopDraft((prev) => ({ ...prev, [key]: value }))
-    if (key === "taxRate") {
-      setFieldErrors((prev) => ({ ...prev, taxRatePercent: undefined }))
-    }
-  }
-
-  function updateLoyalty<K extends keyof LoyaltyDraft>(key: K, value: LoyaltyDraft[K]) {
-    setLoyaltyDraft((prev) => ({ ...prev, [key]: value }))
-    if (key === "earnRate") {
-      setFieldErrors((prev) => ({ ...prev, earnRateVndPerPoint: undefined }))
-    }
-    if (key === "redeemRate") {
-      setFieldErrors((prev) => ({ ...prev, redeemValueVndPerPoint: undefined }))
-    }
   }
 
   async function handleSave() {
     setError(null)
-    const shopInput = {
-      shopName: shopDraft.shopName,
-      address: shopDraft.address,
-      phone: shopDraft.phone,
-      openingHours: shopDraft.openingHours,
-      taxRatePercent: shopDraft.taxRate.trim() === "" ? Number.NaN : Number(shopDraft.taxRate),
-    }
-    const loyaltyInput = {
-      enabled: loyaltyDraft.enabled,
-      earnRateVndPerPoint: loyaltyDraft.earnRate.trim() === "" ? Number.NaN : Number(loyaltyDraft.earnRate),
-      redeemValueVndPerPoint: loyaltyDraft.redeemRate.trim() === "" ? Number.NaN : Number(loyaltyDraft.redeemRate),
-    }
-    const shopInvalidField = validateShopSettingsInput(shopInput)
-    const loyaltyInvalidField = validateLoyaltySettingsInput(loyaltyInput)
-    if (shopInvalidField || loyaltyInvalidField) {
-      setFieldErrors({
-        ...(shopInvalidField ? { [shopInvalidField]: t("taxRateError") } : {}),
-        ...(loyaltyInvalidField === "earnRateVndPerPoint"
-          ? { earnRateVndPerPoint: t("earnRateError") }
-          : {}),
-        ...(loyaltyInvalidField === "redeemValueVndPerPoint"
-          ? { redeemValueVndPerPoint: t("redeemRateError") }
-          : {}),
-      })
-      return
-    }
-
-    setFieldErrors({})
     setIsSaving(true)
     try {
-      await Promise.all([
-        updateShopSettings(supabase, shopInput),
-        updateLoyaltySettings(supabase, loyaltyInput),
-      ])
+      await updateShopSettings(supabase, shopDraft)
       setSavedShop(shopDraft)
-      setSavedLoyalty(loyaltyDraft)
       setJustSaved(true)
       setTimeout(() => setJustSaved(false), 2000)
     } catch {
@@ -137,9 +71,7 @@ export function SettingsView() {
 
   function handleCancel() {
     setShopDraft(savedShop)
-    setLoyaltyDraft(savedLoyalty)
     setError(null)
-    setFieldErrors({})
   }
 
   if (isLoading) {
@@ -198,103 +130,8 @@ export function SettingsView() {
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="tax-rate">{t("taxRate")}</Label>
-            <Input
-              id="tax-rate"
-              type="number"
-              min="0"
-              max="100"
-              step="0.01"
-              value={shopDraft.taxRate}
-              onChange={(e) => updateShop("taxRate", e.target.value)}
-              aria-invalid={Boolean(fieldErrors.taxRatePercent)}
-              aria-describedby={fieldErrors.taxRatePercent ? "tax-rate-error" : undefined}
-              className="h-10 max-w-[140px]"
-            />
-            {fieldErrors.taxRatePercent && (
-              <p id="tax-rate-error" className="text-sm text-destructive">{fieldErrors.taxRatePercent}</p>
-            )}
-          </div>
         </CardContent>
       </Card>
-
-      <Card className="nb-border nb-shadow">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between text-lg font-extrabold">
-            <span className="flex items-center gap-2">
-              <Gift className="h-5 w-5 text-primary" />
-              {t("loyaltySettings")}
-            </span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={loyaltyDraft.enabled}
-              aria-label={t("loyaltyEnabled")}
-              onClick={() => updateLoyalty("enabled", !loyaltyDraft.enabled)}
-              className={cn(
-                "nb-border-sm relative h-6 w-11 shrink-0 rounded-full transition-colors",
-                loyaltyDraft.enabled ? "bg-primary" : "bg-chip"
-              )}
-            >
-              <span
-                className={cn(
-                  "absolute left-0 top-0 h-5 w-5 rounded-full bg-white shadow transition-transform",
-                  loyaltyDraft.enabled ? "translate-x-5" : "translate-x-0"
-                )}
-              />
-            </button>
-          </CardTitle>
-        </CardHeader>
-        <p className="px-6 pb-2 text-xs text-muted-foreground">
-          {loyaltyDraft.enabled
-            ? t("loyaltyEnabledHint", {
-                earnRate: formatVND(Number(loyaltyDraft.earnRate) || 0),
-                redeemRate: formatVND(Number(loyaltyDraft.redeemRate) || 0),
-              })
-            : t("loyaltyDisabledHint")}
-        </p>
-        <CardContent className={cn("space-y-4 transition-opacity", !loyaltyDraft.enabled && "opacity-50")}>
-          <div className="space-y-2">
-            <Label htmlFor="earn-rate">{t("earnRate")}</Label>
-            <Input
-              id="earn-rate"
-              type="number"
-              min="1"
-              step="1"
-              disabled={!loyaltyDraft.enabled}
-              value={loyaltyDraft.earnRate}
-              onChange={(e) => updateLoyalty("earnRate", e.target.value)}
-              aria-invalid={Boolean(fieldErrors.earnRateVndPerPoint)}
-              aria-describedby={fieldErrors.earnRateVndPerPoint ? "earn-rate-error" : undefined}
-              className="h-10"
-            />
-            {fieldErrors.earnRateVndPerPoint && (
-              <p id="earn-rate-error" className="text-sm text-destructive">{fieldErrors.earnRateVndPerPoint}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="redeem-rate">{t("redeemRate")}</Label>
-            <Input
-              id="redeem-rate"
-              type="number"
-              min="0"
-              step="1"
-              disabled={!loyaltyDraft.enabled}
-              value={loyaltyDraft.redeemRate}
-              onChange={(e) => updateLoyalty("redeemRate", e.target.value)}
-              aria-invalid={Boolean(fieldErrors.redeemValueVndPerPoint)}
-              aria-describedby={fieldErrors.redeemValueVndPerPoint ? "redeem-rate-error" : undefined}
-              className="h-10"
-            />
-            {fieldErrors.redeemValueVndPerPoint && (
-              <p id="redeem-rate-error" className="text-sm text-destructive">{fieldErrors.redeemValueVndPerPoint}</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <LandingHeroSettingsCard />
 
       {/* A full-width banner above the buttons (matching the reference)
           rather than inline text next to them -- at mobile widths, two
