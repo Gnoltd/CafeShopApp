@@ -9,11 +9,16 @@ if it ever looks stale rather than trusting this list from memory.
 
 ## What's here
 
-- **`/` (scan-QR landing)** — not a component in this directory; the
-  page itself (`app/[locale]/(customer)/page.tsx`) is a small static
-  server component with a `QrCode` icon, a "scan the QR code at your
-  table" message, and a `/login` link for staff. No marketing content,
-  no personalization, nothing from this folder is imported by it.
+- **`/` (scan-QR landing)** — the page itself
+  (`app/[locale]/(customer)/page.tsx`) is a server component with a
+  `QrCode` icon, a "scan the QR code at your table" message, this
+  folder's `scan-qr-button.tsx` (opens the in-app camera scanner), a
+  "View Menu" link, and a `/login` link for staff. No marketing
+  content, no personalization.
+- **`scan-qr-button.tsx`** — thin client wrapper: a button that opens
+  `qr-scanner-overlay.tsx` in a dialog. On a successful scan it lets
+  the overlay's default behavior (`router.push('/table/[token]')`)
+  handle navigation.
 - **`menu-browser.tsx`** — the shared menu-grid component used by both
   the public `/menu` page and the table ordering session. Fully
   prop-driven (`categories`, `items`, `onAddItem`, `cartItemCount`,
@@ -78,18 +83,16 @@ if it ever looks stale rather than trusting this list from memory.
   a category icon (`coffee`/`cup-soda`/`cookie`/`milk`). Unchanged by
   the rebuild.
 
-## Known gap, found but not fixed during the 2026-09-19 rebuild
+## Known gap — closed (2026-09-21)
 
 `qr-scanner-overlay.tsx` (an in-app camera-based QR scanner component)
-has no importer anywhere in `app/`/`components/` — it's dead code,
-orphaned since an earlier ("Rebuild Home…") commit that predates this
-rebuild, not something the rebuild itself broke. `middleware.ts`'s
-`camera=(self)` Permissions-Policy comment still references it by name.
-Every real path to `/table/[qrToken]` today is a guest's phone camera
-app decoding a physically printed QR code and opening the URL directly
-— there is no in-app scan button. Flagged here per this project's
-"disabled + tooltip"/no-silent-dead-code convention rather than left
-unmentioned; not fixed as part of this docs-only task.
+used to have no importer anywhere in `app/`/`components/` — it was dead
+code, orphaned since an earlier ("Rebuild Home…") commit that predates
+the 2026-09-19 rebuild. It's now wired up via `scan-qr-button.tsx` on
+the `/` landing page, so a guest has an in-app alternative to their
+phone's camera app for reaching `/table/[qrToken]`.
+`middleware.ts`'s `camera=(self)` Permissions-Policy comment already
+referenced it by name in anticipation of this.
 
 ## What's deleted (do not re-introduce without re-reading the design doc)
 

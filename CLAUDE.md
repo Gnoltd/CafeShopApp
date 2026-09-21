@@ -215,9 +215,14 @@ Reusable facts that apply anywhere in the codebase, not tied to one feature.
   "on" thumb outside the track.
 - **The fixed `HeaderActionsStack`** (`components/shared/header-actions-stack.tsx`,
   role badge + theme toggle + `LanguageSwitcher`, mounted from
-  `app/[locale]/layout.tsx`, `fixed top-3 right-4 z-50`) can overlap
-  admin header action buttons — admin layout uses `pt-16` to keep
-  content clear of it. It renders as a sibling of `{children}` in the
+  `app/[locale]/layout.tsx`, `fixed top-1 right-4 z-50 md:top-3`) can
+  overlap admin header action buttons — admin layout uses `pt-16` to
+  keep content clear of it. Its top offset is responsive (`top-1` below
+  `md`, `top-3` at `md` and up) because the stack's own rendered height
+  (52px) only fits flush under a mobile `h-14` header at `top-1` — a
+  flat `top-3` (sized to match the desktop `h-16` header) overflowed
+  ~7px past a mobile header's bottom border, a real bug found live on
+  phone width and fixed 2026-09-21. It renders as a sibling of `{children}` in the
   root layout, not a descendant — a component inside it can't read
   context from a provider scoped lower in the tree (e.g. customer-only
   `TablesProvider`); see `useActiveTableOptional`'s localStorage-based

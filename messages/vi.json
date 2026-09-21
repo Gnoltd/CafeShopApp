@@ -62,6 +62,7 @@
   "Home": {
     "scanTitle": "Quét mã QR tại bàn để gọi món",
     "scanMessage": "Mỗi bàn có một mã QR riêng — quét mã đó để xem menu và đặt món.",
+    "scanQr": "Quét mã QR",
     "viewMenu": "Xem thực đơn",
     "staffLogin": "Nhân viên đăng nhập"
   },

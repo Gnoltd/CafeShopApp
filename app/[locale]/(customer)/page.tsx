@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server"
 import { QrCode } from "lucide-react"
 import { Link } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
+import { ScanQrButton } from "@/components/customer/scan-qr-button"
 
 export default async function HomePage() {
   const t = await getTranslations("Home")
@@ -12,6 +13,7 @@ export default async function HomePage() {
       </div>
       <h1 className="text-xl font-bold text-card-foreground">{t("scanTitle")}</h1>
       <p className="text-sm text-muted-foreground">{t("scanMessage")}</p>
+      <ScanQrButton />
       <Button variant="neubrutal" className="mt-2 h-11 w-full" render={<Link href="/menu" />} nativeButton={false}>
         {t("viewMenu")}
       </Button>
