@@ -1,20 +1,22 @@
 "use client"
 
-import { LogIn, User, Briefcase } from "lucide-react"
+import { LogIn, Briefcase, UtensilsCrossed } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { Link } from "@/i18n/navigation"
 import { ROLE_HOME } from "@/lib/roles"
+import { useActiveTableOptional } from "@/hooks/useTables"
 
 export function RoleBadge({ role }: { role: string | null }) {
   const t = useTranslations("RoleNav")
+  const activeTable = useActiveTableOptional()
 
   const { label, href, Icon } =
     role === "staff"
       ? { label: t("badgeStaff"), href: ROLE_HOME.staff, Icon: Briefcase }
       : role === "manager" || role === "admin"
         ? { label: t("badgeAdmin"), href: ROLE_HOME[role], Icon: Briefcase }
-        : role === "customer"
-          ? { label: t("badgeCustomer"), href: "/profile", Icon: User }
+        : activeTable?.qrToken
+          ? { label: t("badgeTable", { number: activeTable.number }), href: `/table/${activeTable.qrToken}`, Icon: UtensilsCrossed }
           : { label: t("badgeGuest"), href: "/login", Icon: LogIn }
 
   return (

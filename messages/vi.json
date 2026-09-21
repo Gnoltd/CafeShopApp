@@ -62,6 +62,7 @@
   "Home": {
     "scanTitle": "Quét mã QR tại bàn để gọi món",
     "scanMessage": "Mỗi bàn có một mã QR riêng — quét mã đó để xem menu và đặt món.",
+    "viewMenu": "Xem thực đơn",
     "staffLogin": "Nhân viên đăng nhập"
   },
   "QrScanner": {
@@ -73,7 +74,7 @@
   },
   "RoleNav": {
     "badgeGuest": "Khách",
-    "badgeCustomer": "Khách Hàng",
+    "badgeTable": "Bàn {number}",
     "badgeStaff": "Nhân Viên",
     "badgeAdmin": "Quản Trị"
   },

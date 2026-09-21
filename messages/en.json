@@ -62,6 +62,7 @@
   "Home": {
     "scanTitle": "Scan the QR code at your table to order",
     "scanMessage": "Every table has its own QR code — scan it to view the menu and place an order.",
+    "viewMenu": "View Menu",
     "staffLogin": "Staff sign in"
   },
   "QrScanner": {
@@ -73,7 +74,7 @@
   },
   "RoleNav": {
     "badgeGuest": "Guest",
-    "badgeCustomer": "Customer",
+    "badgeTable": "Table {number}",
     "badgeStaff": "Staff",
     "badgeAdmin": "Admin"
   },

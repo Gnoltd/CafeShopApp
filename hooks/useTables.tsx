@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRealtimeChannel } from "@/hooks/useRealtimeChannel"
 import {
@@ -47,6 +47,11 @@ type TablesContextValue = {
 const TablesContext = createContext<TablesContextValue | null>(null)
 
 const ACTIVE_TABLE_STORAGE_KEY = "phadincafe-active-table"
+// Fired whenever TablesProvider writes ACTIVE_TABLE_STORAGE_KEY, so
+// useActiveTableOptional (below) can react in the same tab -- the native
+// `storage` event only fires for *other* tabs/documents, never the one that
+// made the write.
+const ACTIVE_TABLE_EVENT = "phadincafe-active-table-changed"
 
 export function TablesProvider({ children }: { children: ReactNode }) {
   const [supabase] = useState(() => createClient())
@@ -83,6 +88,7 @@ export function TablesProvider({ children }: { children: ReactNode }) {
     } else {
       window.localStorage.removeItem(ACTIVE_TABLE_STORAGE_KEY)
     }
+    window.dispatchEvent(new Event(ACTIVE_TABLE_EVENT))
   }, [activeTable, hydrated])
 
   useEffect(() => {
@@ -207,4 +213,54 @@ export function useTables(): TablesContextValue {
   const ctx = useContext(TablesContext)
   if (!ctx) throw new Error("useTables must be used within a TablesProvider")
   return ctx
+}
+
+// useSyncExternalStore requires getSnapshot to return a stable (===) value
+// when nothing changed -- localStorage.getItem always returns a fresh
+// string, but re-parsing it on every call would return a new object
+// reference each time and spin React into an infinite re-render loop
+// (confirmed live: "Maximum update depth exceeded"). Cache by raw string so
+// JSON.parse only reruns when the persisted value actually changed.
+let cachedRaw: string | null = null
+let cachedTable: TableRecord | null = null
+
+function readActiveTableFromStorage(): TableRecord | null {
+  let raw: string | null
+  try {
+    raw = window.localStorage.getItem(ACTIVE_TABLE_STORAGE_KEY)
+  } catch {
+    raw = null
+  }
+  if (raw !== cachedRaw) {
+    cachedRaw = raw
+    try {
+      cachedTable = raw ? (JSON.parse(raw) as TableRecord) : null
+    } catch {
+      cachedTable = null
+    }
+  }
+  return cachedTable
+}
+
+function subscribeToActiveTableStorage(onChange: () => void) {
+  window.addEventListener("storage", onChange)
+  window.addEventListener(ACTIVE_TABLE_EVENT, onChange)
+  return () => {
+    window.removeEventListener("storage", onChange)
+    window.removeEventListener(ACTIVE_TABLE_EVENT, onChange)
+  }
+}
+
+/** Reads the same table TablesProvider persists to
+ * ACTIVE_TABLE_STORAGE_KEY, but works with no TablesProvider ancestor at
+ * all -- unlike `useTables()`, this reads localStorage directly rather than
+ * React context. Needed because shared chrome like HeaderActionsStack
+ * renders in the root layout (`app/[locale]/layout.tsx`), a SIBLING of
+ * `{children}`, not a descendant -- so even on a customer route where
+ * TablesProvider *is* mounted further down the tree, `useContext` here
+ * would still see no provider. Re-renders on TablesProvider's own writes
+ * (custom event, same tab) and cross-tab localStorage changes (native
+ * `storage` event). */
+export function useActiveTableOptional(): TableRecord | null {
+  return useSyncExternalStore(subscribeToActiveTableStorage, readActiveTableFromStorage, () => null)
 }

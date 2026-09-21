@@ -213,9 +213,16 @@ Reusable facts that apply anywhere in the codebase, not tied to one feature.
   (`absolute left-0.5 top-0.5`, `translate-x-0`/`translate-x-5`) —
   omitting it makes the browser's static-position fallback push the
   "on" thumb outside the track.
-- **The fixed `LanguageSwitcher`** (`app/[locale]/layout.tsx`,
-  `fixed top-2 right-2 z-50`) can overlap admin header action buttons —
-  admin layout uses `pt-16` to keep content clear of it.
+- **The fixed `HeaderActionsStack`** (`components/shared/header-actions-stack.tsx`,
+  role badge + theme toggle + `LanguageSwitcher`, mounted from
+  `app/[locale]/layout.tsx`, `fixed top-3 right-4 z-50`) can overlap
+  admin header action buttons — admin layout uses `pt-16` to keep
+  content clear of it. It renders as a sibling of `{children}` in the
+  root layout, not a descendant — a component inside it can't read
+  context from a provider scoped lower in the tree (e.g. customer-only
+  `TablesProvider`); see `useActiveTableOptional`'s localStorage-based
+  workaround in `hooks/useTables.tsx` for the pattern to reuse instead
+  of `useContext` in this situation.
 - **Historical (no longer applicable after the 2026-09-19 rebuild
   removed Stripe/VNPay, but keeping the lesson):** Supabase Edge
   Function secrets (`Deno.env`) are a separate store from Vercel's env
