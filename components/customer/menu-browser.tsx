@@ -13,6 +13,7 @@ import type { AddToCartInput } from "@/lib/menu-selection-types"
 import { ItemImage } from "@/components/customer/item-image"
 import { QuickAddPopup } from "@/components/customer/quick-add-popup"
 import { SegmentedControl } from "@/components/motion/segmented-control"
+import { MenuOrderingNotice } from "@/components/customer/menu-ordering-notice"
 import { StaggerList, StaggerItem } from "@/components/motion/stagger-list"
 import { TAP_SCALE, TAP_TRANSITION } from "@/components/motion/press-feedback"
 import type { MenuCategory, MenuItem } from "@/lib/supabase/menu-data"
@@ -65,6 +66,10 @@ export function MenuBrowser({
 
   function openItem(item: MenuItem) {
     if (!item.isAvailable) return
+    if (canOrder && onAddItem) {
+      setQuickAddItem(item)
+      return
+    }
     router.push(`/menu/${item.id}`)
   }
 
@@ -86,12 +91,14 @@ export function MenuBrowser({
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pb-32 pt-4 sm:px-6 md:max-w-6xl md:px-8">
+      {!canOrder && <MenuOrderingNotice />}
       <div className="relative mb-4">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={t("searchPlaceholder")}
+          aria-label={t("searchPlaceholder")}
           className="nb-border h-11 rounded-lg bg-card pl-9"
         />
       </div>
@@ -126,7 +133,7 @@ export function MenuBrowser({
                 reachable/activatable via Tab + Enter/Space. */}
             <div
               className={cn(
-                "nb-border nb-shadow nb-press relative flex w-full items-center gap-3 rounded-xl bg-card p-2 text-left md:h-full md:flex-col md:items-stretch md:p-0 md:overflow-hidden",
+                "relative flex w-full items-center gap-3 rounded-xl border border-border bg-card p-3 text-left transition-colors hover:border-primary/50 md:h-full md:flex-col md:items-stretch md:p-0 md:overflow-hidden",
                 !item.isAvailable && "opacity-70"
               )}
             >
@@ -147,9 +154,9 @@ export function MenuBrowser({
               />
               <div className="relative z-10 pointer-events-none flex min-w-0 flex-1 flex-col gap-1 md:p-4">
                 <div className="flex items-start justify-between gap-2">
-                  <span className="line-clamp-1 font-bold text-card-foreground md:text-base">{name(item)}</span>
+                  <span className="line-clamp-2 font-semibold text-card-foreground md:text-base">{name(item)}</span>
                   {item.isPopular && (
-                    <Badge variant="neubrutal" className="shrink-0 text-primary">
+                    <Badge variant="secondary" className="shrink-0 text-primary">
                       {t("popular")}
                     </Badge>
                   )}
@@ -157,7 +164,7 @@ export function MenuBrowser({
                 <p className="line-clamp-1 text-xs text-muted-foreground md:line-clamp-2 md:text-sm md:h-10">{description(item)}</p>
                 <div className="mt-1 flex items-center justify-between">
                   <span className="font-extrabold text-price md:text-base">{formatVND(item.basePrice)}</span>
-                  {item.isAvailable ? (
+                  {item.isAvailable && canOrder ? (
                     <motion.button
                       type="button"
                       role="button"
@@ -171,11 +178,11 @@ export function MenuBrowser({
                     >
                       <Plus className="h-4 w-4" />
                     </motion.button>
-                  ) : (
-                    <span className="pointer-events-none nb-border-sm flex h-8 w-8 items-center justify-center rounded-full bg-chip text-muted-foreground">
-                      <Ban className="h-4 w-4" />
+                  ) : !item.isAvailable ? (
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Ban className="h-4 w-4" />{t("unavailable")}
                     </span>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>

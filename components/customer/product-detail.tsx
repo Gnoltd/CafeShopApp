@@ -8,6 +8,7 @@ import { formatVND } from "@/lib/format"
 import { useSizeModifierSelection } from "@/hooks/useSizeModifierSelection"
 import { SegmentedControl } from "@/components/motion/segmented-control"
 import { PressFeedback } from "@/components/motion/press-feedback"
+import { MenuOrderingNotice } from "@/components/customer/menu-ordering-notice"
 import type { MenuItem, MenuIcon } from "@/lib/supabase/menu-data"
 
 const ICONS: Record<MenuIcon, typeof Coffee> = {
@@ -37,6 +38,7 @@ export function ProductDetail({ item }: { item: MenuItem }) {
 
   return (
     <div className="mx-auto w-full max-w-2xl pb-8 md:max-w-5xl md:px-8 pt-4">
+      <div className="px-4 md:px-0"><MenuOrderingNotice /></div>
       <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-10">
         {/* Left Column: Hero image (sticky) */}
         <div className="w-full md:w-[40%] md:sticky md:top-20 md:self-start">

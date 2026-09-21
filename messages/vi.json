@@ -89,6 +89,11 @@
     "settingsTitle": "Cài Đặt"
   },
   "Menu": {
+    "browseTitle": "Xem thực đơn · Gọi món tại bàn",
+    "browseHelp": "Quét mã QR trên bàn để chọn món và gửi yêu cầu đến bếp.",
+    "unavailable": "Tạm hết",
+    "preferences": "Ngôn ngữ và giao diện",
+    "closePreferences": "Đóng",
     "searchPlaceholder": "Tìm kiếm món...",
     "allCategories": "Tất Cả",
     "size": "Kích Cỡ",

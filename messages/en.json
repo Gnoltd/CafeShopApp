@@ -89,6 +89,11 @@
     "settingsTitle": "Settings"
   },
   "Menu": {
+    "browseTitle": "Browse the menu · Order at your table",
+    "browseHelp": "Scan the QR code on your table to choose items and send your order to the kitchen.",
+    "unavailable": "Sold out",
+    "preferences": "Language and appearance",
+    "closePreferences": "Close",
     "searchPlaceholder": "Search items...",
     "allCategories": "All",
     "size": "Size",

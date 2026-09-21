@@ -40,7 +40,10 @@ vi.mock("@/components/customer/item-image", () => ({
   ItemImage: (props: Record<string, unknown>) => <img alt="item" {...props} />,
 }))
 vi.mock("@/components/customer/quick-add-popup", () => ({
-  QuickAddPopup: () => null,
+  QuickAddPopup: () => <div role="dialog">Item options</div>,
+}))
+vi.mock("@/components/customer/scan-qr-button", () => ({
+  ScanQrButton: () => <button>Scan QR</button>,
 }))
 vi.mock("lucide-react", () => ({
   Search: () => <span>Search</span>,
@@ -68,19 +71,23 @@ const items: MenuItem[] = [
 ]
 
 describe("MenuBrowser — canOrder=false", () => {
-  it("disables quick-add and never calls onAddItem", async () => {
+  it("offers QR entry instead of a disabled ordering action", async () => {
     const onAddItem = vi.fn()
     render(
       <MenuBrowser categories={categories} items={items} canOrder={false} onAddItem={onAddItem} />
     )
-    const addButton = screen.getByRole("button", { name: /add/i })
-    expect(addButton).toBeDisabled()
-    await userEvent.click(addButton)
+    expect(screen.queryByRole("button", { name: /add/i })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Scan QR" })).toBeEnabled()
     expect(onAddItem).not.toHaveBeenCalled()
   })
 })
 
 describe("MenuBrowser — canOrder=true", () => {
+  it("opens item choices inside the table session when the card is tapped", async () => {
+    render(<MenuBrowser categories={categories} items={items} canOrder onAddItem={vi.fn()} />)
+    await userEvent.click(screen.getByRole("button", { name: "Cà phê sữa" }))
+    expect(screen.getByRole("dialog")).toHaveTextContent("Item options")
+  })
   it("calls onAddItem with no size/extras needed", async () => {
     const onAddItem = vi.fn()
     render(
