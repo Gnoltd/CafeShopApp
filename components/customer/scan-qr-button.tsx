@@ -12,7 +12,7 @@ export function ScanQrButton() {
 
   return (
     <>
-      <Button variant="default" className="h-11 w-full gap-2" onClick={() => setScanning(true)}>
+      <Button variant="neubrutal" className="h-12 w-full gap-2 text-base" onClick={() => setScanning(true)}>
         <QrCode className="h-5 w-5" />
         {t("scanQr")}
       </Button>
