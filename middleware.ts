@@ -178,6 +178,6 @@ export async function middleware(request: NextRequest) {
 // suite, which asserts the literal below against both cases.
 export const config = {
   matcher: [
-    "/((?!api|_next|_vercel|models/|[^/]+\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest|glb)$).*)",
+    "/((?!api|_next|_vercel|models/|\\.well-known/|[^/]+\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest|glb)$).*)",
   ],
 }
