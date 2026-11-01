@@ -13,14 +13,25 @@ import { canAccessAdmin } from "@/lib/roles"
 // chrome of its own, see the isLiveOrdersActive/isTablesActive branch
 // below), so this is what makes /staff/tables actually reachable by a
 // plain `staff` account, which has no admin sidebar to fall back on.
-function OperationsTabSwitcher({ isTablesActive }: { isTablesActive: boolean }) {
+function OperationsTabSwitcher({ isTablesActive, role }: { isTablesActive: boolean; role: string | null }) {
   const tNav = useTranslations("Nav")
+  // Admin pages are only reachable from here: manager+admin manage the menu,
+  // admin alone manages staff accounts and shop settings (same split as middleware).
+  const adminLinks = [
+    ...(canAccessAdmin(role) ? [{ href: "/admin/menu", label: tNav("menu") }] : []),
+    ...(role === "admin"
+      ? [
+          { href: "/admin/staff", label: tNav("staff") },
+          { href: "/admin/settings", label: tNav("settings") },
+        ]
+      : []),
+  ]
   return (
-    <nav className="nb-border-sm nb-shadow-sm inline-flex w-fit shrink-0 items-center gap-1 rounded-lg bg-card p-1">
+    <nav className="nb-border-sm nb-shadow-sm inline-flex w-fit max-w-full shrink-0 items-center gap-1 overflow-x-auto rounded-lg bg-card p-1">
       <Link
         href="/staff/orders"
         className={cn(
-          "rounded-md px-3 py-1.5 text-xs font-extrabold",
+          "shrink-0 rounded-md px-3 py-1.5 text-xs font-extrabold",
           !isTablesActive ? "bg-primary text-primary-foreground" : "text-muted-foreground"
         )}
       >
@@ -29,12 +40,17 @@ function OperationsTabSwitcher({ isTablesActive }: { isTablesActive: boolean }) 
       <Link
         href="/staff/tables"
         className={cn(
-          "rounded-md px-3 py-1.5 text-xs font-extrabold",
+          "shrink-0 rounded-md px-3 py-1.5 text-xs font-extrabold",
           isTablesActive ? "bg-primary text-primary-foreground" : "text-muted-foreground"
         )}
       >
         {tNav("tables")}
       </Link>
+      {adminLinks.map(({ href, label }) => (
+        <Link key={href} href={href} className="shrink-0 rounded-md px-3 py-1.5 text-xs font-extrabold text-muted-foreground">
+          {label}
+        </Link>
+      ))}
     </nav>
   )
 }
@@ -57,7 +73,7 @@ export function StaffOrdersLayoutClient({
     return (
       <div className="flex h-full flex-col overflow-hidden">
         <div className={cn("flex shrink-0 items-center px-3 pb-2", isTablesActive ? "pt-14" : "pt-2")}>
-          <OperationsTabSwitcher isTablesActive={isTablesActive} />
+          <OperationsTabSwitcher isTablesActive={isTablesActive} role={role} />
         </div>
         <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
       </div>

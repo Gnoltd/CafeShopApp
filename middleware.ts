@@ -9,6 +9,7 @@ import {
   hasSupabaseAuthCookie,
 } from "./lib/middleware-rules"
 import { getCurrentRole } from "./lib/get-current-role"
+import { authCookieOptions } from "./lib/supabase/cookie-options"
 
 const handleI18nRouting = createIntlMiddleware(routing)
 
@@ -90,6 +91,7 @@ async function resolveRole(request: NextRequest): Promise<string | null> {
     if (!hasSupabaseAuthCookie(cookieNames, storageKey)) return null
 
     const supabase = createServerClient(supabaseUrl, supabasePublishableKey, {
+      cookieOptions: authCookieOptions,
       cookies: {
         getAll() {
           return request.cookies.getAll()
@@ -166,7 +168,8 @@ export async function middleware(request: NextRequest) {
 // SINGLE path segment (`[^/]+\.ext$`, not `.*\.ext$`). Every real static
 // file this app serves from public/ lives at the root (`/icon-192.png`,
 // `/favicon.ico`, `/manifest.webmanifest`, the five root .svg files), with
-// `/models/` (coffee-cup.glb) the one nested exception, excluded by name.
+// `/models/` (coffee-cup.glb) and `/.well-known/` (domain verification) are
+// nested exceptions, excluded by name.
 //
 // Security-critical: the previous unanchored `.*\.(?:...)$` alternative
 // matched ANY path ending in one of those extensions -- including a real
@@ -178,6 +181,6 @@ export async function middleware(request: NextRequest) {
 // suite, which asserts the literal below against both cases.
 export const config = {
   matcher: [
-    "/((?!api|_next|_vercel|models/|[^/]+\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest|glb)$).*)",
+    "/((?!api|_next|_vercel|\\.well-known/|models/|[^/]+\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest|glb)$).*)",
   ],
 }

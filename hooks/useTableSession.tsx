@@ -1,16 +1,9 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
-import { useRealtimeChannel } from "@/hooks/useRealtimeChannel"
 import { useLatestRefetch, type LoadContext } from "@/hooks/useLatestRefetch"
 import { nextAsyncLoadFlags } from "@/lib/async-refetch-flags"
-import {
-  isRelevantTableSessionChange,
-  EMPTY_KNOWN_TABLE_SESSION,
-  type KnownTableSession,
-} from "@/lib/table-session-changes"
 import {
   getTableSession,
   addCartItem as addCartItemQuery,
@@ -29,15 +22,11 @@ import {
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000
 const IDLE_PROMPT_RESPONSE_MS = 60 * 1000
 
-// One "Place Order" writes an `orders` row, N `order_items` rows, clears N
-// `table_cart_items` rows and touches `table_sessions` -- a single logical
-// action arriving as a burst of change events. 300ms is well past that burst
-// while keeping another diner's cart edit feeling instantaneous.
+// Coalesce poll/focus refreshes while mutations refresh immediately.
 const TABLE_SESSION_REFETCH_DELAY_MS = 300
 
-// Poll interval for the guest-invisible-order safety net (see the comment on
-// its effect below).
-const GUEST_ORDER_POLL_MS = 10_000
+// Shared cart and order reads are authorized by QR, including across devices.
+const GUEST_ORDER_POLL_MS = 3_000
 
 type TableSessionState = {
   hasSession: boolean
@@ -88,11 +77,6 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
   const promptTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const roundSubmissionId = useRef(crypto.randomUUID())
 
-  // The ids this device is actually looking at, kept in a ref so the
-  // Realtime handlers (subscribed once per qrToken) always read the latest
-  // values without re-subscribing the channel.
-  const knownRef = useRef<KnownTableSession>(EMPTY_KNOWN_TABLE_SESSION)
-
   const load = useCallback(
     async ({ isStale }: LoadContext) => {
       if (!qrToken) return
@@ -101,11 +85,6 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
         // Latest wins: an older response resolving after a newer one must
         // not roll this device's view of the shared cart backwards.
         if (isStale()) return
-        knownRef.current = {
-          sessionId: session.sessionId,
-          cartItemIds: new Set(session.cartItems.map((item) => item.id)),
-          roundIds: new Set(session.rounds.map((round) => round.id)),
-        }
         setHasSession(session.hasSession)
         setCartItems(session.cartItems)
         setRounds(session.rounds)
@@ -136,7 +115,6 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
   const refetch = useCallback(() => run(), [run])
 
   useEffect(() => {
-    knownRef.current = EMPTY_KNOWN_TABLE_SESSION
     hasLoadedOnceRef.current = false
     // A load still in flight for the previous qrToken must not apply to the
     // table we just switched to.
@@ -160,63 +138,33 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
     void run().finally(() => setIsLoading(false))
   }, [run])
 
-  // Unfiltered subscribe + refetch on any change, matching this
-  // project's established Realtime convention (a server-side `filter`
-  // doesn't reliably combine with RLS-gated Realtime). Because the
-  // subscription can't be narrowed, the *payload* is checked instead:
-  // every cart/session/order change anywhere in the cafe lands here, and
-  // only the ones belonging to this table's own session are worth a
-  // refetch (see lib/table-session-changes.ts).
-  const onSessionChange = useCallback(
-    (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
-      if (!isRelevantTableSessionChange(payload, knownRef.current)) return
-      trigger()
-    },
-    [trigger]
-  )
-
-  useRealtimeChannel(
-    supabase,
-    `table-session-${qrToken ?? "none"}`,
-    [
-      { table: "table_cart_items", event: "*", onChange: onSessionChange },
-      { table: "orders", event: "*", onChange: onSessionChange },
-      { table: "table_sessions", event: "*", onChange: onSessionChange },
-    ],
-    { deps: [qrToken] }
-  )
-
-  // I-1: a guest round has customer_id null, matching neither
-  // orders_select_own nor orders_select_staff -- so Realtime (itself
-  // RLS-gated) never delivers `orders` change events to a guest device
-  // at all. This low-frequency poll is the safety net for round-status
-  // changes (paid -> preparing -> ready -> served) and payment
-  // confirmations Realtime can't deliver here, matching this project's
-  // own guest order-tracking convention (lib/supabase/order-tracking.ts).
-  // Realtime above still gives fast updates for table_cart_items/
-  // table_sessions, which ARE guest-visible -- this poll exists only for
-  // the order-status gap and stays at its original interval. It goes
-  // through the same coalescing trigger, so a tick that lands while a
-  // Realtime-driven refetch is already in flight no longer stacks a
-  // second concurrent request.
+  // Guests have no table-wide SELECT/Realtime access. Every read must
+  // present the QR capability to the narrow RPC. Pause hidden tabs and
+  // refresh on focus; the runner coalesces overlapping requests.
   useEffect(() => {
     if (!qrToken) return
-    const interval = setInterval(trigger, GUEST_ORDER_POLL_MS)
-    return () => clearInterval(interval)
+    const refreshVisible = () => {
+      if (document.visibilityState !== "hidden") trigger()
+    }
+    const interval = setInterval(refreshVisible, GUEST_ORDER_POLL_MS)
+    document.addEventListener("visibilitychange", refreshVisible)
+    window.addEventListener("focus", refreshVisible)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener("visibilitychange", refreshVisible)
+      window.removeEventListener("focus", refreshVisible)
+    }
   }, [qrToken, trigger])
 
   async function dismissAndAbandon() {
     if (!qrToken) return
     queueMicrotask(() => setShowIdlePrompt(false))
     await abandonTableSessionQuery(supabase, qrToken)
+    await run()
   }
 
-  // I-2: a content-based fingerprint, not the raw `cartItems` array -- every
-  // refetch (the 10s poll included) produces a fresh array reference even
-  // when the contents haven't changed. Depending on the array itself re-armed
-  // this timer on unrelated activity, so an abandoned draft essentially never
-  // idled out. Still required now that the Realtime payload filter above
-  // drops other tables' events: the poll alone would re-arm it forever.
+  // Use content, not array identity: polling unchanged data must not keep
+  // an abandoned draft alive by restarting its idle timer.
   const cartFingerprint = cartItems.map((i) => `${i.id}:${i.quantity}`).join(",")
 
   // Idle-draft timeout: only while the session has no placed rounds
@@ -246,6 +194,7 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
   async function addItem(input: AddCartItemInput) {
     if (!qrToken) return
     await addCartItemQuery(supabase, qrToken, input)
+    await run()
   }
 
   async function updateQuantity(cartItemId: string, quantity: number) {
@@ -253,17 +202,20 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
     const item = cartItems.find((candidate) => candidate.id === cartItemId)
     if (!item) throw new Error("cart_item_not_found")
     await updateCartItemQuantityQuery(supabase, qrToken, cartItemId, quantity - item.quantity, item.version)
+    await run()
   }
 
   async function removeItem(cartItemId: string) {
     if (!qrToken) return
     await removeCartItemQuery(supabase, qrToken, cartItemId)
+    await run()
   }
 
   async function placeRound() {
     if (!qrToken) throw new Error("no qr token")
     const result = await placeTableRoundQuery(supabase, qrToken, roundSubmissionId.current)
     roundSubmissionId.current = crypto.randomUUID()
+    await run()
     return result
   }
 

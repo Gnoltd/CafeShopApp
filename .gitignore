@@ -45,5 +45,7 @@ next-env.d.ts
 # superpowers scratch (progress ledger, review packages, briefs)
 .superpowers/
 .worktrees/
+supabase/.temp/
+strix_runs/
 
 .vercel
