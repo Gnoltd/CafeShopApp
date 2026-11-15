@@ -9,12 +9,15 @@ if it ever looks stale rather than trusting this list from memory.
 
 ## What's here
 
-- **`/` (scan-QR landing)** — the page itself
-  (`app/[locale]/(customer)/page.tsx`) is a server component with a
-  `QrCode` icon, a "scan the QR code at your table" message, this
-  folder's `scan-qr-button.tsx` (opens the in-app camera scanner), a
-  "View Menu" link, and a `/login` link for staff. No marketing
-  content, no personalization.
+- **`/` (landing)** — `app/[locale]/(customer)/page.tsx`, a server
+  component: brand-red hero (shop name from `shop_settings`, falling back
+  to `Brand.name`) with the scan-QR button + "View Menu" link, a
+  best-sellers row (`is_popular` and `is_available`, max 6, each links to
+  `/menu/[id]`), and a shop-info card (address/hours/phone). Motion is
+  just the `home-rise` fade-in. **No link to `/login` anywhere on guest
+  screens** — staff reach it by typing the URL; `RoleBadge` renders
+  nothing for a plain guest and only shows for a signed-in role or a
+  guest with a scanned table.
 - **`scan-qr-button.tsx`** — thin client wrapper: a button that opens
   `qr-scanner-overlay.tsx` in a dialog. On a successful scan it lets
   the overlay's default behavior (`router.push('/table/[token]')`)
@@ -113,7 +116,8 @@ tables/columns stay per the rebuild's never-drop rule (see root
 - Reviews (`review-form.tsx`, `star-rating.tsx`) — `product-detail.tsx`
   is view-only now.
 - `home-view.tsx`, `best-sellers-arc.tsx` — the old merged
-  marketing+dashboard Home; replaced by the bare scan-QR page.
+  marketing+dashboard Home (arc scroll, rewards/loyalty/reorder blocks);
+  replaced by the slimmer landing above.
 - Every account-creation surface: signup, Google OAuth callback,
   self-service password reset (see `components/auth/` — not this
   directory, but the same rebuild removed those too, keeping only

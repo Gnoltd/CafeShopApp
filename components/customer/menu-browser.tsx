@@ -154,7 +154,7 @@ export function MenuBrowser({
                 <div className="flex items-start justify-between gap-2">
                   <span className="line-clamp-2 font-semibold text-card-foreground md:text-base">{name(item)}</span>
                   {item.isPopular && (
-                    <Badge variant="secondary" className="shrink-0 text-primary">
+                    <Badge variant="secondary" className="shrink-0">
                       {t("popular")}
                     </Badge>
                   )}
