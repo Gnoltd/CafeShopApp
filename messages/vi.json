@@ -60,11 +60,12 @@
     "tableOrderTitle": "Đặt Món Tại Bàn"
   },
   "Home": {
-    "scanTitle": "Quét mã QR tại bàn để gọi món",
     "scanMessage": "Mỗi bàn có một mã QR riêng — quét mã đó để xem menu và đặt món.",
     "scanQr": "Quét mã QR",
     "viewMenu": "Xem thực đơn",
-    "staffLogin": "Nhân viên đăng nhập"
+    "welcome": "Chào mừng đến với",
+    "bestSellers": "Món bán chạy",
+    "storeNote": "Quét mã QR trên bàn để bắt đầu gọi món."
   },
   "QrScanner": {
     "scanInstructions": "Hướng camera vào mã QR trên bàn",
@@ -74,7 +75,6 @@
     "notATableCode": "Đây không phải mã bàn — vui lòng thử lại."
   },
   "RoleNav": {
-    "badgeGuest": "Khách",
     "badgeTable": "Bàn {number}",
     "badgeStaff": "Nhân Viên",
     "badgeAdmin": "Quản Trị"

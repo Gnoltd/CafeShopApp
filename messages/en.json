@@ -60,11 +60,12 @@
     "tableOrderTitle": "Dine-in Order"
   },
   "Home": {
-    "scanTitle": "Scan the QR code at your table to order",
     "scanMessage": "Every table has its own QR code — scan it to view the menu and place an order.",
     "scanQr": "Scan QR Code",
     "viewMenu": "View Menu",
-    "staffLogin": "Staff sign in"
+    "welcome": "Welcome to",
+    "bestSellers": "Best sellers",
+    "storeNote": "Scan the QR code on your table to start ordering."
   },
   "QrScanner": {
     "scanInstructions": "Point your camera at the table's QR code",
@@ -74,7 +75,6 @@
     "notATableCode": "That's not a table code — try again."
   },
   "RoleNav": {
-    "badgeGuest": "Guest",
     "badgeTable": "Table {number}",
     "badgeStaff": "Staff",
     "badgeAdmin": "Admin"

@@ -24,11 +24,10 @@ describe("RoleBadge", () => {
     window.localStorage.clear()
   })
 
-  it("renders Guest badge linking to /login when no guest active table is stored", () => {
-    render(<RoleBadge role={null} />)
+  it("renders nothing for a plain guest (no link to /login on screen)", () => {
+    const { container } = render(<RoleBadge role={null} />)
 
-    const link = screen.getByRole("link", { name: "RoleNav.badgeGuest" })
-    expect(link).toHaveAttribute("href", "/login")
+    expect(container).toBeEmptyDOMElement()
   })
 
   it("renders Table badge linking to /table/{qrToken} when GuestActiveTable is stored", () => {
@@ -41,7 +40,7 @@ describe("RoleBadge", () => {
 
   it("reacts to same-tab active table writes, conditional clears, and cross-tab storage events", () => {
     render(<RoleBadge role={null} />)
-    expect(screen.getByRole("link", { name: "RoleNav.badgeGuest" })).toHaveAttribute("href", "/login")
+    expect(screen.queryByRole("link")).toBeNull()
 
     act(() => {
       saveGuestActiveTable({ number: "3", qrToken: "qr-3" })
@@ -64,18 +63,18 @@ describe("RoleBadge", () => {
     })
     expect(screen.getByRole("link", { name: 'RoleNav.badgeTable:{"number":"9"}' })).toHaveAttribute("href", "/table/qr-9")
 
-    // Clearing matching token falls back to Guest.
+    // Clearing matching token falls back to no badge.
     act(() => {
       clearGuestActiveTable("qr-9")
     })
-    expect(screen.getByRole("link", { name: "RoleNav.badgeGuest" })).toHaveAttribute("href", "/login")
+    expect(screen.queryByRole("link")).toBeNull()
   })
 
   it("ignores legacy unquoted localStorage strings without throwing", () => {
     window.localStorage.setItem(GUEST_ACTIVE_TABLE_STORAGE_KEY, "raw-legacy-token")
     render(<RoleBadge role={null} />)
 
-    expect(screen.getByRole("link", { name: "RoleNav.badgeGuest" })).toHaveAttribute("href", "/login")
+    expect(screen.queryByRole("link")).toBeNull()
   })
 
   it("renders Staff and Admin badges linking to ROLE_HOME even when guest active table exists", () => {
