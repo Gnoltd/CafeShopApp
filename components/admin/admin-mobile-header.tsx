@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl"
 import { Menu } from "lucide-react"
 import { usePathname } from "@/i18n/navigation"
 import { useHeaderActionsClearance } from "@/hooks/useHeaderActionsClearance"
-import { ADMIN_NAV_ITEMS } from "@/components/admin/admin-nav-items"
+import { getAdminNavItems } from "@/components/admin/admin-nav-items"
 
 export function AdminMobileHeader({ onOpenMenu, role }: { onOpenMenu: () => void; role: string | null }) {
   const tBrand = useTranslations("Brand")
@@ -13,7 +13,7 @@ export function AdminMobileHeader({ onOpenMenu, role }: { onOpenMenu: () => void
   const clearance = useHeaderActionsClearance()
   const pathname = usePathname()
 
-  const pageTitleKey = ADMIN_NAV_ITEMS.find((item) => item.href === pathname)?.labelKey
+  const pageTitleKey = getAdminNavItems(role).find((item) => item.href === pathname)?.labelKey
   const roleLabel = role === "staff" ? tRole("badgeStaff") : tRole("badgeAdmin")
 
   return (

@@ -10,8 +10,19 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { formatVND } from "@/lib/format"
 import { createClient } from "@/lib/supabase/client"
-import { createModifierGroup, getModifierGroups, updateModifierGroup } from "@/lib/supabase/menu-data"
-import type { MenuCategory, MenuIcon, MenuItem, MenuItemInput, MenuItemSizeInput, MenuModifierGroup } from "@/lib/supabase/menu-data"
+import {
+  createSupabaseMenuAdapter,
+  validateMenuItemImageFile,
+} from "@/lib/supabase/menu-data"
+import type {
+  MenuCategory,
+  MenuIcon,
+  MenuItem,
+  MenuItemInput,
+  MenuItemSizeInput,
+  MenuModifierGroup,
+  MenuPort,
+} from "@/lib/supabase/menu-data"
 
 const ICON_OPTIONS: MenuIcon[] = ["coffee", "cup-soda", "cookie", "milk"]
 
@@ -20,11 +31,13 @@ export function MenuItemForm({
   initialItem,
   onCancel,
   onSave,
+  port: injectedPort,
 }: {
   categories: MenuCategory[]
   initialItem?: MenuItem
   onCancel: () => void
   onSave: (input: MenuItemInput, extraGroupIds: string[], sizes: MenuItemSizeInput[]) => void | Promise<void>
+  port?: MenuPort
 }) {
   const t = useTranslations("AdminMenu")
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -85,7 +98,8 @@ export function MenuItemForm({
     })
   }
 
-  const supabase = createClient()
+  const [defaultPort] = useState<MenuPort>(() => injectedPort ?? createSupabaseMenuAdapter(createClient()))
+  const port = injectedPort ?? defaultPort
   const [extraGroups, setExtraGroups] = useState<MenuModifierGroup[]>([])
   const [selectedExtraIds, setSelectedExtraIds] = useState<string[]>(
     initialItem?.modifierGroups.filter((g) => g.options.length === 1).map((g) => g.id) ?? []
@@ -104,14 +118,19 @@ export function MenuItemForm({
   const [isSavingExtra, setIsSavingExtra] = useState(false)
 
   useEffect(() => {
-    getModifierGroups(supabase).then((groups) => {
-      setExtraGroups(groups.filter((g) => g.options.length === 1))
-    })
-    // Runs once on mount; supabase is a fresh client instance each render
-    // but functionally equivalent, so depending on it would only cause
-    // needless repeated fetches.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    let active = true
+    port
+      .getModifierGroups()
+      .then((groups) => {
+        if (active) setExtraGroups(groups.filter((g) => g.options.length === 1))
+      })
+      .catch(() => {
+        // Keep empty extras list if the initial read fails so item editing remains usable.
+      })
+    return () => {
+      active = false
+    }
+  }, [port])
 
   useEffect(() => {
     return () => {
@@ -121,11 +140,12 @@ export function MenuItemForm({
 
   function selectFile(file: File | null) {
     if (!file) return
-    if (!file.type.startsWith("image/")) {
+    const validationError = validateMenuItemImageFile(file)
+    if (validationError === "invalid_type") {
       setError(t("imageInvalidTypeError"))
       return
     }
-    if (file.size > 5 * 1024 * 1024) {
+    if (validationError === "too_large") {
       setError(t("imageTooLargeError"))
       return
     }
@@ -151,7 +171,7 @@ export function MenuItemForm({
     }
     setExtrasError(null)
     try {
-      const created = await createModifierGroup(supabase, {
+      const created = await port.createModifierGroup({
         nameVi: newExtraNameVi.trim(),
         nameEn: newExtraNameEn.trim(),
         priceDelta: parsedPrice,
@@ -184,7 +204,7 @@ export function MenuItemForm({
     setEditExtraError(null)
     setIsSavingExtra(true)
     try {
-      const updated = await updateModifierGroup(supabase, group.id, {
+      const updated = await port.updateModifierGroup(group.id, {
         nameVi: editExtraNameVi.trim(),
         nameEn: editExtraNameEn.trim(),
         priceDelta: parsedPrice,
@@ -224,15 +244,14 @@ export function MenuItemForm({
     let finalImageUrl: string | null = imagePreviewUrl
     if (imageFile) {
       setIsUploading(true)
-      const path = `${crypto.randomUUID()}-${imageFile.name}`
-      const { error: uploadError } = await supabase.storage.from("menu-item-images").upload(path, imageFile)
-      if (uploadError) {
+      try {
+        finalImageUrl = await port.uploadMenuItemImage(imageFile)
+      } catch {
         setError(t("imageUploadError"))
-        setIsUploading(false)
         return
+      } finally {
+        setIsUploading(false)
       }
-      finalImageUrl = supabase.storage.from("menu-item-images").getPublicUrl(path).data.publicUrl
-      setIsUploading(false)
     }
 
     setError(null)

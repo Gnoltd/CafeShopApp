@@ -23,6 +23,11 @@ import { ConfirmDialog } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { useTables } from "@/hooks/useTables"
 import { useKitchenOrders } from "@/hooks/useKitchenOrders"
+import {
+  selectAwaitingPaymentOrders,
+  selectReadyOrderIds,
+  useTableSettlement,
+} from "@/hooks/useTableSettlement"
 import { ConfirmCashPayment } from "@/components/staff/confirm-cash-payment"
 import { TableForm } from "@/components/staff/table-form"
 
@@ -39,7 +44,8 @@ export function TablesOperationsView() {
   const tKds = useTranslations("KitchenDisplay")
   const { tables, openSessionTableIds, addTable, renameTable, updateLocation, regenerateToken, getQrTokens } =
     useTables()
-  const { orders, serveTable, confirmTablePayment } = useKitchenOrders()
+  const { orders } = useKitchenOrders()
+  const { serveTableReadyOrders, settleTableCash } = useTableSettlement()
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draftNumber, setDraftNumber] = useState("")
@@ -203,8 +209,7 @@ export function TablesOperationsView() {
           const isEditing = editingId === table.id
           const location = locale === "vi" ? table.locationVi : table.locationEn
           const hasOpenSession = openSessionTableIds.has(table.id)
-          const tableOrders = orders.filter((o) => o.tableId === table.id)
-          const readyOrderIds = tableOrders.filter((o) => o.status === "ready").map((o) => o.id)
+          const readyOrderIds = selectReadyOrderIds(orders, table.id)
           // A running tab can have several unpaid rounds sharing one payment
           // method once Check Bill has been tapped -- "awaiting payment"
           // isn't scoped to status === "served" here, and also includes
@@ -212,7 +217,7 @@ export function TablesOperationsView() {
           // null): a table round starts with no method and only gets one
           // once Check Bill is tapped, so this is the only signal staff have
           // that money is owed on this table at all if a guest never taps it.
-          const awaitingPaymentOrders = tableOrders.filter((o) => o.paymentStatus === "pending")
+          const awaitingPaymentOrders = selectAwaitingPaymentOrders(orders, table.id)
 
           return (
             <div
@@ -342,7 +347,7 @@ export function TablesOperationsView() {
               {readyOrderIds.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => void runTableAction(`${table.id}:serve`, () => serveTable(readyOrderIds))}
+                  onClick={() => void runTableAction(`${table.id}:serve`, () => serveTableReadyOrders(orders, table.id))}
                   disabled={pendingActionKeys.has(`${table.id}:serve`)}
                   className="nb-border-sm nb-shadow-sm nb-press-sm flex h-9 w-full items-center justify-center gap-1 rounded-lg bg-primary px-3 py-2 text-xs font-extrabold text-primary-foreground disabled:opacity-60"
                 >
@@ -354,8 +359,8 @@ export function TablesOperationsView() {
                 <ConfirmCashPayment
                   className="w-full"
                   disabled={pendingActionKeys.has(`${table.id}:pay`)}
-                  onSelect={(method) =>
-                    void runTableAction(`${table.id}:pay`, () => confirmTablePayment(table.id, method))
+                  onConfirm={() =>
+                    void runTableAction(`${table.id}:pay`, () => settleTableCash(table.id))
                   }
                 />
               )}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 /**
  * Passed to every load run so the load body can drop its own result when a
@@ -13,11 +13,100 @@ export type LoadContext = { isStale: () => boolean }
 
 export type LatestRefetchLoad = (ctx: LoadContext) => Promise<unknown>
 
+export type AsyncLoadOutcome = "success" | "failure"
+
+export type AsyncLoadFlags = {
+  hasBlockingError: boolean
+  hasStaleData: boolean
+}
+
 /**
- * A `LoadContext` that never reports staleness -- for calling a load body
- * directly (outside any runner), e.g. from a test or a one-off path.
+ * Pure state-transition shared by hooks that keep polling/subscribing for a
+ * background refetch after their first successful load:
+ * - `hasBlockingError`: never succeeded yet, so callers render a blocking retry state.
+ * - `hasStaleData`: succeeded at least once before this failure, so callers keep
+ *   rendering last-good data and flag it as possibly outdated.
+ * A success always clears both flags outright.
  */
-export const FRESH_LOAD: LoadContext = { isStale: () => false }
+export function nextAsyncLoadFlags(hasLoadedOnce: boolean, outcome: AsyncLoadOutcome): AsyncLoadFlags {
+  if (outcome === "success") return { hasBlockingError: false, hasStaleData: false }
+  return hasLoadedOnce
+    ? { hasBlockingError: false, hasStaleData: true }
+    : { hasBlockingError: true, hasStaleData: false }
+}
+
+export type AsyncLoadSnapshot = AsyncLoadFlags & {
+  hasLoadedOnce: boolean
+  error: unknown | null
+}
+
+const INITIAL_ASYNC_LOAD_SNAPSHOT: AsyncLoadSnapshot = {
+  hasLoadedOnce: false,
+  hasBlockingError: false,
+  hasStaleData: false,
+  error: null,
+}
+
+export type AsyncLoadStateMachine = {
+  getSnapshot: () => AsyncLoadSnapshot
+  markSuccess: () => AsyncLoadSnapshot
+  markFailure: (error: unknown) => AsyncLoadSnapshot
+  clearErrors: () => AsyncLoadSnapshot
+  reset: () => AsyncLoadSnapshot
+}
+
+/**
+ * Pure stateful transition helper backing `useLatestAsyncLoad` (no React,
+ * directly unit-testable in node). Preserves snapshot reference identity when
+ * a transition produces no change.
+ */
+export function createAsyncLoadState(): AsyncLoadStateMachine {
+  let snapshot: AsyncLoadSnapshot = INITIAL_ASYNC_LOAD_SNAPSHOT
+
+  return {
+    getSnapshot: () => snapshot,
+    markSuccess() {
+      if (
+        snapshot.hasLoadedOnce &&
+        !snapshot.hasBlockingError &&
+        !snapshot.hasStaleData &&
+        snapshot.error === null
+      ) {
+        return snapshot
+      }
+      snapshot = {
+        ...nextAsyncLoadFlags(true, "success"),
+        hasLoadedOnce: true,
+        error: null,
+      }
+      return snapshot
+    },
+    markFailure(error: unknown) {
+      snapshot = {
+        ...nextAsyncLoadFlags(snapshot.hasLoadedOnce, "failure"),
+        hasLoadedOnce: snapshot.hasLoadedOnce,
+        error,
+      }
+      return snapshot
+    },
+    clearErrors() {
+      if (!snapshot.hasBlockingError && !snapshot.hasStaleData && snapshot.error === null) {
+        return snapshot
+      }
+      snapshot = {
+        hasLoadedOnce: snapshot.hasLoadedOnce,
+        hasBlockingError: false,
+        hasStaleData: false,
+        error: null,
+      }
+      return snapshot
+    },
+    reset() {
+      snapshot = INITIAL_ASYNC_LOAD_SNAPSHOT
+      return snapshot
+    },
+  }
+}
 
 /**
  * Monotonic "latest wins" sequencer, kept as a standalone pure factory (no
@@ -64,6 +153,8 @@ export type LatestRefetchRunner = {
    * once, so it always calls the most recently published body.
    */
   setLoad: (load: LatestRefetchLoad) => void
+  /** Replaces the `onError` handler so error closures stay fresh across renders. */
+  setOnError: (onError: ((error: unknown) => void) | undefined) => void
   /** Debounced + coalesced refetch. A burst of events produces one load. */
   trigger: () => void
   /** Run as soon as possible (initial mount fetch, explicit user refresh). */
@@ -104,10 +195,11 @@ export function createLatestRefetchRunner(
   delayMs: number,
   options: LatestRefetchOptions = {}
 ): LatestRefetchRunner {
-  const { maxDelayMs = delayMs * 4, onError } = options
+  const { maxDelayMs = delayMs * 4 } = options
   const guard = createSequenceGuard()
 
   let load = initialLoad
+  let onError = options.onError
   let timer: ReturnType<typeof setTimeout> | null = null
   let burstStartedAt = 0
   let inFlight: Promise<void> | null = null
@@ -132,7 +224,8 @@ export function createLatestRefetchRunner(
       .then(
         () => {},
         (error) => {
-          onError?.(error)
+          // Cancelled or superseded runs must not surface errors into newer state.
+          if (!ctx.isStale()) onError?.(error)
         }
       )
       .then(() => {
@@ -160,6 +253,9 @@ export function createLatestRefetchRunner(
   return {
     setLoad(next: LatestRefetchLoad) {
       load = next
+    },
+    setOnError(next: ((error: unknown) => void) | undefined) {
+      onError = next
     },
     trigger() {
       const now = Date.now()
@@ -198,27 +294,31 @@ export function createLatestRefetchRunner(
 }
 
 /**
- * React binding for `createLatestRefetchRunner`. `load` may change identity
- * every render (it usually closes over props/state); the runner always calls
- * the most recent one.
+ * React binding for `createLatestRefetchRunner`. `load` and `options.onError`
+ * may change identity every render (they usually close over props/state); the
+ * runner always invokes the most recently committed closures.
  *
- * `delayMs` is read once -- every call site in this app passes a module
- * constant. Load failures are swallowed (matching what these hooks did
- * before): a dropped refetch is recovered by the next Realtime event or
- * poll tick, and the pure factory is where an `onError` can be supplied.
+ * `delayMs` and `options.maxDelayMs` are read once on mount. When `onError` is
+ * omitted, load failures are swallowed (recovered by the next Realtime event or
+ * poll tick).
  */
-export function useLatestRefetch(load: LatestRefetchLoad, delayMs: number): LatestRefetchRunner {
+export function useLatestRefetch(
+  load: LatestRefetchLoad,
+  delayMs: number,
+  options?: LatestRefetchOptions
+): LatestRefetchRunner {
   // useState's lazy initialiser (not useMemo) -- React may discard a useMemo
   // result, and this runner owns a timer and in-flight state.
-  const [runner] = useState(() => createLatestRefetchRunner(load, delayMs))
+  const [runner] = useState(() => createLatestRefetchRunner(load, delayMs, options))
 
   // Published from an effect, not during render, so a render that never
   // commits can't install its closure. This effect is declared inside the
   // hook, so it always runs before the calling component's own effects
   // (React runs effects in declaration order) -- a mount fetch in the same
-  // component therefore still sees the current render's load.
+  // component therefore still sees the current render's load and onError.
   useEffect(() => {
     runner.setLoad(load)
+    runner.setOnError(options?.onError)
   })
 
   // `cancel()` (not a permanent dispose) so React Strict Mode's
@@ -228,4 +328,93 @@ export function useLatestRefetch(load: LatestRefetchLoad, delayMs: number): Late
   }, [runner])
 
   return runner
+}
+
+export type LatestAsyncLoadOptions = LatestRefetchOptions & {
+  initialLoading?: boolean
+  enabled?: boolean
+}
+
+export type LatestAsyncLoadResult = Omit<LatestRefetchRunner, "setLoad" | "setOnError"> &
+  AsyncLoadSnapshot & {
+    isLoading: boolean
+    loadWithSpinner: () => Promise<void>
+    reset: () => void
+  }
+
+/**
+ * Cohesive async-load hook uniting `useLatestRefetch` with `hasLoadedOnce`,
+ * blocking-error vs stale-data flags, loading spinner lifecycle, and reset
+ * invalidation so call sites avoid duplicating `hasLoadedOnceRef` boilerplate.
+ */
+export function useLatestAsyncLoad(
+  load: LatestRefetchLoad,
+  delayMs: number,
+  options?: LatestAsyncLoadOptions
+): LatestAsyncLoadResult {
+  const enabled = options?.enabled ?? true
+  const [machine] = useState(() => createAsyncLoadState())
+  const [snapshot, setSnapshot] = useState<AsyncLoadSnapshot>(() => machine.getSnapshot())
+  const [isLoading, setIsLoading] = useState(options?.initialLoading ?? true)
+  const mountedRef = useRef(false)
+  const loadingTicketRef = useRef(0)
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
+
+  const runner = useLatestRefetch(
+    async (ctx) => {
+      if (!enabled) return
+      await load(ctx)
+      if (ctx.isStale()) return
+      const next = machine.markSuccess()
+      if (mountedRef.current) setSnapshot(next)
+    },
+    delayMs,
+    {
+      maxDelayMs: options?.maxDelayMs,
+      onError: (error) => {
+        const next = machine.markFailure(error)
+        if (mountedRef.current) setSnapshot(next)
+        options?.onError?.(error)
+      },
+    }
+  )
+
+  const loadWithSpinner = useCallback(async () => {
+    const ticket = ++loadingTicketRef.current
+    if (mountedRef.current) {
+      setIsLoading(true)
+      setSnapshot(machine.clearErrors())
+    }
+    try {
+      await runner.run()
+    } finally {
+      if (mountedRef.current && loadingTicketRef.current === ticket) {
+        setIsLoading(false)
+      }
+    }
+  }, [machine, runner])
+
+  const reset = useCallback(() => {
+    ++loadingTicketRef.current
+    runner.invalidate()
+    const next = machine.reset()
+    if (mountedRef.current) setSnapshot(next)
+  }, [machine, runner])
+
+  return {
+    trigger: runner.trigger,
+    run: runner.run,
+    cancel: runner.cancel,
+    invalidate: runner.invalidate,
+    loadWithSpinner,
+    reset,
+    isLoading,
+    ...snapshot,
+  }
 }

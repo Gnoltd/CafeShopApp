@@ -1,4 +1,5 @@
 import { useState } from "react"
+import type { MenuItemSelection } from "@/lib/menu-selection-types"
 import type { MenuItem, MenuItemSize, MenuModifierGroup, MenuModifierOption } from "@/lib/supabase/menu-data"
 
 export type SelectedModifierOption = {
@@ -13,19 +14,21 @@ export type SizeModifierSelectionState = {
   toggleModifier: (group: MenuModifierGroup, optionId: string) => void
   selectedSize: MenuItemSize | undefined
   selectedOptions: SelectedModifierOption[]
+  selection: MenuItemSelection
   price: number
   extraGroups: MenuModifierGroup[]
   otherGroups: MenuModifierGroup[]
 }
 
 /**
- * Size/modifier selection state shared by every "add this item" surface
- * (Product Detail, QuickAddPopup, POS's picker): default size, default
- * required-group picks, price calc, and the extras-vs-other-groups split
- * (single-option groups render as one checkbox list, multi-option groups
- * as a grid). A single-option group is always freely toggleable even when
- * `required`; a multi-option `required` group can't be fully deselected —
- * that asymmetry is intentional and preserved from the pre-unification code.
+ * Size/modifier selection state shared by item configuration surfaces
+ * (Product Detail and SizeExtrasSheet/QuickAddPopup): default size, default
+ * required-group picks, price calc, canonical MenuItemSelection output, and
+ * the extras-vs-other-groups split (single-option groups render as one
+ * checkbox list, multi-option groups as a grid). A single-option group is
+ * always freely toggleable even when `required`; a multi-option `required`
+ * group can't be fully deselected — that asymmetry is intentional and
+ * preserved from the pre-unification code.
  */
 export function useSizeModifierSelection(item: MenuItem): SizeModifierSelectionState {
   const [selectedSizeId, setSelectedSizeId] = useState<string | null>(
@@ -34,7 +37,7 @@ export function useSizeModifierSelection(item: MenuItem): SizeModifierSelectionS
   const [selectedModifiers, setSelectedModifiers] = useState<Record<string, string>>(() => {
     const defaults: Record<string, string> = {}
     item.modifierGroups.forEach((group) => {
-      if (group.required) defaults[group.id] = group.options[0].id
+      if (group.required && group.options[0]) defaults[group.id] = group.options[0].id
     })
     return defaults
   })
@@ -52,16 +55,21 @@ export function useSizeModifierSelection(item: MenuItem): SizeModifierSelectionS
   }
 
   const selectedSize = item.sizes.find((s) => s.id === selectedSizeId)
-  const selectedOptions: SelectedModifierOption[] = Object.entries(selectedModifiers).map(([groupId, optionId]) => {
-    const group = item.modifierGroups.find((g) => g.id === groupId)!
-    const option = group.options.find((o) => o.id === optionId)!
-    return { group, option }
+  const selectedOptions: SelectedModifierOption[] = Object.entries(selectedModifiers).flatMap(([groupId, optionId]) => {
+    const group = item.modifierGroups.find((g) => g.id === groupId)
+    const option = group?.options.find((o) => o.id === optionId)
+    return group && option ? [{ group, option }] : []
   })
   const sizeDelta = selectedSize?.priceDelta ?? 0
   const modifierDelta = selectedOptions.reduce((sum, { option }) => sum + option.priceDelta, 0)
   const price = item.basePrice + sizeDelta + modifierDelta
   const extraGroups = item.modifierGroups.filter((g) => g.options.length === 1)
   const otherGroups = item.modifierGroups.filter((g) => g.options.length > 1)
+  const selection: MenuItemSelection = {
+    menuItemId: item.id,
+    sizeId: selectedSize?.id ?? null,
+    modifierIds: selectedOptions.map(({ option }) => option.id),
+  }
 
   return {
     selectedSizeId,
@@ -70,6 +78,7 @@ export function useSizeModifierSelection(item: MenuItem): SizeModifierSelectionS
     toggleModifier,
     selectedSize,
     selectedOptions,
+    selection,
     price,
     extraGroups,
     otherGroups,

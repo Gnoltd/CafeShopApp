@@ -37,6 +37,7 @@ vi.mock("@/components/ui/badge", () => ({
   Badge: ({ children }: { children?: ReactNode }) => <span>{children}</span>,
 }))
 vi.mock("@/components/customer/item-image", () => ({
+  // eslint-disable-next-line @next/next/no-img-element
   ItemImage: (props: Record<string, unknown>) => <img alt="item" {...props} />,
 }))
 vi.mock("@/components/customer/quick-add-popup", () => ({
@@ -94,8 +95,10 @@ describe("MenuBrowser — canOrder=true", () => {
       <MenuBrowser categories={categories} items={items} canOrder onAddItem={onAddItem} cartItemCount={0} cartSubtotal={0} />
     )
     await userEvent.click(screen.getByRole("button", { name: /add/i }))
-    expect(onAddItem).toHaveBeenCalledWith(
-      expect.objectContaining({ menuItemId: "item-1", unitPrice: 25000 })
-    )
+    expect(onAddItem).toHaveBeenCalledWith({
+      menuItemId: "item-1",
+      sizeId: null,
+      modifierIds: [],
+    })
   })
 })

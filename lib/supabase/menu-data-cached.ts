@@ -1,6 +1,7 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { unstable_cache } from "next/cache"
-import { getCategories, getMenuItems, type MenuCategory, type MenuItem } from "@/lib/supabase/menu-data"
+import { resolvePhadinCatalog } from "@/lib/phadin-menu-catalog"
+import { getCategories, getMenuItems, type MenuCategory, type MenuItem } from "./menu-data"
 
 /**
  * Deliberate exception to the DI'd (SupabaseClient-first-arg) query-layer
@@ -22,7 +23,7 @@ const getCachedMenuData = unstable_cache(
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
     )
     const [categories, items] = await Promise.all([getCategories(supabase), getMenuItems(supabase)])
-    return { categories, items }
+    return resolvePhadinCatalog(categories, items)
   },
   ["public-menu-data"],
   { revalidate: 20 }

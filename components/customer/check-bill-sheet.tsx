@@ -15,22 +15,19 @@ import {
   DialogViewport,
 } from "@/components/ui/dialog"
 import { formatVND } from "@/lib/format"
-import { createClient } from "@/lib/supabase/client"
-import { requestTableBill } from "@/lib/supabase/table-session-data"
 
 export function CheckBillSheet({
-  qrToken,
   unpaidTotal,
+  onConfirm,
   onClose,
   onSuccess,
 }: {
-  qrToken: string
   unpaidTotal: number
+  onConfirm: () => Promise<void>
   onClose: () => void
   onSuccess: () => void
 }) {
   const t = useTranslations("TableSession")
-  const [supabase] = useState(() => createClient())
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -38,7 +35,7 @@ export function CheckBillSheet({
     setError(null)
     setIsSubmitting(true)
     try {
-      await requestTableBill(supabase, qrToken)
+      await onConfirm()
       onSuccess()
     } catch {
       setError(t("checkBillError"))

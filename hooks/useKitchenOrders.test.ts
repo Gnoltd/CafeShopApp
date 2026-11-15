@@ -3,7 +3,6 @@ import {
   willCompleteOrderOnAdvance,
   withItemStatus,
   advanceItemOptimistically,
-  advanceItemGuarded,
   itemPendingKey,
   PREV_ITEM_STATUS,
   mergeInFlightItems,
@@ -54,8 +53,8 @@ describe("withItemStatus", () => {
     const orders = [makeOrder(["preparing", "ready"])]
     const next = withItemStatus(orders, "order-1", "item-0", "ready")
     expect(next[0].items[0].status).toBe("ready")
-    expect(next[0].items[1].status).toBe("ready") // unchanged, was already "ready"
-    expect(orders[0].items[0].status).toBe("preparing") // original array untouched
+    expect(next[0].items[1].status).toBe("ready")
+    expect(orders[0].items[0].status).toBe("preparing")
   })
 })
 
@@ -65,7 +64,6 @@ describe("advanceItemOptimistically", () => {
     const setOrders = (updater: (current: KdsOrderRow[]) => KdsOrderRow[]) => {
       state = updater(state)
     }
-    // Never resolves within this test -- proves the UI update doesn't wait on it.
     const advance = vi.fn(() => new Promise<void>(() => {}))
 
     void advanceItemOptimistically(state, "order-1", "item-0", "ready", setOrders, advance)
@@ -82,15 +80,8 @@ describe("advanceItemOptimistically", () => {
 
     const call = advanceItemOptimistically(state, "order-1", "item-0", "ready", setOrders, advance)
 
-    // Optimistic guess is visible immediately, before the rejection settles.
     expect(state[0].items[0].status).toBe("ready")
-
-    // The failure must still propagate so the caller's existing error
-    // surfacing (kitchen-display.tsx's setError) fires.
     await expect(call).rejects.toThrow("not_authorized")
-
-    // And the optimistic guess must be reverted -- not left showing a
-    // status that never actually happened server-side.
     expect(state[0].items[0].status).toBe("preparing")
   })
 
@@ -108,147 +99,17 @@ describe("advanceItemOptimistically", () => {
   })
 })
 
-// Round-2 regression coverage: a prior fix added the optimistic update
-// above, which itself introduced a same-item race (two overlapping
-// advance calls for one item, whichever RPC settles last could clobber
-// the other's result). advanceItemGuarded is the structural fix -- these
-// tests prove the in-flight marker is set before the optimistic update,
-// cleared via `finally` on both success and rejection, and that a call
-// arriving while the marker is still set is a no-op (never reaches the
-// RPC), which is what makes the button-disable in kitchen-board.tsx a
-// real guarantee rather than just cosmetic.
-describe("advanceItemGuarded", () => {
-  function makePendingSet() {
-    let pending = new Set<string>()
-    const setPending = (updater: (current: Set<string>) => Set<string>) => {
-      pending = updater(pending)
-    }
-    return { getPending: () => pending, setPending }
-  }
-
-  it("marks the item pending before the optimistic update, and clears it once the RPC resolves", async () => {
-    let orders: KdsOrderRow[] = [makeOrder(["preparing"])]
-    const setOrders = (updater: (current: KdsOrderRow[]) => KdsOrderRow[]) => {
-      orders = updater(orders)
-    }
-    const { getPending, setPending } = makePendingSet()
-    const advance = vi.fn().mockResolvedValue(undefined)
-
-    const call = advanceItemGuarded(getPending(), setPending, orders, "order-1", "item-0", "ready", setOrders, advance)
-
-    // Pending flag lands synchronously, ahead of the RPC settling.
-    expect(getPending().has(itemPendingKey("order-1", "item-0"))).toBe(true)
-
-    await call
-
-    expect(getPending().has(itemPendingKey("order-1", "item-0"))).toBe(false)
-  })
-
-  it("clears the pending flag via finally even when the RPC rejects", async () => {
-    let orders: KdsOrderRow[] = [makeOrder(["preparing"])]
-    const setOrders = (updater: (current: KdsOrderRow[]) => KdsOrderRow[]) => {
-      orders = updater(orders)
-    }
-    const { getPending, setPending } = makePendingSet()
-    const advance = vi.fn().mockRejectedValue(new Error("network_blip"))
-
-    const call = advanceItemGuarded(getPending(), setPending, orders, "order-1", "item-0", "ready", setOrders, advance)
-    expect(getPending().has(itemPendingKey("order-1", "item-0"))).toBe(true)
-
-    await expect(call).rejects.toThrow("network_blip")
-
-    expect(getPending().has(itemPendingKey("order-1", "item-0"))).toBe(false)
-  })
-
-  it("no-ops a second call for the same item while the first is still in flight -- the regression this fix closes", async () => {
-    let orders: KdsOrderRow[] = [makeOrder(["preparing"])]
-    const setOrders = (updater: (current: KdsOrderRow[]) => KdsOrderRow[]) => {
-      orders = updater(orders)
-    }
-    const { getPending, setPending } = makePendingSet()
-    // Never resolves -- simulates RPC1 (Mark Ready) still in flight.
-    const advance = vi.fn(() => new Promise<void>(() => {}))
-
-    // Tap 1: "Mark Ready" fires, RPC1 starts.
-    void advanceItemGuarded(getPending(), setPending, orders, "order-1", "item-0", "ready", setOrders, advance)
-    expect(advance).toHaveBeenCalledTimes(1)
-
-    // Tap 2: a same-item re-tap ("Mark Served") arriving before RPC1
-    // settles must not fire a second overlapping RPC for this item.
-    await advanceItemGuarded(getPending(), setPending, orders, "order-1", "item-0", "served", setOrders, advance)
-
-    expect(advance).toHaveBeenCalledTimes(1)
-    // The optimistic status stays whatever RPC1's tap applied -- RPC2
-    // never got a chance to touch it.
-    expect(orders[0].items[0].status).toBe("ready")
-  })
-
-  it("does not block a call for a different item on the same order", async () => {
-    let orders: KdsOrderRow[] = [makeOrder(["preparing", "preparing"])]
-    const setOrders = (updater: (current: KdsOrderRow[]) => KdsOrderRow[]) => {
-      orders = updater(orders)
-    }
-    const { getPending, setPending } = makePendingSet()
-    const advance = vi.fn(() => new Promise<void>(() => {}))
-
-    // Neither call's RPC resolves in this test -- both stay in flight, so
-    // this only asserts against the synchronous part of each call.
-    void advanceItemGuarded(getPending(), setPending, orders, "order-1", "item-0", "ready", setOrders, advance)
-    void advanceItemGuarded(getPending(), setPending, orders, "order-1", "item-1", "ready", setOrders, advance)
-
-    expect(advance).toHaveBeenCalledTimes(2)
-    expect(getPending().has(itemPendingKey("order-1", "item-0"))).toBe(true)
-    expect(getPending().has(itemPendingKey("order-1", "item-1"))).toBe(true)
-  })
-})
-
-// PREV_ITEM_STATUS backs the KDS ticket's "undo" button (kitchen-board.tsx's
-// regressTargetFor + kitchen-display.tsx's regressItem) -- these lock in
-// that it's the exact inverse of the forward progression, and that the
-// same generic advanceItemGuarded/advanceItemOptimistically machinery
-// tested above (built for the forward direction) works identically when
-// handed a "previous" status instead, since neither takes any direction
-// as an assumption -- both just apply whatever target status they're given.
 describe("PREV_ITEM_STATUS", () => {
   it("has no previous step before preparing, the item's own starting status", () => {
     expect(PREV_ITEM_STATUS.preparing).toBeNull()
   })
 
-  it("reverses ready back to preparing, and served back to ready -- one step at a time, same as the forward tap", () => {
+  it("reverses ready back to preparing, and served back to ready -- one step at a time", () => {
     expect(PREV_ITEM_STATUS.ready).toBe("preparing")
     expect(PREV_ITEM_STATUS.served).toBe("ready")
   })
 })
 
-describe("advanceItemGuarded regressing a status (the KDS undo button)", () => {
-  it("moves an item backward through the same guarded path used to move it forward", async () => {
-    let orders: KdsOrderRow[] = [makeOrder(["ready"])]
-    const setOrders = (updater: (current: KdsOrderRow[]) => KdsOrderRow[]) => {
-      orders = updater(orders)
-    }
-    let pending = new Set<string>()
-    const setPending = (updater: (current: Set<string>) => Set<string>) => {
-      pending = updater(pending)
-    }
-    const regress = vi.fn().mockResolvedValue(undefined)
-
-    await advanceItemGuarded(pending, setPending, orders, "order-1", "item-0", PREV_ITEM_STATUS.ready!, setOrders, regress)
-
-    expect(orders[0].items[0].status).toBe("preparing")
-    expect(regress).toHaveBeenCalledWith("item-0", "preparing")
-  })
-})
-
-// The bug this closes: a staff-reported "clicks sometimes don't register,
-// then the board sometimes jumps to a different step by itself." Root
-// cause -- the debounced board refetch (KDS_REFETCH_DELAY_MS, capped by
-// maxDelayMs) can legitimately return a snapshot taken before a still-
-// in-flight tap's RPC committed, especially mid-burst when a fixed cadence
-// forces a refetch regardless of pending activity. The old code blindly
-// replaced `orders` with that snapshot, silently reverting the optimistic
-// tap (looked like the click was ignored) until a later refetch -- once
-// the RPC actually landed -- corrected it with no new tap from the user
-// (looked like the board moved on its own).
 describe("mergeInFlightItems", () => {
   it("returns the fresh snapshot untouched when nothing is pending", () => {
     const fresh = [makeOrder(["ready"])]
@@ -256,8 +117,8 @@ describe("mergeInFlightItems", () => {
   })
 
   it("keeps the previous (optimistic) status for a pending item even when the fresh fetch disagrees", () => {
-    const previous = [makeOrder(["ready"])] // optimistic tap already applied locally
-    const fresh = [makeOrder(["preparing"])] // refetch raced ahead of that tap's own commit
+    const previous = [makeOrder(["ready"])]
+    const fresh = [makeOrder(["preparing"])]
     const pending = new Set([itemPendingKey("order-1", "item-0")])
 
     const merged = mergeInFlightItems(fresh, previous, pending)
@@ -268,13 +129,12 @@ describe("mergeInFlightItems", () => {
   it("still applies the fresh status for every item that isn't pending", () => {
     const previous = [makeOrder(["ready", "preparing"])]
     const fresh = [makeOrder(["served", "ready"])]
-    // Only item-0 is mid-flight; item-1's fresh "ready" is real server truth.
     const pending = new Set([itemPendingKey("order-1", "item-0")])
 
     const merged = mergeInFlightItems(fresh, previous, pending)
 
-    expect(merged[0].items[0].status).toBe("ready") // preserved (pending)
-    expect(merged[0].items[1].status).toBe("ready") // taken from fresh
+    expect(merged[0].items[0].status).toBe("ready")
+    expect(merged[0].items[1].status).toBe("ready")
   })
 
   it("passes through an order the previous snapshot doesn't have (e.g. a brand-new ticket)", () => {

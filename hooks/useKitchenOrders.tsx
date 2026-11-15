@@ -1,22 +1,26 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react"
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import { useRealtimeChannel } from "@/hooks/useRealtimeChannel"
 import { useLatestRefetch, type LoadContext } from "@/hooks/useLatestRefetch"
 import {
-  advanceOrderItemStatus,
-  markOrderItemsServed,
-  confirmCashPayment as confirmCashPaymentQuery,
-  confirmServedPayment as confirmServedPaymentQuery,
-  confirmTablePayment as confirmTablePaymentQuery,
-  getKitchenOrders,
-  getPendingPaymentOrders,
-  recallLastCompletedOrder as recallLastCompletedOrderQuery,
+  createSupabaseKdsPreparationAdapter,
   type KdsOrderRow,
+  type KdsPreparationPort,
   type OrderItemStatus,
 } from "@/lib/supabase/order-kds"
-import type { RealOrderStatus, RealPaymentMethod } from "@/lib/supabase/order-mapping"
+import type { RealOrderStatus } from "@/lib/supabase/order-mapping"
 
 // Derived from the real order_status enum (not hand-typed) so it can never
 // silently drift from it -- was a second, independently-declared status
@@ -26,49 +30,36 @@ export type { KdsOrderRow as KdsOrder }
 
 // One tap per drink -- lands on "ready" (visually identical to "served":
 // green, checked, struck through; KitchenBoard treats status !== "preparing"
-// as done). Real bug this reverts from an earlier pass: sending the tap
-// straight to "served" meant the LAST item finishing on an already-paid
-// order (e.g. any POS cash sale, paid up front) satisfied
-// complete_order_when_served_and_paid instantly -- the ticket vanished off
-// the board the moment it was ticked, with zero time visible in "Sẵn Sàng"
-// and no way to recall it. "served" is now reached only through the
-// ticket-level "Đã Giao Khách" bulk action (KitchenOrdersProvider's
-// existing serveTable, already used by the dine-in Tables column) once the
-// whole order is "ready" -- a deliberate, distinct tap, not an accidental
-// side effect of ticking the last drink.
+// as done). Sending the tap straight to "served" meant the last item
+// finishing on an already-paid order satisfied complete_order_when_served_and_paid
+// immediately, skipping the "Ready" column and recall. "served" is reached
+// only through the ticket-level "Đã Giao Khách" bulk hand-over once ready.
 const NEXT_ITEM_STATUS: Record<OrderItemStatus, OrderItemStatus | null> = {
   preparing: "ready",
   ready: "served",
   served: null,
 }
 
-// The mockup's per-ticket "back" arrow (mis-tapped done) -- safe to send
-// straight through advanceOrderItemStatus with no new RPC: order_items.status
-// has no forward-only constraint, and sync_order_status_from_items
-// (migration 0082) recomputes the parent order's rolled-up status from its
-// items' current statuses on every update, in either direction, so a
-// regressed item correctly reopens its parent order too (e.g. "ready" ->
-// "preparing" flips the order itself back to "preparing").
+// Per-ticket "back" arrow (mis-tapped done): order_items.status has no
+// forward-only constraint, and sync_order_status_from_items (migration 0082)
+// recomputes the parent order's rolled-up status on every update in either
+// direction, so a regressed item correctly reopens its parent order too.
 export const PREV_ITEM_STATUS: Record<OrderItemStatus, OrderItemStatus | null> = {
   preparing: null,
   ready: "preparing",
   served: "ready",
 }
 
-// Pure so it's directly testable: given the order this item belongs to,
-// would advancing this one item to "served" leave every item in the
-// order served? Order completion (and the completedCount/avgTimeLabel
-// stats below) is a derived side effect of the *last* item being
-// ticked -- it can happen from either a single advanceItem call or a
-// table-wide serveTable bulk call, so both consult this.
+/**
+ * Returns whether advancing `itemId` to `"served"` leaves every item in `order` served.
+ */
 export function willCompleteOrderOnAdvance(order: KdsOrderRow, itemId: string): boolean {
   return order.items.every((item) => item.id === itemId || item.status === "served")
 }
 
-// Pure so it's directly testable: returns a new `orders` array with one
-// item's status swapped. Used both to apply the optimistic guess the
-// instant a staff member taps an item, and to roll that guess back if the
-// RPC confirming it server-side turns out to have failed.
+/**
+ * Returns a new `orders` array with one item's status replaced.
+ */
 export function withItemStatus(
   orders: KdsOrderRow[],
   orderId: string,
@@ -82,23 +73,10 @@ export function withItemStatus(
   )
 }
 
-// Real bug this closes: KDS_REFETCH_DELAY_MS's debounce is capped at
-// maxDelayMs (4x delayMs = 1200ms) so a continuous burst of taps -- the
-// documented "normal interaction pattern" below -- still forces a refetch
-// on a fixed cadence even while events keep arriving. If a tap's RPC is
-// still in flight when that capped refetch's SELECT fires, the fetch can
-// legitimately return a snapshot from *before* that write committed --
-// Realtime/refetch and the optimistic update are two entirely separate
-// paths with no coordination between them. Blindly overwriting `orders`
-// with that snapshot reverts the still-pending tap's optimistic status
-// back to what the server had a moment ago, indistinguishable from the tap
-// never having registered; the next refetch (triggered once the RPC's own
-// write actually lands) then shows the correct status with no new tap
-// from the user, indistinguishable from the board "jumping on its own."
-// Fix: for any item currently mid-flight (tracked in pendingItemKeys),
-// keep showing its last-known-locally-applied status instead of trusting
-// a fetch that may have raced ahead of that item's own commit -- every
-// other item in the same snapshot is unaffected and applied as fetched.
+/**
+ * Preserves local optimistic statuses for any items currently mid-flight in
+ * `pendingKeys` when a background refetch lands before those writes commit.
+ */
 export function mergeInFlightItems(
   fresh: KdsOrderRow[],
   previous: KdsOrderRow[],
@@ -120,21 +98,9 @@ export function mergeInFlightItems(
   })
 }
 
-// The debounced Realtime refetch (useLatestRefetch, KDS_REFETCH_DELAY_MS
-// below) can take up to ~1.2s to confirm a tap on a busy board -- ticking
-// several items in quick succession is the NORMAL interaction pattern, not
-// an edge case, and each tick restarts that window. Without this, the
-// tapped item shows literally no feedback until the debounce finally
-// fires. So the item's local status is flipped immediately, ahead of the
-// RPC that makes it real; the later coalesced refetch just reconciles
-// (normally confirming what's already shown). If the RPC actually fails,
-// the optimistic guess is rolled back and the caller's error handling
-// still fires (`advance` rejecting propagates out of this function).
-//
-// Kept as a standalone function (state passed as explicit get/set) rather
-// than inlined in `advanceItem` so the rollback path is unit-testable
-// without a React render harness -- this project's Vitest setup has no
-// DOM/render environment.
+/**
+ * Applies an item status optimistically and rolls back to the prior status if `advance` rejects.
+ */
 export async function advanceItemOptimistically(
   orders: KdsOrderRow[],
   orderId: string,
@@ -155,59 +121,8 @@ export async function advanceItemOptimistically(
   }
 }
 
-// Composite key -- orderId + itemId -- rather than the bare item id: item
-// ids are order_items primary keys (globally unique in practice), but the
-// key shouldn't quietly assume that forever, and pairing with orderId
-// costs nothing.
 export function itemPendingKey(orderId: string, itemId: string): string {
   return `${orderId}:${itemId}`
-}
-
-// Round-2 fix for the regression the optimistic update above introduced:
-// without in-flight tracking, a staff member could tap the SAME item
-// through two overlapping transitions (e.g. Mark Ready then, before RPC1
-// resolves, Mark Served -- the optimistic update already flipped the
-// button's label/action) before either RPC settled. If RPC1 later
-// rejected, its unconditional rollback to the pre-RPC1 status could
-// clobber RPC2's already-succeeded result, and a stray re-tap in that
-// window could fire a real UPDATE that regresses the server's actual
-// status. Structural fix: mark the item "pending" BEFORE the optimistic
-// update even runs (so a UI reading the flag can disable the button
-// before any flicker), clear it in `finally` regardless of outcome, and
-// no-op a call that arrives while the item is already pending -- so two
-// RPCs can never be in flight for the same item at once. The UI disabling
-// the button is the primary defense; this is the structural backstop.
-//
-// Kept standalone (state passed as explicit get/set, like
-// advanceItemOptimistically above) so it's unit-testable without a React
-// render harness -- this project's Vitest setup has no DOM/render
-// environment.
-export async function advanceItemGuarded(
-  pendingKeys: Set<string>,
-  setPendingKeys: (updater: (current: Set<string>) => Set<string>) => void,
-  orders: KdsOrderRow[],
-  orderId: string,
-  itemId: string,
-  nextStatus: OrderItemStatus,
-  setOrders: (updater: (current: KdsOrderRow[]) => KdsOrderRow[]) => void,
-  advance: (itemId: string, newStatus: OrderItemStatus) => Promise<void>
-): Promise<void> {
-  const key = itemPendingKey(orderId, itemId)
-  if (pendingKeys.has(key)) return
-  setPendingKeys((current) => {
-    const next = new Set(current)
-    next.add(key)
-    return next
-  })
-  try {
-    await advanceItemOptimistically(orders, orderId, itemId, nextStatus, setOrders, advance)
-  } finally {
-    setPendingKeys((current) => {
-      const next = new Set(current)
-      next.delete(key)
-      return next
-    })
-  }
 }
 
 function formatDuration(ms: number): string {
@@ -225,10 +140,9 @@ type KitchenOrdersContextValue = {
   advanceItem: (orderId: string, itemId: string) => Promise<void>
   regressItem: (orderId: string, itemId: string) => Promise<void>
   isItemPending: (orderId: string, itemId: string) => boolean
-  serveTable: (orderIds: string[]) => Promise<void>
-  confirmPayment: (orderId: string, method: RealPaymentMethod) => Promise<void>
-  confirmTablePayment: (tableId: string, method: RealPaymentMethod) => Promise<void>
+  handOverOrder: (orderId: string) => Promise<void>
   recallLastOrder: () => Promise<void>
+  refetch: () => Promise<void>
   completedCount: number
   avgTimeLabel: string
 }
@@ -236,182 +150,239 @@ type KitchenOrdersContextValue = {
 const KitchenOrdersContext = createContext<KitchenOrdersContextValue | null>(null)
 
 // Placing a table round writes one `orders` row plus one `order_items` row
-// per line, all inside a single transaction -- Realtime delivers those as N+1
-// separate change events milliseconds apart, which used to mean N+1 full
-// board refetches. 300ms is far longer than that burst and short enough that
-// a single staff tick still feels immediate on the board.
+// per line in one transaction -- Realtime delivers N+1 change events ms apart.
 const KDS_REFETCH_DELAY_MS = 300
 
-export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
-  const [supabase] = useState(() => createClient())
+function KdsRealtimeBridge({
+  supabase,
+  onChange,
+  onConnectionChange,
+}: {
+  supabase: SupabaseClient
+  onChange: () => void
+  onConnectionChange: (connected: boolean) => void
+}) {
+  // Unfiltered subscriptions: server-side filters don't reliably combine with
+  // RLS-gated Realtime; coalescing lives in useLatestRefetch.
+  useRealtimeChannel(
+    supabase,
+    "kitchen-orders-changes",
+    [
+      { table: "orders", event: "*", onChange },
+      { table: "order_items", event: "*", onChange },
+    ],
+    { onStatusChange: (status) => onConnectionChange(status === "SUBSCRIBED") }
+  )
+  return null
+}
+
+/**
+ * Provides live KDS ticket state, per-item optimistic progression, hand-over,
+ * and last-order recall for staff operations views.
+ */
+export function KitchenOrdersProvider({
+  children,
+  port,
+}: {
+  children: ReactNode
+  port?: KdsPreparationPort
+}) {
+  const [defaultSupabase] = useState<SupabaseClient | null>(() => (port ? null : createClient()))
+  const [defaultPort] = useState<KdsPreparationPort>(() =>
+    port ?? createSupabaseKdsPreparationAdapter(defaultSupabase!)
+  )
+  const activePort = port ?? defaultPort
+
   const [orders, setOrders] = useState<KdsOrderRow[]>([])
+  const ordersRef = useRef<KdsOrderRow[]>([])
   const [pendingPaymentOrders, setPendingPaymentOrders] = useState<KdsOrderRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false)
   const [completedCount, setCompletedCount] = useState(0)
   const [completedDurations, setCompletedDurations] = useState<number[]>([])
-  // Item ids currently mid-flight through advanceItem -- see
-  // advanceItemGuarded above for why this exists.
-  const [pendingItemKeys, setPendingItemKeys] = useState<Set<string>>(new Set())
+  const [pendingItemKeys, setPendingItemKeys] = useState<Set<string>>(() => new Set())
+  // Synchronized ref so async load() completions always see the live set of
+  // in-flight item keys instead of a stale render-time closure snapshot.
+  const pendingItemKeysRef = useRef<Set<string>>(new Set())
 
-  function isItemPending(orderId: string, itemId: string): boolean {
-    return pendingItemKeys.has(itemPendingKey(orderId, itemId))
-  }
+  const applyOrdersUpdate = useCallback((updater: (current: KdsOrderRow[]) => KdsOrderRow[]) => {
+    const next = updater(ordersRef.current)
+    ordersRef.current = next
+    setOrders(next)
+  }, [])
+
+  const isItemPending = useCallback(
+    (orderId: string, itemId: string): boolean => pendingItemKeys.has(itemPendingKey(orderId, itemId)),
+    [pendingItemKeys]
+  )
 
   async function load({ isStale }: LoadContext) {
-    const [active, pending] = await Promise.all([getKitchenOrders(supabase), getPendingPaymentOrders(supabase)])
-    // A straggling older response must never overwrite a newer one that
-    // already landed -- overlapping fetches don't resolve in call order.
+    const [active, pending] = await Promise.all([
+      activePort.getKitchenOrders(),
+      activePort.getPendingPaymentOrders(),
+    ])
     if (isStale()) return
-    // mergeInFlightItems: don't let a refetch that raced ahead of a still-
-    // in-flight tap revert that tap's optimistic status -- see its own
-    // comment above for the exact race this closes.
-    setOrders((current) => mergeInFlightItems(active, current, pendingItemKeys))
+    applyOrdersUpdate((current) => mergeInFlightItems(active, current, pendingItemKeysRef.current))
     setPendingPaymentOrders(pending)
   }
 
-  const { trigger, run } = useLatestRefetch(load, KDS_REFETCH_DELAY_MS)
+  const refetch = useLatestRefetch(load, KDS_REFETCH_DELAY_MS)
 
   useEffect(() => {
-    run().finally(() => setIsLoading(false))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabase])
+    let active = true
+    refetch.run().finally(() => {
+      if (active) setIsLoading(false)
+    })
+    return () => {
+      active = false
+    }
+  }, [activePort, refetch])
 
-  // Staff sees every order (orders_select_staff has no per-row filtering
-  // concerns), so a plain refetch on any change is both correct and
-  // simple -- the board is small enough this is cheap. order_items is
-  // also watched now: an item tick that doesn't flip the parent order's
-  // own status (e.g. one of four drinks going ready) only ever shows up
-  // as an order_items change, never an orders change. The subscription
-  // stays deliberately unfiltered (this project's Realtime convention --
-  // a server-side `filter` doesn't reliably combine with RLS-gated
-  // Realtime); the coalescing lives in the refetch, not the subscription.
-  useRealtimeChannel(
-    supabase,
-    "kitchen-orders-changes",
-    [
-      { table: "orders", event: "*", onChange: () => trigger() },
-      { table: "order_items", event: "*", onChange: () => trigger() },
-    ],
-    { onStatusChange: (status) => setIsRealtimeConnected(status === "SUBSCRIBED") }
+  useEffect(() => {
+    if (!activePort.subscribe) return
+    return activePort.subscribe({
+      onChange: refetch.trigger,
+      onConnectionChange: setIsRealtimeConnected,
+    })
+  }, [activePort, refetch])
+
+  const recordCompletedOrder = useCallback((createdAt: number) => {
+    setCompletedCount((count) => count + 1)
+    setCompletedDurations((durations) => [...durations, Date.now() - createdAt])
+  }, [])
+
+  const transitionItem = useCallback(
+    async (
+      orderId: string,
+      itemId: string,
+      nextStatus: OrderItemStatus,
+      onCompleted?: () => void
+    ) => {
+      const key = itemPendingKey(orderId, itemId)
+      if (pendingItemKeysRef.current.has(key)) return
+
+      const added = new Set(pendingItemKeysRef.current)
+      added.add(key)
+      pendingItemKeysRef.current = added
+      setPendingItemKeys(added)
+
+      try {
+        await advanceItemOptimistically(
+          ordersRef.current,
+          orderId,
+          itemId,
+          nextStatus,
+          applyOrdersUpdate,
+          (id, status) => activePort.updateItemStatus(id, status)
+        )
+        onCompleted?.()
+      } finally {
+        const removed = new Set(pendingItemKeysRef.current)
+        removed.delete(key)
+        pendingItemKeysRef.current = removed
+        setPendingItemKeys(removed)
+      }
+    },
+    [activePort, applyOrdersUpdate]
   )
 
-  async function advanceItem(orderId: string, itemId: string) {
-    const order = orders.find((o) => o.id === orderId)
-    if (!order) return
-    const item = order.items.find((i) => i.id === itemId)
-    if (!item) return
-    const next = NEXT_ITEM_STATUS[item.status]
-    if (!next) return
-    // Belt-and-suspenders: the UI disables the tick button while
-    // isItemPending is true, so this shouldn't normally be reachable --
-    // but checking here too (ahead of the completedCount side effect)
-    // keeps that side effect from firing on a call that's about to be a
-    // structural no-op inside advanceItemGuarded.
-    if (isItemPending(orderId, itemId)) return
-    if (next === "served" && willCompleteOrderOnAdvance(order, itemId)) {
-      setCompletedCount((count) => count + 1)
-      setCompletedDurations((durations) => [...durations, Date.now() - order.createdAt])
-    }
-    await advanceItemGuarded(pendingItemKeys, setPendingItemKeys, orders, orderId, itemId, next, setOrders, (id, status) =>
-      advanceOrderItemStatus(supabase, id, status)
-    )
-  }
+  const advanceItem = useCallback(
+    async (orderId: string, itemId: string) => {
+      const order = ordersRef.current.find((o) => o.id === orderId)
+      if (!order) return
+      const item = order.items.find((i) => i.id === itemId)
+      if (!item) return
+      const next = NEXT_ITEM_STATUS[item.status]
+      if (!next) return
 
-  async function regressItem(orderId: string, itemId: string) {
-    const order = orders.find((o) => o.id === orderId)
-    if (!order) return
-    const item = order.items.find((i) => i.id === itemId)
-    if (!item) return
-    const prev = PREV_ITEM_STATUS[item.status]
-    if (!prev) return
-    if (isItemPending(orderId, itemId)) return
-    await advanceItemGuarded(pendingItemKeys, setPendingItemKeys, orders, orderId, itemId, prev, setOrders, (id, status) =>
-      advanceOrderItemStatus(supabase, id, status)
-    )
-  }
+      await transitionItem(orderId, itemId, next, () => {
+        if (next === "served" && willCompleteOrderOnAdvance(order, itemId)) {
+          recordCompletedOrder(order.createdAt)
+        }
+      })
+    },
+    [recordCompletedOrder, transitionItem]
+  )
 
-  async function serveTable(orderIds: string[]) {
-    const ordersToServe = orders.filter((o) => orderIds.includes(o.id) && o.status === "ready")
-    // Real bug this closes: hand-over doesn't always mean *complete* --
-    // complete_order_when_served_and_paid only fires when payment is
-    // already settled. A Pay Later order that's still payment_status
-    // "pending" correctly stays on the board (KitchenBoard's own
-    // "confirm-payment" method-picker branch), so it must not tick the
-    // completedCount/avgTimeLabel KPIs -- those numbers are meant to
-    // describe orders that actually left the board, not every tap of
-    // this button.
-    for (const order of ordersToServe.filter((o) => o.paymentStatus === "paid")) {
-      setCompletedCount((count) => count + 1)
-      setCompletedDurations((durations) => [...durations, Date.now() - order.createdAt])
-    }
-    await markOrderItemsServed(
-      supabase,
-      ordersToServe.map((o) => o.id)
-    )
-  }
+  const regressItem = useCallback(
+    async (orderId: string, itemId: string) => {
+      const order = ordersRef.current.find((o) => o.id === orderId)
+      if (!order) return
+      const item = order.items.find((i) => i.id === itemId)
+      if (!item) return
+      const prev = PREV_ITEM_STATUS[item.status]
+      if (!prev) return
 
-  // A pre-serve pending_payment order (Pay Now, cash chosen at checkout)
-  // only ever reaches here as cash -- the method param is meaningless for
-  // that branch and ignored, matching confirmCashPaymentQuery's own
-  // cash-only shape. A served order's deferred payment can genuinely be
-  // any method, which the caller-picked `method` records.
-  async function confirmPayment(orderId: string, method: RealPaymentMethod) {
-    const order = orders.find((o) => o.id === orderId) ?? pendingPaymentOrders.find((o) => o.id === orderId)
-    if (order?.status === "served") {
-      await confirmServedPaymentQuery(supabase, orderId, method)
-    } else {
-      await confirmCashPaymentQuery(supabase, orderId)
-    }
-  }
+      await transitionItem(orderId, itemId, prev)
+    },
+    [transitionItem]
+  )
 
-  async function confirmTablePayment(tableId: string, method: RealPaymentMethod) {
-    await confirmTablePaymentQuery(supabase, tableId, method)
-  }
+  const handOverOrder = useCallback(
+    async (orderId: string) => {
+      const order = ordersRef.current.find((o) => o.id === orderId && o.status === "ready")
+      if (!order) return
+      await activePort.markOrdersServed([order.id])
+      if (order.paymentStatus === "paid") {
+        recordCompletedOrder(order.createdAt)
+      }
+      await refetch.run()
+    },
+    [activePort, recordCompletedOrder, refetch]
+  )
 
-  // No optimistic status update -- which order (if any) is eligible lives
-  // entirely server-side (recall_last_completed_order's own ORDER BY
-  // completed_at desc LIMIT 1 WHERE clause). The existing orders/order_items
-  // Realtime subscription picks up the resulting status change and refetches
-  // like any other server-driven mutation.
-  //
-  // completedCount/completedDurations DO need an explicit undo here, though --
-  // they're pure client-side session counters (see the "served" branch of
-  // advanceItem and serveTable above), so nothing else will ever correct them
-  // once recall reverses a completion. The RPC recalls the single MOST
-  // RECENTLY completed order, which is exactly the last entry pushed onto
-  // completedDurations -- popping it keeps both stats consistent with the
-  // recalled order no longer counting as done, without needing to identify
-  // which entry was "its" duration.
-  async function recallLastOrder() {
-    await recallLastCompletedOrderQuery(supabase)
+  const recallLastOrder = useCallback(async () => {
+    await activePort.recallLastCompletedOrder()
     setCompletedCount((count) => Math.max(0, count - 1))
     setCompletedDurations((durations) => durations.slice(0, -1))
-  }
+    await refetch.run()
+  }, [activePort, refetch])
 
   const avgTimeLabel =
     completedDurations.length === 0
       ? "--:--"
       : formatDuration(completedDurations.reduce((sum, d) => sum + d, 0) / completedDurations.length)
 
+  const value = useMemo<KitchenOrdersContextValue>(
+    () => ({
+      orders,
+      pendingPaymentOrders,
+      isLoading,
+      isRealtimeConnected,
+      advanceItem,
+      regressItem,
+      isItemPending,
+      handOverOrder,
+      recallLastOrder,
+      refetch: refetch.run,
+      completedCount,
+      avgTimeLabel,
+    }),
+    [
+      orders,
+      pendingPaymentOrders,
+      isLoading,
+      isRealtimeConnected,
+      advanceItem,
+      regressItem,
+      isItemPending,
+      handOverOrder,
+      recallLastOrder,
+      refetch.run,
+      completedCount,
+      avgTimeLabel,
+    ]
+  )
+
   return (
-    <KitchenOrdersContext.Provider
-      value={{
-        orders,
-        pendingPaymentOrders,
-        isLoading,
-        isRealtimeConnected,
-        advanceItem,
-        regressItem,
-        isItemPending,
-        serveTable,
-        confirmPayment,
-        confirmTablePayment,
-        recallLastOrder,
-        completedCount,
-        avgTimeLabel,
-      }}
-    >
+    <KitchenOrdersContext.Provider value={value}>
+      {defaultSupabase && (
+        <KdsRealtimeBridge
+          supabase={defaultSupabase}
+          onChange={refetch.trigger}
+          onConnectionChange={setIsRealtimeConnected}
+        />
+      )}
       {children}
     </KitchenOrdersContext.Provider>
   )
@@ -421,4 +392,8 @@ export function useKitchenOrders(): KitchenOrdersContextValue {
   const ctx = useContext(KitchenOrdersContext)
   if (!ctx) throw new Error("useKitchenOrders must be used within a KitchenOrdersProvider")
   return ctx
+}
+
+export function useOptionalKitchenOrdersRefetch(): (() => Promise<void>) | undefined {
+  return useContext(KitchenOrdersContext)?.refetch
 }

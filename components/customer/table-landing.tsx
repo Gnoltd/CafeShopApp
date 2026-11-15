@@ -6,10 +6,12 @@ import { useTranslations } from "next-intl"
 import { AlertCircle } from "lucide-react"
 import { Link } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
-import { useTables, type TableRecord } from "@/hooks/useTables"
 import { TableOrderingSession } from "@/components/customer/table-ordering-session"
-import { saveActiveTable } from "@/lib/active-table-storage"
 import type { MenuCategory, MenuItem } from "@/lib/supabase/menu-data"
+import type { TableSessionPort } from "@/lib/supabase/table-session-data"
+import { createClient } from "@/lib/supabase/client"
+import { createGuestTableLookupAdapter } from "@/lib/supabase/tables-data"
+import { resolveGuestTable, type GuestResolvedTable, type GuestTableLookupPort } from "@/lib/guest-active-table"
 import { AsyncRetryError, AsyncSkeleton } from "@/components/shared/async-state"
 import { useLatestRefetch, type LoadContext } from "@/hooks/useLatestRefetch"
 
@@ -17,36 +19,39 @@ export function TableLanding({
   qrToken,
   categories,
   items,
+  lookupPort: injectedLookupPort,
+  sessionPort,
 }: {
   qrToken: string
   categories: MenuCategory[]
   items: MenuItem[]
+  lookupPort?: GuestTableLookupPort
+  sessionPort?: TableSessionPort
 }) {
   const t = useTranslations("TableLanding")
   const searchParams = useSearchParams()
-  const { setActiveTableByToken } = useTables()
-  const [resolvedTable, setResolvedTable] = useState<TableRecord | null | undefined>(undefined)
+  const [defaultLookupPort] = useState<GuestTableLookupPort>(
+    () => injectedLookupPort ?? createGuestTableLookupAdapter(createClient())
+  )
+  const lookupPort = injectedLookupPort ?? defaultLookupPort
+  const [resolvedTable, setResolvedTable] = useState<GuestResolvedTable | null | undefined>(undefined)
   const [resolveError, setResolveError] = useState(false)
 
   const resolveTable = useCallback(async ({ isStale }: LoadContext) => {
     try {
-      const table = await setActiveTableByToken(qrToken)
+      const resolved = await resolveGuestTable(lookupPort, qrToken)
       if (isStale()) return
-      setResolvedTable(table)
+      setResolvedTable(resolved?.table ?? null)
       setResolveError(false)
     } catch {
       if (!isStale()) setResolveError(true)
     }
-  }, [qrToken, setActiveTableByToken])
+  }, [lookupPort, qrToken])
   const { run: runTableResolve } = useLatestRefetch(resolveTable, 0)
 
   useEffect(() => {
     void runTableResolve()
   }, [qrToken, runTableResolve])
-
-  useEffect(() => {
-    if (resolvedTable) saveActiveTable(qrToken)
-  }, [resolvedTable, qrToken])
 
   function handleRetryResolve() {
     setResolvedTable(undefined)
@@ -83,11 +88,11 @@ export function TableLanding({
 
   return (
     <TableOrderingSession
-      table={resolvedTable}
       qrToken={qrToken}
       categories={categories}
       items={items}
       initialTab={searchParams.get("view") === "order" ? "order" : "menu"}
+      port={sessionPort}
     />
   )
 }

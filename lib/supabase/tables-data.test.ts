@@ -7,6 +7,7 @@ import {
   regenerateQrToken,
   incrementScanCount,
   getTableByToken,
+  createGuestTableLookupAdapter,
   getActiveSessionTableIds,
 } from "./tables-data"
 
@@ -178,5 +179,57 @@ describe("getActiveSessionTableIds", () => {
     expect(selectSpy).toHaveBeenCalledWith("table_id")
     expect(eqSpy).toHaveBeenCalledWith("status", "active")
     expect(result).toEqual(["tbl-1", "tbl-2"])
+  })
+})
+
+describe("createGuestTableLookupAdapter", () => {
+  it("delegates findByQrToken to get_table_by_qr_token and returns mapped TableRecord", async () => {
+    const row = {
+      id: "tbl-3",
+      table_number: "3",
+      qr_code_token: "qr-3",
+      location_vi: "Trong nhà",
+      location_en: "Indoor",
+      status: "available",
+      cleaning_notified_at: null,
+      scan_count: 1,
+    }
+    const rpcSpy = vi.fn(() => Promise.resolve({ data: row, error: null }))
+    const supabase = { rpc: rpcSpy } as unknown as SupabaseClient
+
+    const adapter = createGuestTableLookupAdapter(supabase)
+    const table = await adapter.findByQrToken("qr-3")
+
+    expect(rpcSpy).toHaveBeenCalledWith("get_table_by_qr_token", { p_token: "qr-3" })
+    expect(table).toEqual({
+      id: "tbl-3",
+      number: "3",
+      qrToken: "qr-3",
+      locationVi: "Trong nhà",
+      locationEn: "Indoor",
+      status: "available",
+      cleaningNotifiedAt: null,
+      scanCount: 1,
+    })
+  })
+
+  it("delegates recordScan to increment_table_scan_count", async () => {
+    const row = {
+      id: "tbl-3",
+      table_number: "3",
+      qr_code_token: "qr-3",
+      location_vi: "",
+      location_en: "",
+      status: "available",
+      cleaning_notified_at: null,
+      scan_count: 2,
+    }
+    const rpcSpy = vi.fn(() => Promise.resolve({ data: row, error: null }))
+    const supabase = { rpc: rpcSpy } as unknown as SupabaseClient
+
+    const adapter = createGuestTableLookupAdapter(supabase)
+    await adapter.recordScan("tbl-3")
+
+    expect(rpcSpy).toHaveBeenCalledWith("increment_table_scan_count", { p_table_id: "tbl-3" })
   })
 })

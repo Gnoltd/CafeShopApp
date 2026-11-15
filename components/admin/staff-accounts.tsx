@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client"
 import { getStaffMembers, updateStaffMember, createStaffAccount, type StaffMember, type StaffRole } from "@/lib/supabase/staff-data"
 import { StaffMemberForm } from "@/components/admin/staff-member-form"
 import { useLatestRefetch, type LoadContext } from "@/hooks/useLatestRefetch"
+import { useRealtimeChannel } from "@/hooks/useRealtimeChannel"
 
 const ROLE_STYLES: Record<StaffRole, string> = {
   admin: "bg-primary/10 text-primary",
@@ -32,17 +33,14 @@ export function StaffAccounts() {
   const [createdPassword, setCreatedPassword] = useState<string | null>(null)
 
   const loadStaff = useCallback(async ({ isStale }: LoadContext) => {
-    try {
-      const rows = await getStaffMembers(supabase)
-      if (isStale()) return
-      setStaff(rows)
-      setError(null)
-    } catch (loadError) {
-      if (!isStale()) setError(t("loadError"))
-      throw loadError
-    }
-  }, [supabase, t])
-  const { run: refetch } = useLatestRefetch(loadStaff, 0)
+    const rows = await getStaffMembers(supabase)
+    if (isStale()) return
+    setStaff(rows)
+    setError(null)
+  }, [supabase])
+  const { run: refetch } = useLatestRefetch(loadStaff, 0, {
+    onError: () => setError(t("loadError")),
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -57,22 +55,20 @@ export function StaffAccounts() {
     }
     void loadInitialStaff()
 
-    const channel = supabase
-      .channel("staff-accounts-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
-        if (!cancelled) void refetch()
-      })
-      .subscribe((status) => {
-        if (status !== "SUBSCRIBED" && status !== "CLOSED") {
-          console.warn(`Staff accounts realtime subscription status: ${status}`)
-        }
-      })
-
     return () => {
       cancelled = true
-      supabase.removeChannel(channel)
     }
   }, [refetch, supabase])
+
+  useRealtimeChannel(supabase, "staff-accounts-changes", [
+    {
+      table: "profiles",
+      event: "*",
+      onChange: () => {
+        void refetch()
+      },
+    },
+  ])
 
   const totalPages = Math.max(1, Math.ceil(staff.length / PAGE_SIZE))
   const visiblePage = Math.min(currentPage, totalPages)

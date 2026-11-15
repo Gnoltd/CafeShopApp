@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
-import { createSequenceGuard, createLatestRefetchRunner, type LoadContext } from "./useLatestRefetch"
+import {
+  createAsyncLoadState,
+  createSequenceGuard,
+  createLatestRefetchRunner,
+  nextAsyncLoadFlags,
+  type LoadContext,
+} from "./useLatestRefetch"
 
 // A deferred promise, so a test can decide exactly when (and in what order)
 // each simulated network round trip resolves.
@@ -299,5 +305,147 @@ describe("createLatestRefetchRunner", () => {
     await flush()
     expect(load).toHaveBeenCalledTimes(2)
     expect(onError).toHaveBeenCalledTimes(1)
+  })
+
+  it("suppresses onError when the in-flight run is cancelled or invalidated before failing", async () => {
+    const cancelGate = deferred<void>()
+    const onError = vi.fn()
+    const runner = createLatestRefetchRunner(
+      async () => {
+        await cancelGate.promise
+      },
+      300,
+      { onError }
+    )
+
+    void runner.run()
+    await flush()
+    runner.cancel()
+    cancelGate.reject(new Error("aborted"))
+    await flush()
+    expect(onError).not.toHaveBeenCalled()
+
+    const invalidateGate = deferred<void>()
+    runner.setLoad(async () => {
+      await invalidateGate.promise
+    })
+    void runner.run()
+    await flush()
+    runner.invalidate()
+    invalidateGate.reject(new Error("superseded token"))
+    await flush()
+    expect(onError).not.toHaveBeenCalled()
+  })
+
+  it("uses the most recently installed onError handler (setOnError)", async () => {
+    const first = vi.fn()
+    const second = vi.fn()
+    const runner = createLatestRefetchRunner(
+      async () => {
+        throw new Error("boom")
+      },
+      300,
+      { onError: first }
+    )
+
+    runner.setOnError(second)
+    await runner.run()
+
+    expect(first).not.toHaveBeenCalled()
+    expect(second).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("nextAsyncLoadFlags", () => {
+  it("a first-ever load succeeding clears both flags", () => {
+    expect(nextAsyncLoadFlags(false, "success")).toEqual({ hasBlockingError: false, hasStaleData: false })
+  })
+
+  it("a first-ever load failing is a blocking error, not stale (nothing good to show yet)", () => {
+    expect(nextAsyncLoadFlags(false, "failure")).toEqual({ hasBlockingError: true, hasStaleData: false })
+  })
+
+  it("a refetch failing after a prior success retains-and-flags-stale, never blocks", () => {
+    expect(nextAsyncLoadFlags(true, "failure")).toEqual({ hasBlockingError: false, hasStaleData: true })
+  })
+
+  it("a refetch succeeding after a prior success stays clear", () => {
+    expect(nextAsyncLoadFlags(true, "success")).toEqual({ hasBlockingError: false, hasStaleData: false })
+  })
+
+  it("recovery: stale -> success clears staleness (the caller re-applies hasLoadedOnce=true before this call)", () => {
+    // Simulates the sequence a hook actually drives: fail once while loaded
+    // (stale), then succeed again.
+    const afterFailure = nextAsyncLoadFlags(true, "failure")
+    expect(afterFailure.hasStaleData).toBe(true)
+    const afterRecovery = nextAsyncLoadFlags(true, "success")
+    expect(afterRecovery).toEqual({ hasBlockingError: false, hasStaleData: false })
+  })
+})
+
+describe("createAsyncLoadState", () => {
+  it("tracks blocking errors before first success and stale recovery afterwards", () => {
+    const state = createAsyncLoadState()
+    expect(state.getSnapshot()).toEqual({
+      hasLoadedOnce: false,
+      hasBlockingError: false,
+      hasStaleData: false,
+      error: null,
+    })
+
+    const err1 = new Error("initial failure")
+    expect(state.markFailure(err1)).toEqual({
+      hasLoadedOnce: false,
+      hasBlockingError: true,
+      hasStaleData: false,
+      error: err1,
+    })
+
+    const loaded = state.markSuccess()
+    expect(loaded).toEqual({
+      hasLoadedOnce: true,
+      hasBlockingError: false,
+      hasStaleData: false,
+      error: null,
+    })
+    // Steady-state repeated successes preserve object reference identity.
+    expect(state.markSuccess()).toBe(loaded)
+
+    const err2 = new Error("background failure")
+    expect(state.markFailure(err2)).toEqual({
+      hasLoadedOnce: true,
+      hasBlockingError: false,
+      hasStaleData: true,
+      error: err2,
+    })
+
+    expect(state.markSuccess()).toEqual({
+      hasLoadedOnce: true,
+      hasBlockingError: false,
+      hasStaleData: false,
+      error: null,
+    })
+  })
+
+  it("clearErrors preserves hasLoadedOnce while reset clears everything", () => {
+    const state = createAsyncLoadState()
+    state.markSuccess()
+    state.markFailure(new Error("stale"))
+
+    const cleared = state.clearErrors()
+    expect(cleared).toEqual({
+      hasLoadedOnce: true,
+      hasBlockingError: false,
+      hasStaleData: false,
+      error: null,
+    })
+    expect(state.clearErrors()).toBe(cleared)
+
+    expect(state.reset()).toEqual({
+      hasLoadedOnce: false,
+      hasBlockingError: false,
+      hasStaleData: false,
+      error: null,
+    })
   })
 })

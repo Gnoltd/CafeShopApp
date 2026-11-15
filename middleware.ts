@@ -2,8 +2,8 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 import createIntlMiddleware from "next-intl/middleware"
 import { routing } from "./i18n/routing"
+import { resolveRedirect } from "./lib/roles"
 import {
-  resolveRedirect,
   splitLocaleFromPathname,
   getSupabaseAuthCookieName,
   hasSupabaseAuthCookie,
@@ -181,6 +181,6 @@ export async function middleware(request: NextRequest) {
 // suite, which asserts the literal below against both cases.
 export const config = {
   matcher: [
-    "/((?!api|_next|_vercel|\\.well-known/|models/|[^/]+\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest|glb)$).*)",
+    "/((?!api|_next|_vercel|\\.well-known/|models/|images/menu/|[^/]+\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest|glb)$).*)",
   ],
 }

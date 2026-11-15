@@ -11,15 +11,14 @@ import { cn } from "@/lib/utils"
 import { formatVND } from "@/lib/format"
 import { createClient } from "@/lib/supabase/client"
 import {
-  deleteMenuItem,
-  updateMenuItem,
+  createSupabaseMenuAdapter,
   type MenuCategory,
   type MenuIcon,
   type MenuItem,
   type MenuItemInput,
   type MenuItemSizeInput,
+  type MenuPort,
 } from "@/lib/supabase/menu-data"
-import { saveMenuItem } from "@/lib/supabase/save-menu-item"
 import { MenuItemForm } from "@/components/admin/menu-item-form"
 import { MenuCategoriesCard } from "@/components/admin/menu-categories-card"
 
@@ -39,13 +38,16 @@ type FormMode = { type: "add" } | { type: "edit"; item: MenuItem } | null
 export function MenuManagement({
   categories,
   initialItems,
+  port: injectedPort,
 }: {
   categories: MenuCategory[]
   initialItems: MenuItem[]
+  port?: MenuPort
 }) {
   const locale = useLocale()
   const t = useTranslations("AdminMenu")
-  const supabase = createClient()
+  const [defaultPort] = useState<MenuPort>(() => injectedPort ?? createSupabaseMenuAdapter(createClient()))
+  const port = injectedPort ?? defaultPort
 
   const [items, setItems] = useState(initialItems)
   const [categoryList, setCategoryList] = useState(categories)
@@ -92,7 +94,7 @@ export function MenuManagement({
   async function toggleAvailability(item: MenuItem) {
     setError(null)
     try {
-      const updated = await updateMenuItem(supabase, item.id, {
+      const updated = await port.updateMenuItem(item.id, {
         categoryIds: item.categoryIds,
         nameVi: item.nameVi,
         nameEn: item.nameEn,
@@ -114,7 +116,7 @@ export function MenuManagement({
   async function removeItem(id: string) {
     setError(null)
     try {
-      await deleteMenuItem(supabase, id)
+      await port.deleteMenuItem(id)
       setItems((prev) => prev.filter((item) => item.id !== id))
     } catch (err) {
       setError(t("deleteError"))
@@ -133,7 +135,7 @@ export function MenuManagement({
   ) {
     setError(null)
     try {
-      const refreshed = await saveMenuItem(supabase, { editingId, item: input, extraGroupIds, sizes })
+      const refreshed = await port.saveMenuItem({ editingId, item: input, extraGroupIds, sizes })
       setItems((prev) =>
         editingId ? prev.map((item) => (item.id === editingId ? refreshed : item)) : [refreshed, ...prev]
       )
@@ -188,6 +190,7 @@ export function MenuManagement({
           onSave={(input, extraGroupIds, sizes) =>
             saveItem(input, extraGroupIds, sizes, formMode?.type === "edit" ? formMode.item.id : null)
           }
+          port={port}
         />
       )}
 
@@ -195,6 +198,7 @@ export function MenuManagement({
         categories={categoryList}
         onCategoriesChange={setCategoryList}
         itemCountByCategory={itemCountByCategory}
+        port={port}
       />
 
       <div className="relative">

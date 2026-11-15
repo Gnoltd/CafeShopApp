@@ -2,7 +2,12 @@ import { describe, it, expect } from "vitest"
 import { readFileSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { resolveRedirect, getSupabaseAuthCookieName, hasSupabaseAuthCookie } from "./middleware-rules"
+import {
+  resolveRedirect,
+  splitLocaleFromPathname,
+  getSupabaseAuthCookieName,
+  hasSupabaseAuthCookie,
+} from "./middleware-rules"
 
 describe("resolveRedirect — no more auth-required exact paths", () => {
   it("never gates any path for an anonymous guest via AUTH_REQUIRED_EXACT_PATHS", () => {
@@ -30,6 +35,28 @@ describe("resolveRedirect — existing /staff and /admin behavior unaffected", (
 
   it("redirects non-manager customers away from admin settings", () => {
     expect(resolveRedirect("/admin/settings", "customer")).toBe("/menu")
+  })
+
+  it("redirects manager away from admin-only staff and settings routes", () => {
+    expect(resolveRedirect("/admin/staff", "manager")).toBe("/staff/orders")
+    expect(resolveRedirect("/admin/settings", "manager")).toBe("/staff/orders")
+  })
+
+  it("allows admin onto admin-only staff and settings routes", () => {
+    expect(resolveRedirect("/admin/staff", "admin")).toBeNull()
+    expect(resolveRedirect("/admin/settings", "admin")).toBeNull()
+  })
+
+  it("redirects staff away from admin menu", () => {
+    expect(resolveRedirect("/admin/menu", "staff")).toBe("/staff/orders")
+  })
+})
+
+describe("splitLocaleFromPathname", () => {
+  it("extracts locale and normalizes trailing slashes", () => {
+    expect(splitLocaleFromPathname("/vi/staff/orders")).toEqual({ locale: "vi", rest: "/staff/orders" })
+    expect(splitLocaleFromPathname("/en/admin/staff/")).toEqual({ locale: "en", rest: "/admin/staff" })
+    expect(splitLocaleFromPathname("/vi")).toEqual({ locale: "vi", rest: "/" })
   })
 })
 

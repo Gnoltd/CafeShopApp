@@ -1,36 +1,35 @@
-import { act, fireEvent, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { TablesOperationsView } from "./tables-operations-view"
+import { KitchenOrdersProvider, type KdsOrder } from "@/hooks/useKitchenOrders"
+import { TableSettlementProvider } from "@/hooks/useTableSettlement"
+import type { KdsPreparationPort, TableSettlementPort } from "@/lib/supabase/order-kds"
 
 const mocks = vi.hoisted(() => ({
-  serveTable: vi.fn(),
-  confirmTablePayment: vi.fn(),
   getQrTokens: vi.fn(() => Promise.resolve({})),
-  // Stable references (not re-created per useTables() call) -- the real
-  // component's QR-generation effect depends on [tables, tokensById], and
-  // a mock that hands back a fresh array/Set literal on every call would
-  // make that effect think its deps changed on every render, looping
-  // forever (setQrCodes -> re-render -> "new" tables -> effect -> ...).
-  tables: [{
-    id: "table-1", number: "T1", locationVi: "", locationEn: "Patio", status: "occupied",
-    scanCount: 0, cleaningNotifiedAt: null,
-  }],
-  // Binary open-session signal (rebuild Decision 12) replaces the old
-  // 3-state `setStatus` cycle button this component used to render.
+  tables: [
+    {
+      id: "table-1",
+      number: "T1",
+      locationVi: "",
+      locationEn: "Patio",
+      status: "occupied" as const,
+      scanCount: 0,
+      cleaningNotifiedAt: null,
+    },
+  ],
   openSessionTableIds: new Set(["table-1"]),
 }))
 
 vi.mock("next-intl", () => ({
   useLocale: () => "en",
-  useTranslations: (namespace: string) => (key: string) => `${namespace}.${key}`,
+  useTranslations: (namespace: string) => (key: string, values?: Record<string, unknown>) =>
+    values ? `${namespace}.${key}(${JSON.stringify(values)})` : `${namespace}.${key}`,
 }))
 vi.mock("@/hooks/useTables", () => ({
   useTables: () => ({
     tables: mocks.tables,
     openSessionTableIds: mocks.openSessionTableIds,
-    // CRUD (moved in from components/admin/tables-management.tsx, Task 16)
-    // -- not exercised by the tests below, just needs to exist so the
-    // component's mount-time getQrTokens().then(...) doesn't crash.
     addTable: vi.fn(),
     renameTable: vi.fn(),
     updateLocation: vi.fn(),
@@ -38,60 +37,196 @@ vi.mock("@/hooks/useTables", () => ({
     getQrTokens: mocks.getQrTokens,
   }),
 }))
-vi.mock("@/hooks/useKitchenOrders", () => ({
-  useKitchenOrders: () => ({
-    orders: [
-      { id: "order-1", tableId: "table-1", status: "ready", paymentStatus: "paid", paymentMethod: "cash", total: 30_000 },
-      { id: "order-2", tableId: "table-1", status: "served", paymentStatus: "pending", paymentMethod: null, total: 20_000 },
+
+function createInMemoryStaffOrdersStore(initialOrders: KdsOrder[]) {
+  const orders = structuredClone(initialOrders)
+
+  const kdsPort: KdsPreparationPort = {
+    getKitchenOrders: vi.fn(async () =>
+      structuredClone(orders.filter((o) => !(o.status === "served" && o.paymentStatus === "paid")))
+    ),
+    getPendingPaymentOrders: vi.fn(async () => []),
+    updateItemStatus: vi.fn(async (itemId, status) => {
+      for (const order of orders) {
+        for (const item of order.items) {
+          if (item.id === itemId) item.status = status
+        }
+      }
+    }),
+    markOrdersServed: vi.fn(async (orderIds) => {
+      for (const order of orders) {
+        if (orderIds.includes(order.id)) {
+          order.status = "served"
+          for (const item of order.items) item.status = "served"
+        }
+      }
+    }),
+    recallLastCompletedOrder: vi.fn(async () => undefined),
+  }
+
+  const settlementPort: TableSettlementPort = {
+    serveOrders: vi.fn(async (orderIds) => {
+      await kdsPort.markOrdersServed(orderIds)
+    }),
+    settleTable: vi.fn(async (tableId, method = "cash") => {
+      let count = 0
+      for (const order of orders) {
+        if (order.tableId === tableId && order.paymentStatus === "pending") {
+          order.paymentStatus = "paid"
+          order.paymentMethod = method
+          count += 1
+        }
+      }
+      return count
+    }),
+    settleOrder: vi.fn(async (order, method = "cash") => {
+      const target = orders.find((o) => o.id === order.id)
+      if (target) {
+        target.paymentStatus = "paid"
+        target.paymentMethod = method
+      }
+    }),
+  }
+
+  return {
+    kdsPort,
+    settlementPort,
+    getOrders: () => orders,
+  }
+}
+
+const initialOrders: KdsOrder[] = [
+  {
+    id: "order-1",
+    orderType: "dine-in",
+    tableId: "table-1",
+    status: "ready",
+    paymentStatus: "paid",
+    paymentMethod: "cash",
+    createdAt: 1,
+    total: 30_000,
+    items: [
+      {
+        id: "item-1",
+        nameVi: "Cà phê",
+        nameEn: "Coffee",
+        quantity: 1,
+        note: null,
+        status: "ready",
+        sizeName: null,
+        modifierNames: [],
+      },
     ],
-    serveTable: mocks.serveTable,
-    confirmTablePayment: mocks.confirmTablePayment,
-  }),
-}))
+  },
+  {
+    id: "order-2",
+    orderType: "dine-in",
+    tableId: "table-1",
+    status: "served",
+    paymentStatus: "pending",
+    paymentMethod: null,
+    createdAt: 2,
+    total: 20_000,
+    items: [
+      {
+        id: "item-2",
+        nameVi: "Trà đào",
+        nameEn: "Peach Tea",
+        quantity: 1,
+        note: null,
+        status: "served",
+        sizeName: null,
+        modifierNames: [],
+      },
+    ],
+  },
+]
 
-describe("TablesOperationsView mutation guard", () => {
+describe("TablesOperationsView (Seam 2: real KitchenOrdersProvider & TableSettlementProvider + ports)", () => {
   beforeEach(() => {
-    mocks.serveTable.mockReset()
-    mocks.confirmTablePayment.mockReset()
+    mocks.getQrTokens.mockClear()
   })
 
-  it("allows only one Mark Served request while the table mutation is pending", async () => {
-    let resolveRequest!: () => void
-    mocks.serveTable.mockImplementation(() => new Promise<void>((resolve) => { resolveRequest = resolve }))
-    render(<TablesOperationsView />)
+  it("marks ready KDS Tickets on a Table as served, blocks duplicate taps while pending, and removes the Mark Served action once served", async () => {
+    const store = createInMemoryStaffOrdersStore(initialOrders)
+    let resolveServe!: () => void
+    vi.mocked(store.settlementPort.serveOrders).mockImplementationOnce(
+      (orderIds) =>
+        new Promise<void>((resolve) => {
+          resolveServe = async () => {
+            await store.kdsPort.markOrdersServed(orderIds)
+            resolve()
+          }
+        })
+    )
 
-    const button = screen.getByRole("button", { name: "KitchenDisplay.markServed" })
-    fireEvent.click(button)
-    fireEvent.click(button)
+    render(
+      <KitchenOrdersProvider port={store.kdsPort}>
+        <TableSettlementProvider port={store.settlementPort}>
+          <TablesOperationsView />
+        </TableSettlementProvider>
+      </KitchenOrdersProvider>
+    )
 
-    expect(mocks.serveTable).toHaveBeenCalledTimes(1)
-    expect(button).toBeDisabled()
+    const serveButton = await screen.findByRole("button", { name: "KitchenDisplay.markServed" })
+    fireEvent.click(serveButton)
+    fireEvent.click(serveButton)
 
-    await act(async () => resolveRequest())
-    expect(button).toBeEnabled()
+    expect(store.settlementPort.serveOrders).toHaveBeenCalledTimes(1)
+    expect(store.settlementPort.serveOrders).toHaveBeenCalledWith(["order-1"])
+    expect(serveButton).toBeDisabled()
+
+    await act(async () => {
+      resolveServe()
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: "KitchenDisplay.markServed" })).not.toBeInTheDocument()
+    })
   })
-})
 
-describe("TablesOperationsView cash confirmation", () => {
-  beforeEach(() => {
-    mocks.serveTable.mockReset()
-    mocks.confirmTablePayment.mockReset()
-  })
+  it("completes Table Settlement in cash, blocks duplicate taps while pending, and clears the Table's awaiting-payment state", async () => {
+    const store = createInMemoryStaffOrdersStore(initialOrders)
+    let resolveSettle!: () => void
+    vi.mocked(store.settlementPort.settleTable).mockImplementationOnce(
+      (tableId, method = "cash") =>
+        new Promise<number>((resolve) => {
+          resolveSettle = () => {
+            let count = 0
+            for (const order of store.getOrders()) {
+              if (order.tableId === tableId && order.paymentStatus === "pending") {
+                order.paymentStatus = "paid"
+                order.paymentMethod = method
+                count += 1
+              }
+            }
+            resolve(count)
+          }
+        })
+    )
 
-  it("confirms cash for the table and disables the button while pending", async () => {
-    let resolveRequest!: () => void
-    mocks.confirmTablePayment.mockImplementation(() => new Promise<void>((resolve) => { resolveRequest = resolve }))
-    render(<TablesOperationsView />)
+    render(
+      <KitchenOrdersProvider port={store.kdsPort}>
+        <TableSettlementProvider port={store.settlementPort}>
+          <TablesOperationsView />
+        </TableSettlementProvider>
+      </KitchenOrdersProvider>
+    )
 
-    const confirmButton = screen.getByRole("button", { name: "KitchenDisplay.confirmCashReceived" })
+    const confirmButton = await screen.findByRole("button", { name: "KitchenDisplay.confirmCashReceived" })
     fireEvent.click(confirmButton)
     fireEvent.click(confirmButton)
 
-    expect(mocks.confirmTablePayment).toHaveBeenCalledTimes(1)
-    expect(mocks.confirmTablePayment).toHaveBeenCalledWith("table-1", "cash")
+    expect(store.settlementPort.settleTable).toHaveBeenCalledTimes(1)
+    expect(store.settlementPort.settleTable).toHaveBeenCalledWith("table-1", "cash")
     expect(confirmButton).toBeDisabled()
 
-    await act(async () => resolveRequest())
-    expect(confirmButton).toBeEnabled()
+    await act(async () => {
+      resolveSettle()
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: "KitchenDisplay.confirmCashReceived" })).not.toBeInTheDocument()
+    })
   })
 })

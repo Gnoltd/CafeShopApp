@@ -1,15 +1,13 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentRole } from "@/lib/get-current-role"
-import { ROLE_HOME } from "@/lib/roles"
-
-const ALLOWED_ROLES = ["staff", "manager", "admin"]
+import { resolveRedirect } from "@/lib/roles"
 
 // Defense-in-depth (2026-07-29 review, L-4): middleware.ts is the real
 // gate for /staff/*, but if it were ever bypassed this would otherwise
 // still render the full staff UI shell (data itself stays RLS-gated
-// regardless). Mirrors middleware's own resolveRedirect target exactly
-// -- a wrong-role login goes to its own ROLE_HOME, a logged-out visitor
+// regardless). Consults the same resolveRedirect policy as middleware --
+// a wrong-role login goes to its own ROLE_HOME, a logged-out visitor
 // to /login.
 export default async function StaffLayout({
   children,
@@ -25,20 +23,19 @@ export default async function StaffLayout({
   // middleware run here?" is exactly the question this gate must not have
   // to answer. Resolving the role independently, server-side, is what
   // makes the defense-in-depth claim above true rather than circular; the
-  // extra Auth + profiles round trip is the accepted cost on the two
-  // authorization gates specifically (the 5 display/data-only readers
+  // extra Auth + profiles round trip is the accepted cost on the
+  // authorization gates specifically (the display/data-only readers
   // keep the header optimization).
   const supabase = await createClient()
   const role = await getCurrentRole(supabase)
 
-  if (!role || !ALLOWED_ROLES.includes(role)) {
-    redirect(`/${locale}${role ? (ROLE_HOME[role] ?? "/menu") : "/login"}`)
+  const redirectPath = resolveRedirect("/staff", role)
+  if (redirectPath) {
+    redirect(`/${locale}${redirectPath}`)
   }
 
-  // Shift/KitchenOrders data is only needed on /staff/orders/* (live board,
-  // history, shift-history all share the top bar's shift/realtime status)
-  // and /staff/pos (cash-confirm banner + shift gate) -- each mounts its
-  // own provider so /staff/rewards doesn't pay for either fetch/Realtime
-  // subscription. See daily.md Task 4.
+  // KitchenOrders and Tables providers mount in the `(operations)` route-group
+  // layout (`app/[locale]/staff/(operations)/layout.tsx`) so /staff/orders and
+  // /staff/tables share one live subscription and state tree.
   return <div className="h-dvh overflow-hidden">{children}</div>
 }

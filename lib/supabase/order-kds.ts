@@ -158,3 +158,64 @@ export async function recallLastCompletedOrder(supabase: SupabaseClient): Promis
   const { error } = await supabase.rpc("recall_last_completed_order")
   if (error) throw error
 }
+
+/**
+ * Port for Kitchen Display item preparation and ticket hand-over operations.
+ */
+export interface KdsPreparationPort {
+  getKitchenOrders: () => Promise<KdsOrderRow[]>
+  getPendingPaymentOrders: () => Promise<KdsOrderRow[]>
+  updateItemStatus: (itemId: string, newStatus: OrderItemStatus) => Promise<void>
+  markOrdersServed: (orderIds: string[]) => Promise<void>
+  recallLastCompletedOrder: () => Promise<void>
+  subscribe?: (handlers: {
+    onChange: () => void
+    onConnectionChange?: (connected: boolean) => void
+  }) => () => void
+}
+
+/**
+ * Supabase adapter implementing KDS preparation operations.
+ */
+export function createSupabaseKdsPreparationAdapter(supabase: SupabaseClient): KdsPreparationPort {
+  return {
+    getKitchenOrders: () => getKitchenOrders(supabase),
+    getPendingPaymentOrders: () => getPendingPaymentOrders(supabase),
+    updateItemStatus: (itemId, newStatus) => advanceOrderItemStatus(supabase, itemId, newStatus),
+    markOrdersServed: (orderIds) => markOrderItemsServed(supabase, orderIds),
+    recallLastCompletedOrder: () => recallLastCompletedOrder(supabase),
+  }
+}
+
+export type SettleableOrder = Pick<KdsOrderRow, "id" | "orderType" | "status" | "tableId">
+
+/**
+ * Port for staff table serving and payment settlement operations.
+ * Hides table-level RPCs and legacy pickup / pending_payment branching from UI callers.
+ */
+export interface TableSettlementPort {
+  serveOrders: (orderIds: string[]) => Promise<void>
+  settleTable: (tableId: string, method?: RealPaymentMethod) => Promise<number>
+  settleOrder: (order: SettleableOrder, method?: RealPaymentMethod) => Promise<void>
+}
+
+/**
+ * Supabase adapter implementing table serving and cash/legacy order settlement.
+ */
+export function createSupabaseTableSettlementAdapter(supabase: SupabaseClient): TableSettlementPort {
+  return {
+    serveOrders: (orderIds) => markOrderItemsServed(supabase, orderIds),
+    settleTable: (tableId, method = "cash") => confirmTablePayment(supabase, tableId, method),
+    async settleOrder(order, method = "cash") {
+      if (order.orderType === "dine-in" && order.status === "served" && order.tableId) {
+        await confirmTablePayment(supabase, order.tableId, method)
+        return
+      }
+      if (order.status === "served") {
+        await confirmServedPayment(supabase, order.id, method)
+        return
+      }
+      await confirmCashPayment(supabase, order.id)
+    },
+  }
+}

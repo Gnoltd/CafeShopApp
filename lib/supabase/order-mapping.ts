@@ -4,32 +4,6 @@ export type OrderType = "pickup" | "dine-in"
 export type RealPaymentMethod = "stripe" | "cash" | "vnpay"
 export type RealOrderItemStatus = "preparing" | "ready" | "served"
 
-export type OrderForTrackingItem = {
-  menuItemId: string; nameVi: string; nameEn: string; quantity: number; unitPrice: number; note?: string
-  sizeId?: string | null; modifierIds?: string[]
-  /** Human-readable size/modifier names, resolved server-side at query time
-   * (not derivable from sizeId/modifierIds alone without a second menu
-   * fetch) -- sizeName is null for an item with no size chosen; modifierNames
-   * is always present (empty array) once size_id is selected at all. */
-  sizeName?: string | null
-  modifierNames?: { nameVi: string; nameEn: string }[]
-}
-
-export type OrderForTracking = {
-  id: string
-  createdAt: number
-  orderType: OrderType
-  table?: string
-  items: OrderForTrackingItem[]
-  subtotal: number
-  discount: number
-  taxAmount: number
-  total: number
-  status: RealOrderStatus
-  paymentStatus: string
-  paymentMethod: RealPaymentMethod | null
-}
-
 export function toRealOrderType(orderType: OrderType): RealOrderType {
   return orderType === "dine-in" ? "dine_in" : "pickup"
 }
@@ -71,38 +45,3 @@ export const ORDER_SELECT = `
   tables ( table_number ),
   order_items ( id, menu_item_id, size_id, quantity, unit_price, note, status, menu_item_sizes ( name ), order_item_modifiers ( modifier_id, modifiers ( name_vi, name_en ) ), menu_items ( name_vi, name_en ) )
 `
-
-export function mapOrderRow(row: OrderRow): OrderForTracking {
-  return {
-    id: row.id,
-    createdAt: new Date(row.created_at).getTime(),
-    orderType: fromRealOrderType(row.order_type),
-    table: row.tables?.table_number,
-    items: row.order_items.map((oi) => ({
-      menuItemId: oi.menu_item_id,
-      nameVi: oi.menu_items.name_vi,
-      nameEn: oi.menu_items.name_en,
-      quantity: oi.quantity,
-      unitPrice: oi.unit_price,
-      note: oi.note ?? undefined,
-      ...(oi.size_id !== undefined
-        ? {
-            sizeId: oi.size_id,
-            modifierIds: (oi.order_item_modifiers ?? []).map((modifier) => modifier.modifier_id),
-            sizeName: oi.menu_item_sizes?.name ?? null,
-            modifierNames: (oi.order_item_modifiers ?? []).map((modifier) => ({
-              nameVi: modifier.modifiers.name_vi,
-              nameEn: modifier.modifiers.name_en,
-            })),
-          }
-        : {}),
-    })),
-    subtotal: row.subtotal,
-    discount: row.discount_amount,
-    taxAmount: row.tax_amount,
-    total: row.total,
-    status: row.status,
-    paymentStatus: row.payment_status,
-    paymentMethod: row.payment_method,
-  }
-}

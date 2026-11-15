@@ -8,13 +8,24 @@ import { KitchenStatsFooter } from "@/components/staff/kitchen-stats-footer"
 import { formatKitchenClock } from "@/components/staff/kitchen-clock"
 import { KitchenBoard } from "@/components/staff/kitchen-board"
 import { useKitchenOrders } from "@/hooks/useKitchenOrders"
+import { useTableSettlement } from "@/hooks/useTableSettlement"
 import { NOTHING_TO_RECALL_ERROR } from "@/lib/supabase/order-kds"
-import type { RealPaymentMethod } from "@/lib/supabase/order-mapping"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { LanguageSwitcher } from "@/components/shared/language-switcher"
 
 export function KitchenDisplay() {
-  const { orders, pendingPaymentOrders, advanceItem, regressItem, isItemPending, serveTable, confirmPayment, confirmTablePayment, recallLastOrder, completedCount, avgTimeLabel } = useKitchenOrders()
+  const {
+    orders,
+    pendingPaymentOrders,
+    advanceItem,
+    regressItem,
+    isItemPending,
+    handOverOrder,
+    recallLastOrder,
+    completedCount,
+    avgTimeLabel,
+  } = useKitchenOrders()
+  const { settleOrder } = useTableSettlement()
   const t = useTranslations("KitchenDisplay")
   const locale = useLocale()
   const [now, setNow] = useState(0)
@@ -46,18 +57,13 @@ export function KitchenDisplay() {
     },
     [regressItem, t]
   )
-  // "Đã Giao Khách" -- a pickup ticket's own single-order hand-over,
-  // reusing the exact bulk action the dine-in Tables column already calls
-  // for a whole table's ready orders (serveTable). One deliberate tap once
-  // every item is "ready", not an accidental side effect of ticking the
-  // last drink -- see NEXT_ITEM_STATUS's own comment for why that
-  // distinction matters for an order that's already paid.
+  // "Đã Giao Khách" -- KDS single-ticket hand-over once every item is "ready".
   const handleHandOver = useCallback(
     (orderId: string) => {
       setError(null)
-      serveTable([orderId]).catch(() => setError(t("updateError")))
+      handOverOrder(orderId).catch(() => setError(t("updateError")))
     },
-    [serveTable, t]
+    [handOverOrder, t]
   )
   const handleRecall = useCallback(() => {
     setError(null)
@@ -68,20 +74,13 @@ export function KitchenDisplay() {
       setError(err?.message === NOTHING_TO_RECALL_ERROR ? t("recallNothingError") : t("updateError"))
     })
   }, [recallLastOrder, t])
-  // Dine-in's deferred payment settles the whole table's tab in one RPC
-  // (confirmTablePayment); pickup -- whether it's the pre-serve pending_payment
-  // cash confirm or a served order's deferred payment -- always settles just
-  // this one order (confirmPayment).
-  const handleConfirmPayment = useCallback(async (order: (typeof orders)[number], method: RealPaymentMethod) => {
-    setError(null)
-    try {
-      if (order.orderType === "dine-in" && order.status === "served" && order.tableId) {
-        await confirmTablePayment(order.tableId, method)
-      } else {
-        await confirmPayment(order.id, method)
-      }
-    } catch { setError(t("updateError")) }
-  }, [confirmPayment, confirmTablePayment, t])
+  const handleConfirmPayment = useCallback(
+    (order: (typeof orders)[number]) => {
+      setError(null)
+      settleOrder(order).catch(() => setError(t("updateError")))
+    },
+    [settleOrder, t]
+  )
 
   const visibleOrders = useMemo(() => {
     const all = [...orders, ...pendingPaymentOrders.filter((pending) => !orders.some((order) => order.id === pending.id))]

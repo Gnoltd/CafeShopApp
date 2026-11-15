@@ -8,7 +8,6 @@ import { formatOrderId } from "@/lib/format"
 import { SegmentedControl } from "@/components/motion/segmented-control"
 import { PREV_ITEM_STATUS } from "@/hooks/useKitchenOrders"
 import type { KdsStatus, KdsOrder } from "@/hooks/useKitchenOrders"
-import type { RealPaymentMethod } from "@/lib/supabase/order-mapping"
 import { ConfirmCashPayment } from "@/components/staff/confirm-cash-payment"
 
 const COLUMNS: { status: KdsStatus; key: "columnNew" | "columnPreparing" | "columnReady"; dot: string }[] = [
@@ -76,7 +75,7 @@ export function KitchenBoard({
   onRegressItem: (orderId: string, itemId: string) => void
   onHandOver: (orderId: string) => void
   isItemPending: (orderId: string, itemId: string) => boolean
-  onConfirmPayment: (order: KdsOrder, method: RealPaymentMethod) => void
+  onConfirmPayment: (order: KdsOrder) => void
 }) {
   const t = useTranslations("KitchenDisplay")
   const locale = useLocale()
@@ -160,7 +159,7 @@ function Ticket({
   onRegressItem: (orderId: string, itemId: string) => void
   onHandOver: (orderId: string) => void
   isItemPending: (orderId: string, itemId: string) => boolean
-  onConfirmPayment: (order: KdsOrder, method: RealPaymentMethod) => void
+  onConfirmPayment: (order: KdsOrder) => void
 }) {
   const t = useTranslations("KitchenDisplay")
   const done = order.items.filter((item) => item.status !== "preparing").length
@@ -247,7 +246,7 @@ function Ticket({
       </div>
 
       {paymentAction === "confirm-payment" ? (
-        <ConfirmCashPayment onSelect={(method) => onConfirmPayment(order, method)} />
+        <ConfirmCashPayment onConfirm={() => onConfirmPayment(order)} />
       ) : order.status === "ready" ? (
         // Every item is "ready" -- the one deliberate tap that hands the
         // whole order over (and, if already paid, is what actually

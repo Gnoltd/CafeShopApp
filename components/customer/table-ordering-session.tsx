@@ -17,9 +17,9 @@ import { TableCartPanel } from "@/components/customer/table-cart-panel"
 import { CheckBillSheet } from "@/components/customer/check-bill-sheet"
 import { SegmentedControl } from "@/components/motion/segmented-control"
 import { useTableSession } from "@/hooks/useTableSession"
-import type { TableRecord } from "@/hooks/useTables"
+import type { TableSessionPort } from "@/lib/supabase/table-session-data"
 import type { MenuCategory, MenuItem } from "@/lib/supabase/menu-data"
-import type { AddToCartInput } from "@/lib/menu-selection-types"
+import type { MenuItemSelection } from "@/lib/menu-selection-types"
 import { AsyncRetryError, AsyncSkeleton, StaleNotice } from "@/components/shared/async-state"
 
 export function TableOrderingSession({
@@ -27,80 +27,34 @@ export function TableOrderingSession({
   categories,
   items,
   initialTab = "menu",
+  port,
 }: {
-  table: TableRecord
   qrToken: string
   categories: MenuCategory[]
   items: MenuItem[]
   initialTab?: "menu" | "order"
+  port?: TableSessionPort
 }) {
   const t = useTranslations("TableSession")
-  const session = useTableSession(qrToken)
+  const session = useTableSession(qrToken, port ? { port } : undefined)
   const [tab, setTab] = useState<"menu" | "order">(initialTab)
-  const [isPlacingRound, setIsPlacingRound] = useState(false)
-  const [placeOrderError, setPlaceOrderError] = useState<string | null>(null)
-  const [addItemError, setAddItemError] = useState<string | null>(null)
   const [isCheckBillOpen, setIsCheckBillOpen] = useState(false)
-  // A cart-item id is a member while its own quantity/remove mutation is in
-  // flight -- disables only that row's controls, so a double-tap can't fire
-  // two concurrent RPCs for the same line, without freezing the rest of the
-  // cart or the Place Order button.
-  const [pendingCartItemIds, setPendingCartItemIds] = useState<Set<string>>(new Set())
 
-  function withPendingCartItem(cartItemId: string, action: () => Promise<void>): Promise<void> {
-    setPendingCartItemIds((prev) => new Set(prev).add(cartItemId))
-    return action().finally(() => {
-      setPendingCartItemIds((prev) => {
-        const next = new Set(prev)
-        next.delete(cartItemId)
-        return next
-      })
-    })
-  }
-
-  function handleAddItem(item: AddToCartInput) {
-    setAddItemError(null)
-    session
-      .addItem({
-        menuItemId: item.menuItemId,
-        sizeId: item.size?.id ?? null,
-        modifierIds: item.modifiers.map((m) => m.optionId),
-        note: item.note ?? null,
-      })
-      .catch(() => setAddItemError(t("addItemError")))
+  function handleAddItem(item: MenuItemSelection) {
+    void session.addItem(item)
   }
 
   function handleUpdateQuantity(cartItemId: string, quantity: number) {
-    setAddItemError(null)
-    void withPendingCartItem(cartItemId, () =>
-      session.updateQuantity(cartItemId, quantity).catch((error: unknown) => {
-        setAddItemError(error instanceof Error && error.message === "stale_cart_item" ? t("cartChangedRetry") : t("cartUpdateError"))
-        session.refetch().catch(() => {})
-      })
-    )
+    void session.updateQuantity(cartItemId, quantity)
   }
 
   function handleRemoveItem(cartItemId: string) {
-    setAddItemError(null)
-    void withPendingCartItem(cartItemId, () =>
-      session.removeItem(cartItemId).catch(() => {
-        setAddItemError(t("cartUpdateError"))
-        session.refetch().catch(() => {})
-      })
-    )
+    void session.removeItem(cartItemId)
   }
 
   async function handlePlaceOrder() {
-    setPlaceOrderError(null)
-    setIsPlacingRound(true)
-    try {
-      await session.placeRound()
-      setTab("order")
-    } catch {
-      setPlaceOrderError(t("placeOrderFailed"))
-    } finally {
-      setIsPlacingRound(false)
-    }
+    const placed = await session.placeRound()
+    if (placed) setTab("order")
   }
 
   if (session.isLoading) return <AsyncSkeleton variant="page" />
@@ -112,6 +66,18 @@ export function TableOrderingSession({
       </div>
     )
   }
+
+  const cartErrorMessage =
+    session.error === "add_item"
+      ? t("addItemError")
+      : session.error === "stale_cart_item"
+        ? t("cartChangedRetry")
+        : session.error === "cart_update"
+          ? t("cartUpdateError")
+          : null
+
+  const placeOrderErrorMessage =
+    session.error === "place_round" ? t("placeOrderFailed") : null
 
   return (
     <div className="mx-auto w-full max-w-2xl md:max-w-6xl">
@@ -128,13 +94,18 @@ export function TableOrderingSession({
           onChange={setTab}
           options={[
             { value: "menu" as const, label: t("menuTabLabel") },
-            { value: "order" as const, label: `${t("orderTabLabel")}${session.cartItems.length > 0 ? ` (${session.cartItems.length})` : ""}` },
+            {
+              value: "order" as const,
+              label: `${t("orderTabLabel")}${session.cartItems.length > 0 ? ` (${session.cartItems.length})` : ""}`,
+            },
           ]}
         />
       </div>
 
-      {addItemError && (
-        <p className="mx-4 mt-2 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive sm:mx-6">{addItemError}</p>
+      {cartErrorMessage && (
+        <p className="mx-4 mt-2 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive sm:mx-6">
+          {cartErrorMessage}
+        </p>
       )}
 
       {tab === "menu" ? (
@@ -152,9 +123,9 @@ export function TableOrderingSession({
           rounds={session.rounds}
           unpaidTotal={session.unpaidTotal}
           paymentPending={session.paymentPending}
-          isPlacingRound={isPlacingRound}
-          placeOrderError={placeOrderError}
-          pendingCartItemIds={pendingCartItemIds}
+          isPlacingRound={session.isPlacingRound}
+          placeOrderError={placeOrderErrorMessage}
+          pendingCartItemIds={session.pendingCartItemIds}
           onUpdateQuantity={handleUpdateQuantity}
           onRemoveItem={handleRemoveItem}
           onPlaceOrder={handlePlaceOrder}
@@ -197,13 +168,10 @@ export function TableOrderingSession({
 
       {isCheckBillOpen && (
         <CheckBillSheet
-          qrToken={qrToken}
           unpaidTotal={session.unpaidTotal}
+          onConfirm={session.requestBill}
           onClose={() => setIsCheckBillOpen(false)}
-          onSuccess={() => {
-            setIsCheckBillOpen(false)
-            session.refetch()
-          }}
+          onSuccess={() => setIsCheckBillOpen(false)}
         />
       )}
     </div>

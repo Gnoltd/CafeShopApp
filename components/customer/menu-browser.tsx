@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { formatVND } from "@/lib/format"
-import type { AddToCartInput } from "@/lib/menu-selection-types"
+import type { MenuItemSelection } from "@/lib/menu-selection-types"
 import { ItemImage } from "@/components/customer/item-image"
 import { QuickAddPopup } from "@/components/customer/quick-add-popup"
 import { SegmentedControl } from "@/components/motion/segmented-control"
@@ -31,7 +31,7 @@ export function MenuBrowser({
 }: {
   categories: MenuCategory[]
   items: MenuItem[]
-  onAddItem?: (item: AddToCartInput, quantity?: number) => void
+  onAddItem?: (item: MenuItemSelection) => void
   cartItemCount?: number
   cartSubtotal?: number
   onViewCart?: () => void
@@ -82,10 +82,8 @@ export function MenuBrowser({
     }
     addToCart?.({
       menuItemId: item.id,
-      nameVi: item.nameVi,
-      nameEn: item.nameEn,
-      modifiers: [],
-      unitPrice: item.basePrice,
+      sizeId: null,
+      modifierIds: [],
     })
   }
 

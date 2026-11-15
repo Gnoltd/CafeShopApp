@@ -2,17 +2,19 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { useLatestRefetch, type LoadContext } from "@/hooks/useLatestRefetch"
-import { nextAsyncLoadFlags } from "@/lib/async-refetch-flags"
 import {
-  getTableSession,
-  addCartItem as addCartItemQuery,
-  updateCartItemQuantity as updateCartItemQuantityQuery,
-  removeCartItem as removeCartItemQuery,
-  placeTableRound as placeTableRoundQuery,
-  abandonTableSession as abandonTableSessionQuery,
+  nextAsyncLoadFlags,
+  useLatestRefetch,
+  type LoadContext,
+} from "@/hooks/useLatestRefetch"
+import { clearGuestActiveTable } from "@/lib/guest-active-table"
+import {
+  createSupabaseTableSessionAdapter,
+  isStaleCartItemError,
   type AddCartItemInput,
+  type PlaceTableRoundResult,
   type TableSessionCartItem,
+  type TableSessionPort,
   type TableSessionRound,
 } from "@/lib/supabase/table-session-data"
 
@@ -28,7 +30,18 @@ const TABLE_SESSION_REFETCH_DELAY_MS = 300
 // Shared cart and order reads are authorized by QR, including across devices.
 const GUEST_ORDER_POLL_MS = 3_000
 
-type TableSessionState = {
+export type TableSessionErrorKind =
+  | "add_item"
+  | "stale_cart_item"
+  | "cart_update"
+  | "place_round"
+
+export type UseTableSessionOptions = {
+  port?: TableSessionPort
+  onAbandon?: (qrToken: string) => void
+}
+
+export type TableSessionState = {
   hasSession: boolean
   cartItems: TableSessionCartItem[]
   rounds: TableSessionRound[]
@@ -37,20 +50,23 @@ type TableSessionState = {
   isLoading: boolean
   /** True only when the session has never loaded successfully and its most
    * recent load attempt failed -- distinct from `hasStaleData` below, which
-   * covers a background Realtime/poll-refetch failure once real data is
-   * already showing. */
+   * covers a background poll-refetch failure once real data is already showing. */
   hasLoadError: boolean
   /** True when the session HAS loaded successfully at least once, but the
-   * most recent background refetch (Realtime trigger or the guest poll)
-   * failed. `cartItems`/`rounds`/etc. still hold the last-good data --
-   * never cleared on a refetch failure -- this only flags it as possibly
-   * outdated until the next successful refetch clears it. */
+   * most recent background refetch (focus/visibility or guest poll) failed.
+   * `cartItems`/`rounds`/etc. still hold the last-good data -- never cleared
+   * on a refetch failure -- this only flags it as possibly outdated until the
+   * next successful refetch clears it. */
   hasStaleData: boolean
   showIdlePrompt: boolean
+  pendingCartItemIds: Set<string>
+  isPlacingRound: boolean
+  error: TableSessionErrorKind | null
   addItem: (input: AddCartItemInput) => Promise<void>
   updateQuantity: (cartItemId: string, quantity: number) => Promise<void>
   removeItem: (cartItemId: string) => Promise<void>
-  placeRound: () => Promise<{ orderId: string; total: number }>
+  placeRound: () => Promise<PlaceTableRoundResult | null>
+  requestBill: () => Promise<void>
   confirmStillHere: () => void
   dismissAndAbandon: () => Promise<void>
   refetch: () => Promise<void>
@@ -60,8 +76,20 @@ type TableSessionState = {
   retryLoad: () => void
 }
 
-export function useTableSession(qrToken: string | undefined): TableSessionState {
-  const [supabase] = useState(() => createClient())
+export function useTableSession(
+  qrToken: string | undefined,
+  options: UseTableSessionOptions = {}
+): TableSessionState {
+  const [fallbackPort] = useState<TableSessionPort>(() =>
+    options.port ?? createSupabaseTableSessionAdapter(createClient())
+  )
+  const port = options.port ?? fallbackPort
+
+  const onAbandonRef = useRef(options.onAbandon)
+  useEffect(() => {
+    onAbandonRef.current = options.onAbandon
+  }, [options.onAbandon])
+
   const [hasSession, setHasSession] = useState(false)
   const [cartItems, setCartItems] = useState<TableSessionCartItem[]>([])
   const [rounds, setRounds] = useState<TableSessionRound[]>([])
@@ -70,9 +98,17 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
   const [isLoading, setIsLoading] = useState(true)
   const [hasLoadError, setHasLoadError] = useState(false)
   const [hasStaleData, setHasStaleData] = useState(false)
-  const hasLoadedOnceRef = useRef(false)
   const [showIdlePrompt, setShowIdlePrompt] = useState(false)
   const [stillHereNonce, setStillHereNonce] = useState(0)
+  const [pendingCartItemIds, setPendingCartItemIds] = useState<Set<string>>(() => new Set())
+  const [isPlacingRound, setIsPlacingRound] = useState(false)
+  const [error, setError] = useState<TableSessionErrorKind | null>(null)
+
+  const hasLoadedOnceRef = useRef(false)
+  const cartItemsRef = useRef<TableSessionCartItem[]>([])
+  const pendingIdsRef = useRef<Set<string>>(new Set())
+  const isPlacingRoundRef = useRef(false)
+  const activeQrTokenRef = useRef(qrToken)
   const idleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const promptTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const roundSubmissionId = useRef(crypto.randomUUID())
@@ -81,10 +117,11 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
     async ({ isStale }: LoadContext) => {
       if (!qrToken) return
       try {
-        const session = await getTableSession(supabase, qrToken)
+        const session = await port.getSession(qrToken)
         // Latest wins: an older response resolving after a newer one must
         // not roll this device's view of the shared cart backwards.
         if (isStale()) return
+        cartItemsRef.current = session.cartItems
         setHasSession(session.hasSession)
         setCartItems(session.cartItems)
         setRounds(session.rounds)
@@ -93,21 +130,18 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
         hasLoadedOnceRef.current = true
         setHasLoadError(false)
         setHasStaleData(false)
-      } catch (error) {
+      } catch (err) {
         if (isStale()) return
         // First load (never succeeded yet): blocking error, nothing safe to
-        // show. Background refetch failing (Realtime trigger, the guest
-        // poll) once real data is already on screen: leave cartItems/
-        // rounds/etc. exactly as they are (no setState above ran) and just
-        // flag them as possibly outdated instead of yanking the screen back
-        // to an error/blank state.
+        // show. Background refetch failing once real data is already on screen:
+        // keep last-good data and only flag it as possibly outdated.
         const flags = nextAsyncLoadFlags(hasLoadedOnceRef.current, "failure")
         setHasLoadError(flags.hasBlockingError)
         setHasStaleData(flags.hasStaleData)
-        throw error
+        throw err
       }
     },
-    [supabase, qrToken]
+    [port, qrToken]
   )
 
   const { trigger, run, invalidate } = useLatestRefetch(load, TABLE_SESSION_REFETCH_DELAY_MS)
@@ -115,13 +149,21 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
   const refetch = useCallback(() => run(), [run])
 
   useEffect(() => {
+    activeQrTokenRef.current = qrToken
     hasLoadedOnceRef.current = false
+    cartItemsRef.current = []
+    pendingIdsRef.current.clear()
+    isPlacingRoundRef.current = false
+    roundSubmissionId.current = crypto.randomUUID()
     // A load still in flight for the previous qrToken must not apply to the
     // table we just switched to.
     invalidate()
     let cancelled = false
     queueMicrotask(async () => {
       if (cancelled) return
+      setError(null)
+      setPendingCartItemIds(new Set())
+      setIsPlacingRound(false)
       setIsLoading(true)
       setHasLoadError(false)
       setHasStaleData(false)
@@ -156,12 +198,25 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
     }
   }, [qrToken, trigger])
 
-  async function dismissAndAbandon() {
+  const dismissAndAbandon = useCallback(async () => {
     if (!qrToken) return
-    queueMicrotask(() => setShowIdlePrompt(false))
-    await abandonTableSessionQuery(supabase, qrToken)
-    await run()
-  }
+    clearTimeout(idleTimer.current)
+    clearTimeout(promptTimer.current)
+    setShowIdlePrompt(false)
+    const capturedToken = qrToken
+    try {
+      await port.abandonSession(qrToken)
+      if (onAbandonRef.current) {
+        onAbandonRef.current(qrToken)
+      } else {
+        clearGuestActiveTable(qrToken)
+      }
+    } catch {
+      if (activeQrTokenRef.current === capturedToken) setError("cart_update")
+    } finally {
+      await run()
+    }
+  }, [port, qrToken, run])
 
   // Use content, not array identity: polling unchanged data must not keep
   // an abandoned draft alive by restarting its idle timer.
@@ -180,7 +235,7 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
     idleTimer.current = setTimeout(() => {
       setShowIdlePrompt(true)
       promptTimer.current = setTimeout(() => {
-        dismissAndAbandon()
+        void dismissAndAbandon()
       }, IDLE_PROMPT_RESPONSE_MS)
     }, IDLE_TIMEOUT_MS)
 
@@ -188,50 +243,110 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
       clearTimeout(idleTimer.current)
       clearTimeout(promptTimer.current)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasSession, rounds.length, cartFingerprint, stillHereNonce])
+  }, [hasSession, rounds.length, cartFingerprint, stillHereNonce, dismissAndAbandon])
 
-  async function addItem(input: AddCartItemInput) {
-    if (!qrToken) return
-    await addCartItemQuery(supabase, qrToken, input)
-    await run()
-  }
+  const addItem = useCallback(
+    async (input: AddCartItemInput) => {
+      if (!qrToken) return
+      setError(null)
+      const capturedToken = qrToken
+      try {
+        await port.addCartItem(qrToken, input)
+        await run()
+      } catch {
+        if (activeQrTokenRef.current === capturedToken) setError("add_item")
+      }
+    },
+    [port, qrToken, run]
+  )
 
-  async function updateQuantity(cartItemId: string, quantity: number) {
-    if (!qrToken) return
-    const item = cartItems.find((candidate) => candidate.id === cartItemId)
-    if (!item) throw new Error("cart_item_not_found")
-    await updateCartItemQuantityQuery(supabase, qrToken, cartItemId, quantity - item.quantity, item.version)
-    await run()
-  }
+  const runCartItemMutation = useCallback(
+    async (cartItemId: string, mutation: () => Promise<void>) => {
+      if (!qrToken) return
+      if (pendingIdsRef.current.has(cartItemId)) return
+      setError(null)
+      const capturedToken = qrToken
+      pendingIdsRef.current.add(cartItemId)
+      setPendingCartItemIds(new Set(pendingIdsRef.current))
+      try {
+        await mutation()
+        await run()
+      } catch (err) {
+        if (activeQrTokenRef.current === capturedToken) {
+          setError(isStaleCartItemError(err) ? "stale_cart_item" : "cart_update")
+        }
+        await run()
+      } finally {
+        if (activeQrTokenRef.current === capturedToken) {
+          pendingIdsRef.current.delete(cartItemId)
+          setPendingCartItemIds(new Set(pendingIdsRef.current))
+        }
+      }
+    },
+    [qrToken, run]
+  )
 
-  async function removeItem(cartItemId: string) {
-    if (!qrToken) return
-    await removeCartItemQuery(supabase, qrToken, cartItemId)
-    await run()
-  }
+  const updateQuantity = useCallback(
+    async (cartItemId: string, quantity: number) => {
+      if (!qrToken) return
+      const item = cartItemsRef.current.find((candidate) => candidate.id === cartItemId)
+      if (!item) {
+        setError("cart_update")
+        await run()
+        return
+      }
+      await runCartItemMutation(cartItemId, () =>
+        port.updateCartItemQuantity(qrToken, cartItemId, quantity - item.quantity, item.version)
+      )
+    },
+    [port, qrToken, run, runCartItemMutation]
+  )
 
-  async function placeRound() {
+  const removeItem = useCallback(
+    async (cartItemId: string) => {
+      if (!qrToken) return
+      await runCartItemMutation(cartItemId, () => port.removeCartItem(qrToken, cartItemId))
+    },
+    [port, qrToken, runCartItemMutation]
+  )
+
+  const placeRound = useCallback(async (): Promise<PlaceTableRoundResult | null> => {
+    if (!qrToken) return null
+    if (isPlacingRoundRef.current) return null
+    setError(null)
+    const capturedToken = qrToken
+    isPlacingRoundRef.current = true
+    setIsPlacingRound(true)
+    try {
+      const result = await port.placeRound(qrToken, roundSubmissionId.current)
+      roundSubmissionId.current = crypto.randomUUID()
+      await run()
+      return result
+    } catch {
+      if (activeQrTokenRef.current === capturedToken) setError("place_round")
+      return null
+    } finally {
+      if (activeQrTokenRef.current === capturedToken) {
+        isPlacingRoundRef.current = false
+        setIsPlacingRound(false)
+      }
+    }
+  }, [port, qrToken, run])
+
+  const requestBill = useCallback(async () => {
     if (!qrToken) throw new Error("no qr token")
-    const result = await placeTableRoundQuery(supabase, qrToken, roundSubmissionId.current)
-    roundSubmissionId.current = crypto.randomUUID()
+    await port.requestBill(qrToken)
     await run()
-    return result
-  }
+  }, [port, qrToken, run])
 
-  function confirmStillHere() {
+  const confirmStillHere = useCallback(() => {
     clearTimeout(promptTimer.current)
     setShowIdlePrompt(false)
-    // Bumping stillHereNonce re-runs the idle-timer effect below even
-    // when hasSession/rounds.length/cartFingerprint haven't changed --
-    // otherwise a guest who confirms "still here" and then genuinely
-    // leaves would never have the idle timer re-armed (found in review:
-    // the fingerprint fix for the "unrelated Realtime activity resets
-    // every table's timer" bug also stopped this legitimate re-arm case
-    // from firing, since dismissing the prompt alone doesn't change any
-    // of the other deps).
+    // Bumping stillHereNonce re-runs the idle-timer effect even when
+    // hasSession/rounds.length/cartFingerprint haven't changed, so a guest
+    // who confirms "still here" and then leaves still gets re-armed.
     setStillHereNonce((n) => n + 1)
-  }
+  }, [])
 
   return {
     hasSession,
@@ -243,10 +358,14 @@ export function useTableSession(qrToken: string | undefined): TableSessionState 
     hasLoadError,
     hasStaleData,
     showIdlePrompt,
+    pendingCartItemIds,
+    isPlacingRound,
+    error,
     addItem,
     updateQuantity,
     removeItem,
     placeRound,
+    requestBill,
     confirmStillHere,
     dismissAndAbandon,
     refetch,

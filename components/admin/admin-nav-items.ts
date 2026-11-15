@@ -1,20 +1,48 @@
-import { UtensilsCrossed, Users, Settings, ClipboardList } from "lucide-react"
+import { UtensilsCrossed, Users, Settings, ClipboardList, type LucideIcon } from "lucide-react"
+import {
+  ADMIN_NAV_ITEMS as ADMIN_NAV_ROUTES,
+  ADMIN_EXTERNAL_NAV_ITEMS as ADMIN_EXTERNAL_NAV_ROUTES,
+  getAdminNavItems as getAuthorizedAdminNavRoutes,
+  getAdminExternalNavItems as getAuthorizedAdminExternalNavRoutes,
+} from "@/lib/roles"
 
-// Single source of truth for admin-shell navigation -- shared by the
-// desktop sidebar, the mobile drawer, and the mobile header's page-title
-// lookup, so all three stay in sync with one edit.
-export const ADMIN_NAV_ITEMS = [
-  { href: "/admin/menu", labelKey: "menu", icon: UtensilsCrossed },
-  { href: "/admin/staff", labelKey: "staff", icon: Users },
-  { href: "/admin/settings", labelKey: "settings", icon: Settings },
-] as const
+type AdminNavHref = (typeof ADMIN_NAV_ROUTES)[number]["href"]
+type AdminExternalNavHref = (typeof ADMIN_EXTERNAL_NAV_ROUTES)[number]["href"]
 
-// Links out of the admin shell entirely (outside /admin/*) to the staff
-// operations area -- admin/manager still need a way to reach KDS/Tables
-// even though those pages no longer live under /admin/*. Kept as its own
-// list (rendered in its own bordered-off section, distinct from
-// ADMIN_NAV_ITEMS) since it's conceptually "leaving the admin shell", not
-// one more admin page.
-export const ADMIN_EXTERNAL_NAV_ITEMS = [
-  { href: "/staff/orders", labelKey: "operations", icon: ClipboardList },
-] as const
+const ADMIN_NAV_ICONS: Record<AdminNavHref, LucideIcon> = {
+  "/admin/menu": UtensilsCrossed,
+  "/admin/staff": Users,
+  "/admin/settings": Settings,
+}
+
+const ADMIN_EXTERNAL_NAV_ICONS: Record<AdminExternalNavHref, LucideIcon> = {
+  "/staff/orders": ClipboardList,
+}
+
+// Single source of truth for admin-shell navigation -- route definitions and
+// role gates come from lib/roles.ts; this module binds UI icons so the desktop
+// sidebar, mobile drawer, and mobile header page-title lookup stay in sync.
+export const ADMIN_NAV_ITEMS = ADMIN_NAV_ROUTES.map((item) => ({
+  ...item,
+  icon: ADMIN_NAV_ICONS[item.href],
+}))
+
+// Links out of the admin shell (outside /admin/*) to staff operations.
+export const ADMIN_EXTERNAL_NAV_ITEMS = ADMIN_EXTERNAL_NAV_ROUTES.map((item) => ({
+  ...item,
+  icon: ADMIN_EXTERNAL_NAV_ICONS[item.href],
+}))
+
+export function getAdminNavItems(role: string | null) {
+  return getAuthorizedAdminNavRoutes(role).map((item) => ({
+    ...item,
+    icon: ADMIN_NAV_ICONS[item.href],
+  }))
+}
+
+export function getAdminExternalNavItems(role: string | null) {
+  return getAuthorizedAdminExternalNavRoutes(role).map((item) => ({
+    ...item,
+    icon: ADMIN_EXTERNAL_NAV_ICONS[item.href],
+  }))
+}

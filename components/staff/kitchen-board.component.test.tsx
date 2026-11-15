@@ -38,12 +38,10 @@ describe("KitchenBoard ticket -- per-item advance only", () => {
         onRegressItem={noop}
         onHandOver={noop}
         isItemPending={() => false}
-        onConfirmPayment={async () => {}}
+        onConfirmPayment={noop}
       />
     )
 
-    // Only the two per-item rows are tappable -- no separate "Start
-    // Preparing" / "Mark Ready" button exists anywhere on the ticket.
     expect(screen.queryByText(/KitchenDisplay\.startPreparing/)).not.toBeInTheDocument()
     expect(screen.queryByText(/KitchenDisplay\.markReady/)).not.toBeInTheDocument()
 
@@ -72,12 +70,48 @@ describe("KitchenBoard ticket -- per-item advance only", () => {
         onRegressItem={onRegressItem}
         onHandOver={noop}
         isItemPending={() => false}
-        onConfirmPayment={async () => {}}
+        onConfirmPayment={noop}
       />
     )
 
     fireEvent.click(screen.getByRole("button", { name: "KitchenDisplay.undoItem" }))
     expect(onRegressItem).toHaveBeenCalledWith("order-1", "item-a")
     expect(onAdvanceItem).not.toHaveBeenCalled()
+  })
+
+  it("hands over a ready order and confirms cash payment on a served unpaid order", () => {
+    const onHandOver = vi.fn()
+    const onConfirmPayment = vi.fn()
+    const readyOrder = makeOrder({
+      id: "order-ready",
+      status: "ready",
+      items: [{ id: "item-a", nameVi: "A", nameEn: "Coffee A", quantity: 1, note: null, status: "ready", sizeName: null, modifierNames: [] }],
+    })
+    const servedUnpaidOrder = makeOrder({
+      id: "order-served-unpaid",
+      orderType: "dine-in",
+      tableId: "table-1",
+      status: "served",
+      paymentStatus: "pending",
+      items: [{ id: "item-b", nameVi: "B", nameEn: "Coffee B", quantity: 1, note: null, status: "served", sizeName: null, modifierNames: [] }],
+    })
+
+    render(
+      <KitchenBoard
+        orders={[readyOrder, servedUnpaidOrder]}
+        now={0}
+        onAdvanceItem={noop}
+        onRegressItem={noop}
+        onHandOver={onHandOver}
+        isItemPending={() => false}
+        onConfirmPayment={onConfirmPayment}
+      />
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "KitchenDisplay.markServed" }))
+    expect(onHandOver).toHaveBeenCalledWith("order-ready")
+
+    fireEvent.click(screen.getByRole("button", { name: "KitchenDisplay.confirmCashReceived" }))
+    expect(onConfirmPayment).toHaveBeenCalledWith(servedUnpaidOrder)
   })
 })

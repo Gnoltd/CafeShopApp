@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import type { GuestTableLookupPort } from "@/lib/guest-active-table"
 
 export type TableOccupancyStatus = "available" | "occupied" | "cleaning"
 
@@ -121,6 +122,14 @@ export async function getTableByToken(supabase: SupabaseClient, token: string): 
   const { data, error } = await supabase.rpc("get_table_by_qr_token", { p_token: token })
   if (error) throw error
   return data ? mapTableRow(data as TableRow) : null
+}
+
+/** Bridges the guest table lookup port to Supabase QR token & scan RPCs. */
+export function createGuestTableLookupAdapter(supabase: SupabaseClient): GuestTableLookupPort<TableRecord> {
+  return {
+    findByQrToken: (qrToken) => getTableByToken(supabase, qrToken),
+    recordScan: (tableId) => incrementScanCount(supabase, tableId),
+  }
 }
 
 // Staff-facing binary "has an open session" signal (rebuild Decision 12) --

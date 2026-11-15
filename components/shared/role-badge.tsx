@@ -4,11 +4,11 @@ import { LogIn, Briefcase, UtensilsCrossed } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { Link } from "@/i18n/navigation"
 import { ROLE_HOME } from "@/lib/roles"
-import { useActiveTableOptional } from "@/hooks/useTables"
+import { useGuestActiveTable } from "@/lib/guest-active-table"
 
 export function RoleBadge({ role }: { role: string | null }) {
   const t = useTranslations("RoleNav")
-  const activeTable = useActiveTableOptional()
+  const activeTable = useGuestActiveTable()
 
   const { label, href, Icon } =
     role === "staff"

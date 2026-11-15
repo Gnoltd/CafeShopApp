@@ -10,25 +10,13 @@ import { DialogClose, DialogTitle } from "@/components/ui/dialog"
 import { SegmentedControl } from "@/components/motion/segmented-control"
 import { PressFeedback } from "@/components/motion/press-feedback"
 import { useSizeModifierSelection } from "@/hooks/useSizeModifierSelection"
-import type { CartModifier } from "@/lib/menu-selection-types"
+import type { MenuItemSelection } from "@/lib/menu-selection-types"
 import type { MenuItem } from "@/lib/supabase/menu-data"
 
-export type SizeModifierSelection = {
-  size: { id: string; name: string; priceDelta: number } | null
-  cartModifiers: CartModifier[]
-  modifierIds: string[]
-  modifierNames: string[]
-  unitPrice: number
-}
-
 /**
- * Shared BottomSheet body for QuickAddPopup and PosItemPicker — the two
- * near-identical size/extras pickers that previously hand-rolled the same
- * JSX. onAdd receives both the bilingual CartModifier[] shape (for
- * useCart) and the flat modifierIds/modifierNames shape (for POS's
- * OrderLine merge key) already derived, so each adapter just picks what
- * it needs. Product Detail's full-page layout is a different enough skin
- * that it stays its own JSX, consuming only useSizeModifierSelection.
+ * BottomSheet picker for configuring item size and modifiers before adding
+ * to a table session. Emits the canonical MenuItemSelection directly from
+ * useSizeModifierSelection so callers pass it through without shape mapping.
  */
 export function SizeExtrasSheet({
   item,
@@ -36,7 +24,7 @@ export function SizeExtrasSheet({
   onClose,
 }: {
   item: MenuItem
-  onAdd: (selection: SizeModifierSelection) => void
+  onAdd: (selection: MenuItemSelection) => void
   onClose: () => void
 }) {
   const locale = useLocale()
@@ -45,29 +33,15 @@ export function SizeExtrasSheet({
     selectedSizeId,
     setSelectedSizeId,
     selectedModifiers,
-    selectedOptions,
     toggleModifier,
-    selectedSize,
+    selection,
     price,
     extraGroups,
     otherGroups,
   } = useSizeModifierSelection(item)
 
   function handleAdd() {
-    const cartModifiers: CartModifier[] = selectedOptions.map(({ group, option }) => ({
-      groupId: group.id,
-      optionId: option.id,
-      labelVi: option.nameVi,
-      labelEn: option.nameEn,
-      priceDelta: option.priceDelta,
-    }))
-    onAdd({
-      size: selectedSize ? { id: selectedSize.id, name: selectedSize.name, priceDelta: selectedSize.priceDelta } : null,
-      cartModifiers,
-      modifierIds: selectedOptions.map(({ option }) => option.id),
-      modifierNames: selectedOptions.map(({ option }) => (locale === "vi" ? option.nameVi : option.nameEn)),
-      unitPrice: price,
-    })
+    onAdd(selection)
     onClose()
   }
 

@@ -1,15 +1,13 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRealtimeChannel } from "@/hooks/useRealtimeChannel"
 import {
   createTable as createTableQuery,
   getActiveSessionTableIds,
-  getTableByToken,
   getTables,
   getTablesWithQrTokens,
-  incrementScanCount,
   mapTableRow,
   regenerateQrToken as regenerateQrTokenQuery,
   renameTable as renameTableQuery,
@@ -39,57 +37,14 @@ type TablesContextValue = {
   // get_tables_admin RPC (see tables-data.ts) -- the general `tables` list
   // above deliberately never carries qr_code_token.
   getQrTokens: () => Promise<Record<string, string>>
-  activeTable: TableRecord | null
-  setActiveTableByToken: (token: string) => Promise<TableRecord | null>
-  clearActiveTable: () => void
 }
 
 const TablesContext = createContext<TablesContextValue | null>(null)
-
-const ACTIVE_TABLE_STORAGE_KEY = "phadincafe-active-table"
-// Fired whenever TablesProvider writes ACTIVE_TABLE_STORAGE_KEY, so
-// useActiveTableOptional (below) can react in the same tab -- the native
-// `storage` event only fires for *other* tabs/documents, never the one that
-// made the write.
-const ACTIVE_TABLE_EVENT = "phadincafe-active-table-changed"
 
 export function TablesProvider({ children }: { children: ReactNode }) {
   const [supabase] = useState(() => createClient())
   const [tables, setTables] = useState<TableRecord[]>([])
   const [openSessionTableIds, setOpenSessionTableIds] = useState<Set<string>>(new Set())
-  const [activeTable, setActiveTable] = useState<TableRecord | null>(null)
-  const [hydrated, setHydrated] = useState(false)
-
-  // activeTable persistence is unchanged from before this hook was
-  // rewritten — it must survive a VI/EN locale switch, which remounts
-  // this whole provider (see the design spec's Section 3).
-  useEffect(() => {
-    let cancelled = false
-    queueMicrotask(() => {
-      if (cancelled) return
-      try {
-        const storedActive = window.localStorage.getItem(ACTIVE_TABLE_STORAGE_KEY)
-        if (storedActive) setActiveTable(JSON.parse(storedActive))
-      } catch {
-        // ignore malformed/unavailable storage
-      } finally {
-        setHydrated(true)
-      }
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!hydrated) return
-    if (activeTable) {
-      window.localStorage.setItem(ACTIVE_TABLE_STORAGE_KEY, JSON.stringify(activeTable))
-    } else {
-      window.localStorage.removeItem(ACTIVE_TABLE_STORAGE_KEY)
-    }
-    window.dispatchEvent(new Event(ACTIVE_TABLE_EVENT))
-  }, [activeTable, hydrated])
 
   useEffect(() => {
     let cancelled = false
@@ -156,12 +111,10 @@ export function TablesProvider({ children }: { children: ReactNode }) {
 
   async function renameTable(id: string, number: string) {
     await renameTableQuery(supabase, id, number)
-    setActiveTable((prev) => (prev?.id === id ? { ...prev, number } : prev))
   }
 
   async function updateLocation(id: string, locationVi: string, locationEn: string) {
     await updateTableLocation(supabase, id, locationVi, locationEn)
-    setActiveTable((prev) => (prev?.id === id ? { ...prev, locationVi, locationEn } : prev))
   }
 
   async function regenerateToken(id: string): Promise<TableRecord> {
@@ -171,22 +124,6 @@ export function TablesProvider({ children }: { children: ReactNode }) {
   async function getQrTokens(): Promise<Record<string, string>> {
     const rows = await getTablesWithQrTokens(supabase)
     return Object.fromEntries(rows.map((row) => [row.id, row.qrToken ?? ""]))
-  }
-
-  async function setActiveTableByToken(token: string): Promise<TableRecord | null> {
-    const found = await getTableByToken(supabase, token)
-    if (found) {
-      incrementScanCount(supabase, found.id).catch(() => {
-        // A missed scan-count increment is a cosmetic admin-stat miss,
-        // not something worth failing table resolution over.
-      })
-    }
-    setActiveTable(found)
-    return found
-  }
-
-  function clearActiveTable() {
-    setActiveTable(null)
   }
 
   return (
@@ -199,9 +136,6 @@ export function TablesProvider({ children }: { children: ReactNode }) {
         openSessionTableIds,
         regenerateToken,
         getQrTokens,
-        activeTable,
-        setActiveTableByToken,
-        clearActiveTable,
       }}
     >
       {children}
@@ -213,54 +147,4 @@ export function useTables(): TablesContextValue {
   const ctx = useContext(TablesContext)
   if (!ctx) throw new Error("useTables must be used within a TablesProvider")
   return ctx
-}
-
-// useSyncExternalStore requires getSnapshot to return a stable (===) value
-// when nothing changed -- localStorage.getItem always returns a fresh
-// string, but re-parsing it on every call would return a new object
-// reference each time and spin React into an infinite re-render loop
-// (confirmed live: "Maximum update depth exceeded"). Cache by raw string so
-// JSON.parse only reruns when the persisted value actually changed.
-let cachedRaw: string | null = null
-let cachedTable: TableRecord | null = null
-
-function readActiveTableFromStorage(): TableRecord | null {
-  let raw: string | null
-  try {
-    raw = window.localStorage.getItem(ACTIVE_TABLE_STORAGE_KEY)
-  } catch {
-    raw = null
-  }
-  if (raw !== cachedRaw) {
-    cachedRaw = raw
-    try {
-      cachedTable = raw ? (JSON.parse(raw) as TableRecord) : null
-    } catch {
-      cachedTable = null
-    }
-  }
-  return cachedTable
-}
-
-function subscribeToActiveTableStorage(onChange: () => void) {
-  window.addEventListener("storage", onChange)
-  window.addEventListener(ACTIVE_TABLE_EVENT, onChange)
-  return () => {
-    window.removeEventListener("storage", onChange)
-    window.removeEventListener(ACTIVE_TABLE_EVENT, onChange)
-  }
-}
-
-/** Reads the same table TablesProvider persists to
- * ACTIVE_TABLE_STORAGE_KEY, but works with no TablesProvider ancestor at
- * all -- unlike `useTables()`, this reads localStorage directly rather than
- * React context. Needed because shared chrome like HeaderActionsStack
- * renders in the root layout (`app/[locale]/layout.tsx`), a SIBLING of
- * `{children}`, not a descendant -- so even on a customer route where
- * TablesProvider *is* mounted further down the tree, `useContext` here
- * would still see no provider. Re-renders on TablesProvider's own writes
- * (custom event, same tab) and cross-tab localStorage changes (native
- * `storage` event). */
-export function useActiveTableOptional(): TableRecord | null {
-  return useSyncExternalStore(subscribeToActiveTableStorage, readActiveTableFromStorage, () => null)
 }

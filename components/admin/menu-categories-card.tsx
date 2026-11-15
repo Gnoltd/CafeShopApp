@@ -5,20 +5,23 @@ import { useLocale, useTranslations } from "next-intl"
 import { Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
-import { createCategory, updateCategory, deleteCategory, type MenuCategory } from "@/lib/supabase/menu-data"
+import { createSupabaseMenuAdapter, type MenuCategory, type MenuPort } from "@/lib/supabase/menu-data"
 
 export function MenuCategoriesCard({
   categories,
   onCategoriesChange,
   itemCountByCategory,
+  port: injectedPort,
 }: {
   categories: MenuCategory[]
   onCategoriesChange: (categories: MenuCategory[]) => void
   itemCountByCategory: Record<string, number>
+  port?: MenuPort
 }) {
   const locale = useLocale()
   const t = useTranslations("AdminMenu")
-  const supabase = createClient()
+  const [defaultPort] = useState<MenuPort>(() => injectedPort ?? createSupabaseMenuAdapter(createClient()))
+  const port = injectedPort ?? defaultPort
   const [isEditing, setIsEditing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isAdding, setIsAdding] = useState(false)
@@ -28,7 +31,7 @@ export function MenuCategoriesCard({
     if (!trimmed || trimmed === category[field]) return
     setError(null)
     try {
-      await updateCategory(supabase, category.id, {
+      await port.updateCategory(category.id, {
         nameVi: field === "nameVi" ? trimmed : category.nameVi,
         nameEn: field === "nameEn" ? trimmed : category.nameEn,
       })
@@ -45,7 +48,7 @@ export function MenuCategoriesCard({
     setIsAdding(true)
     try {
       const nextSortOrder = categories.reduce((max, c) => Math.max(max, c.sortOrder), 0) + 1
-      const created = await createCategory(supabase, {
+      const created = await port.createCategory({
         nameVi: t("categoriesTitle"),
         nameEn: t("categoriesTitle"),
         sortOrder: nextSortOrder,
@@ -61,7 +64,7 @@ export function MenuCategoriesCard({
   async function handleRemove(category: MenuCategory) {
     setError(null)
     try {
-      await deleteCategory(supabase, category.id)
+      await port.deleteCategory(category.id)
       onCategoriesChange(categories.filter((c) => c.id !== category.id))
     } catch {
       // The FK constraint (menu_items_category_id_fkey, ON DELETE RESTRICT)
