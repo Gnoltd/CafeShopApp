@@ -2,6 +2,10 @@
 
 Current-state architectural map for **PhaDinCafe** (synced with [CLAUDE.md](CLAUDE.md)). Historical design specs and plans live in `docs/superpowers/specs/` and `docs/superpowers/plans/`. Module-level notes live in `components/customer/CLAUDE.md`, `components/staff/CLAUDE.md`, `components/admin/CLAUDE.md`, `supabase/CLAUDE.md`, and `docs/agents/` (`GLOSSARY.md` defines the canonical domain language).
 
+## Language & Communication Rule
+
+- **Always respond to the user in Vietnamese (Tiếng Việt)** regardless of the language used in the user's prompt, unless explicitly asked otherwise for a specific piece of text.
+
 ## Read Graph First (`graphify-out/`)
 
 `graphify-out/` holds an up-to-date codebase knowledge graph (`1,711` nodes, `3,386` edges, `131` communities). For architecture, dependency, symbol, or cross-module questions, query `graphify-out/GRAPH_REPORT.md` or `graphify-out/graph.json` before bulk-reading source files. Run `/graphify --update` after large structural edits.
