@@ -1,6 +1,17 @@
 # Menu image credits
 
-Photos from [Unsplash](https://unsplash.com), used under the Unsplash License. Cropped to 1200x1200.
+## Current PhaDinCafe Studio Set (1200×1200 JPEG)
+
+All 27 beverage images in `public/images/menu/*.jpg` use a unified PhaDinCafe rustic Vietnamese studio tabletop concept (`1200×1200` JPEG):
+- **Angle & Aperture:** `25°–30°` tabletop product angle at `f/5.6` (no people, no room background).
+- **Tabletop & Props:** Natural beige woven burlap/linen cloth (`vải bố/đay`) over a warm wooden surface with a round woven rattan coaster (`đế mây tre đan`).
+- **Background:** Warm dark wooden lattice screen (`vách mắt cáo gỗ nâu trầm`) on the right and fresh green fern foliage (`lá dương xỉ xanh`) on the left.
+
+---
+
+## Historical Unsplash Sources (Archived Reference)
+
+Photos previously sourced from [Unsplash](https://unsplash.com), used under the Unsplash License. Cropped to 1200x1200.
 
 | File | Photographer | Source |
 |---|---|---|
